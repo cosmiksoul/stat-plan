@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f1115;
+  --color-bg-elev: #161a21;
+  --color-bg-elev-2: #1d222b;
+  --color-bg-elev-3: #232936;
+  --color-border: #2a313d;
+  --color-border-soft: #20262f;
+  --color-fg: #e8eaed;
+  --color-fg-dim: #9aa3b2;
+  --color-fg-faint: #5b6473;
+  --color-accent: #c9f25c;
+  --color-accent-soft: rgba(201, 242, 92, 0.12);
+  --color-warn: #ffb866;
+  --color-danger: #ff7a8a;
+  --color-ok: #6fe0a1;
+  --color-tour: #7ab4ff;
+  --color-tour-soft: rgba(122, 180, 255, 0.12);
+
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", Menlo, monospace;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(1200px 600px at 80% -200px, rgba(201, 242, 92, 0.05), transparent 60%),
+    radial-gradient(800px 400px at -100px 100%, rgba(120, 170, 255, 0.04), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
