@@ -42,7 +42,8 @@
 
 > Накопленный технический долг. Каждая запись — что и из какого спринта приехало.
 
-- [ ] [debt item] — приехало из Sprint N, причина: ...
+- [ ] **Inline rgba цвета вместо токенов @theme.** Приехало из Sprint 1 (code review concerns #1-2). Места: `src/components/Header.jsx` hover-bg кнопки тура, `src/pages/StartScreen.jsx` warn-toast bg/border. Зафиксировать как `--color-tour-hover`, `--color-warn-soft`, `--color-warn-border` в `src/styles/index.css` при ближайшем добавлении новых state-цветов (вероятно Sprint 2).
+- [ ] **Нет ErrorBoundary вокруг приложения.** Приехало из Sprint 1 (code review concern #5). `useAppState` throw'ает без Provider'а — сейчас не воспроизводится, но при добавлении React Testing Library тестов рендера компонентов без обёртки сломается с непонятным сообщением. Добавить минимальный ErrorBoundary или тестовый Provider-wrapper когда появятся первые RTL-тесты.
 
 ---
 

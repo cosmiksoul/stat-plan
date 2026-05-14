@@ -28,3 +28,6 @@ coverage/
 .env.local
 .env.*.local
 *.tmp
+
+# Claude Code local agent state
+.claude/
