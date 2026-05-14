@@ -1,0 +1,5 @@
+# Normalize all text files to LF in repository.
+# Working tree on Windows will still see CRLF via core.autocrlf,
+# but the committed bytes are always LF — prevents mixed line endings
+# and CRLF-related surprises in CI / tooling (eslint, vite, vitest).
+* text=auto eol=lf
