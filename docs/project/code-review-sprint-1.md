@@ -99,12 +99,12 @@
 |---|---------|---------|--------------------|
 | 🔴 1 | `.gitignore`, `CLAUDE.md`, `README.md` обрезаны | **Fix.** Пользователь восстановил через `git checkout HEAD -- ...` локально. Причина повреждения не диагностирована (вероятно encoding-related, не CRLF). Если повторится — отдельно расследуем. | Восстановлено локально, без новых коммитов. |
 | 🟡 2 | Hardcoded rgba цвета в `Header.jsx` и `StartScreen.jsx` | **Defer как tech debt.** В Sprint 2 при добавлении новых hover/state-цветов выносим в `@theme` (`--color-tour-hover`, `--color-warn-soft`, `--color-warn-border`). В текущем спринте не правим. | `docs/project/CONTEXT.md` секция Tech Debt. |
-| 🟡 3 | Google Fonts CDN противоречит духу ADR-001 | **Fix в FIX phase.** Переход на `@fontsource/fraunces`, `@fontsource/inter`, `@fontsource/jetbrains-mono`. Удалить `<link>` из `index.html`, импортировать в `src/main.jsx` или `src/styles/index.css`. Trade-off ~100KB к bundle — принят как разумный. | Запланировано в `sprint-1-fix-prompt.md` (создаётся после QA). |
+| 🟡 3 | Google Fonts CDN противоречит духу ADR-001 | **Defer как low-priority в JTBD** (пересмотрено после QA 2026-05-15). Пользователь оценил приоритет как «минорный» — нет багов из QA, фактический эффект CDN несущественный. Переносится как отдельная небольшая user story в JTBD §9 без привязки к спринту. | `docs/project/JTBD.md` §9 — кросс-функциональные требования. |
 | 🟡 4 | Drag-and-drop карточка без click-fallback | **New user story.** Не FIX этого спринта, а полноценная фича. Добавляется в `JTBD.md` §1 «Старт и навигация». Скоуп для Sprint 2 или 3 (на выбор PLAN-фазы). | `docs/project/JTBD.md`, новая user story в §1. |
 | 🟡 5 | `useAppState` throw без Provider'а | **Note для будущего.** Не правим сейчас. Когда появятся RTL-тесты в `src/lib/`-направленных компонентах — добавим минимальный ErrorBoundary или тестовый Provider-wrapper. | `docs/project/CONTEXT.md` секция Recurring questions / Tech debt. |
 | 🟢 1-5 | Notes (см. таблицу выше) | Никаких изменений в этом спринте, оставлены как наблюдения. | — |
 
-**Итог:** концерны разобраны. Один deferred fix (@fontsource) попадёт в FIX phase, одна новая user story добавлена в backlog, два пункта tech debt зафиксированы. К QA готовы после того как пользователь добавит `.claude/` в `.gitignore` и закоммитит cowork-доки.
+**Итог:** концерны разобраны. После QA (0 багов) FIX-фаза не понадобилась — @fontsource переклассифицирован в minor task в JTBD §9. Одна новая user story добавлена в backlog, два пункта tech debt зафиксированы. Спринт закрывается без FIX-итерации.
 
 ---
 

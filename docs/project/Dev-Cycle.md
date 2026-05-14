@@ -661,6 +661,6 @@ Architecture sprint **завершается** передачей в следу�
 
 ## Текущее состояние
 
-| Sprint | Type | Status | Начало | Заметки |
-|---|---|---|---|---|
-| 1 | Code | DEV (передан в Claude Code) | 2026-05-14 23:54 | Foundation React+Vite+Tailwind, стартовый экран, шаг 1 skeleton. Замеряем длительность как метрику. |
+| Sprint | Type | Status | Старт | Финиш | Длительность | Заметки |
+|---|---|---|---|---|---|---|
+| 1 | Code | CLOSED | 2026-05-14 23:54 | 2026-05-15 00:45 | 51 мин | Foundation React+Vite+Tailwind. 0 багов в QA. FIX-фазы не было. См. `CONTEXT.md` Timeline. |
