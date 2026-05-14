@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>stat·plan — A/B planner v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1115;
+    --bg-elev: #161a21;
+    --bg-elev-2: #1d222b;
+    --bg-elev-3: #232936;
+    --border: #2a313d;
+    --border-soft: #20262f;
+    --fg: #e8eaed;
+    --fg-dim: #9aa3b2;
+    --fg-faint: #5b6473;
+    --accent: #c9f25c;
+    --accent-soft: rgba(201, 242, 92, 0.12);
+    --warn: #ffb866;
+    --warn-soft: rgba(255, 184, 102, 0.12);
+    --danger: #ff7a8a;
+    --danger-soft: rgba(255, 122, 138, 0.1);
+    --ok: #6fe0a1;
+    --ok-soft: rgba(111, 224, 161, 0.1);
+    --tour: #7ab4ff;
+    --tour-soft: rgba(122, 180, 255, 0.12);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter", -apple-system, sans-serif;
+    --mono: "JetBrains Mono", "Menlo", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -200px, rgba(201,242,92,0.05), transparent 60%),
+      radial-gradient(800px 400px at -100px 100%, rgba(120,170,255,0.04), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  .shell { max-width: 1240px; margin: 0 auto; padding: 28px 32px 80px; }
+
+  /* HEADER */
+  header.top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 24px; border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 24px;
+  }
+  .brand { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand .dot { color: var(--accent); }
+  .brand-sub { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.12em; margin-left: 12px; }
+  .top-actions { display: flex; gap: 12px; align-items: center; }
+  .top-meta { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; }
+  .top-meta a { color: var(--fg-dim); text-decoration: none; border-bottom: 1px dashed var(--border); }
+  .top-meta a:hover { color: var(--accent); border-color: var(--accent); }
+
+  .tour-btn {
+    border: 1px solid var(--tour);
+    background: var(--tour-soft);
+    color: var(--tour);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.12s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tour-btn:hover { background: rgba(122, 180, 255, 0.2); }
+  body.tour .tour-btn { background: var(--tour); color: #0a0d12; }
+
+  /* TOUR HINT */
+  .tour-hint {
+    display: none;
+    background: var(--tour-soft);
+    border: 1px solid rgba(122, 180, 255, 0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--fg-dim);
+    gap: 10px;
+    align-items: flex-start;
+  }
+  body.tour .tour-hint { display: flex; }
+  .tour-hint .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--tour); text-transform: uppercase; letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+  .tour-hint b { color: var(--fg); }
+  .tour-hint code {
+    background: var(--bg-elev-2); padding: 1px 5px;
+    border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);
+  }
+
+  /* STEPPER */
+  .stepper-wrap { display: none; }
+  body.started .stepper-wrap { display: block; }
+  .stepper { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-bottom: 28px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-elev); }
+  .step {
+    padding: 14px 16px; cursor: pointer; position: relative;
+    border-right: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .step:last-child { border-right: 0; }
+  .step:hover { background: var(--bg-elev-2); }
+  .step .num { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); letter-spacing: 0.08em; }
+  .step .label { font-weight: 500; margin-top: 4px; font-size: 14px; color: var(--fg-dim); }
+  .step .sub { font-size: 11px; color: var(--fg-faint); margin-top: 2px; font-family: var(--mono); }
+  .step.active { background: var(--bg-elev-2); }
+  .step.active .label { color: var(--fg); }
+  .step.active .num { color: var(--accent); }
+  .step.active::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); }
+  .step.done .num::after { content: " ✓"; color: var(--ok); }
+  .step.locked { opacity: 0.45; cursor: not-allowed; }
+  .step.locked:hover { background: var(--bg-elev); }
+
+  /* ========== START SCREEN ========== */
+  .start-screen { display: block; }
+  body.started .start-screen { display: none; }
+
+  .start-hero {
+    text-align: center;
+    padding: 32px 0 32px;
+  }
+  .start-hero h1 {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    line-height: 1.1;
+  }
+  .start-hero p {
+    font-size: 16px;
+    color: var(--fg-dim);
+    margin: 0 auto;
+    max-width: 580px;
+    line-height: 1.55;
+  }
+  .start-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .start-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 26px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+  }
+  .start-card:hover {
+    border-color: var(--accent);
+    background: var(--bg-elev-2);
+    transform: translateY(-1px);
+  }
+  .start-card .icon {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .start-card h2 {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .start-card p {
+    font-size: 13px;
+    color: var(--fg-dim);
+    line-height: 1.55;
+    margin: 0 0 18px;
+    flex: 1;
+  }
+  .start-card .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--fg-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .start-card .meta .arrow {
+    float: right;
+    color: var(--accent);
+    transition: transform 0.18s;
+  }
+  .start-card:hover .meta .arrow { transform: translateX(3px); }
+  .start-card .upload-mini {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    background: var(--bg-elev-2);
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: var(--fg-dim);
+  }
+  .start-card .upload-mini code {
+    background: var(--bg-elev); padding: 1px 5px;
+    border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);
+  }
+  .start-footnote {
+    text-align: center;
+    margin-top: 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--fg-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ========== STEPS (shared) ========== */
+  body:not(.started) .step-content { display: none; }
+  .step-content { display: none; }
+  .step-content.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .grid { display: grid; gap: 24px; }
+  .grid-2 { grid-template-columns: 1.4fr 1fr; }
+  .grid-2-eq { grid-template-columns: 1fr 1fr; }
+
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .card h2 {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    margin: 0 0 4px; letter-spacing: -0.01em;
+  }
+  .card h3 {
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    margin: 0 0 12px; color: var(--fg-faint);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .card-desc { color: var(--fg-dim); font-size: 13px; margin-bottom: 20px; }
+
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    color: var(--fg);
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.12s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn:hover { border-color: var(--fg-faint); }
+  .btn.primary { background: var(--accent); color: #0a0d12; border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; }
+  .btn.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+  .btn.small { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .actions { display: flex; gap: 12px; justify-content: space-between; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-soft); }
+  .actions .left, .actions .right { display: flex; gap: 8px; align-items: center; }
+
+  /* BRIEF */
+  .brief-progress {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px; font-family: var(--mono); font-size: 11px;
+    color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .brief-progress .meta b { color: var(--accent); font-weight: 600; }
+  .brief-progress .track { flex: 1; height: 2px; background: var(--border); margin: 0 16px; border-radius: 1px; overflow: hidden; }
+  .brief-progress .fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+
+  .q-num { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
+  .q-title { font-family: var(--serif); font-size: 26px; font-weight: 500; margin: 0 0 6px; letter-spacing: -0.01em; line-height: 1.25; }
+  .q-hint { color: var(--fg-dim); font-size: 13px; margin-bottom: 24px; }
+
+  /* Question map */
+  .qmap { display: flex; flex-direction: column; gap: 2px; }
+  .qmap-item { border-radius: 6px; overflow: hidden; transition: background 0.12s; }
+  .qmap-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; cursor: pointer; font-size: 13px;
+    transition: background 0.12s;
+  }
+  .qmap-header:hover { background: var(--bg-elev-2); }
+  .qmap-item.current > .qmap-header { background: var(--accent-soft); }
+  .qmap-item.current .qmap-num { color: var(--accent); }
+  .qmap-item.current .qmap-name { color: var(--fg); font-weight: 500; }
+  .qmap-item.expanded > .qmap-header .chevron { transform: rotate(90deg); }
+  .qmap-num { font-family: var(--mono); font-size: 11px; width: 22px; color: var(--fg-faint); flex-shrink: 0; }
+  .qmap-status { width: 14px; flex-shrink: 0; text-align: center; font-family: var(--mono); font-size: 11px; }
+  .qmap-status.done { color: var(--ok); }
+  .qmap-status.current { color: var(--accent); }
+  .qmap-status.todo { color: var(--fg-faint); }
+  .qmap-name { flex: 1; color: var(--fg-dim); }
+  .qmap-item.done .qmap-name { color: var(--fg-dim); }
+  .qmap-preview {
+    font-family: var(--mono); font-size: 10px; color: var(--fg-faint);
+    text-transform: none; letter-spacing: 0;
+    max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .chevron {
+    width: 12px; flex-shrink: 0; color: var(--fg-faint);
+    font-family: var(--mono); font-size: 10px; transition: transform 0.18s;
+  }
+  .qmap-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.22s ease;
+    padding: 0 10px 0 46px;
+  }
+  .qmap-item.expanded > .qmap-body { max-height: 200px; padding-bottom: 10px; }
+  .qmap-answer {
+    background: var(--bg-elev-2); border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 8px 10px; font-size: 11px; color: var(--fg-dim); line-height: 1.5;
+  }
+  .qmap-answer .a-key {
+    font-family: var(--mono); font-size: 10px; color: var(--fg-faint);
+    text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 3px;
+  }
+  .qmap-answer .a-val { color: var(--fg); font-family: var(--mono); font-size: 11px; }
+  .qmap-divider {
+    margin: 8px 0 6px; padding: 6px 10px 0;
+    border-top: 1px solid var(--border-soft);
+    font-family: var(--mono); font-size: 10px; color: var(--fg-faint);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  /* Score panel */
+  .score-label { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 6px; }
+  .score-big {
+    font-family: var(--serif); font-size: 56px; font-weight: 500; line-height: 1;
+    letter-spacing: -0.02em; color: var(--accent);
+  }
+  .score-big .denom { font-size: 24px; color: var(--fg-faint); }
+  .score-breakdown { margin-top: 22px; display: grid; gap: 14px; }
+  .breakdown-group { font-size: 12px; }
+  .breakdown-group .name { display: flex; justify-content: space-between; color: var(--fg); font-weight: 500; margin-bottom: 8px; }
+  .breakdown-group .name .pts { font-family: var(--mono); color: var(--fg-faint); font-weight: 400; }
+  .breakdown-group .items { display: grid; gap: 4px; }
+  .breakdown-item { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--fg-dim); line-height: 1.45; }
+  .breakdown-item .mk { font-family: var(--mono); font-size: 11px; width: 14px; flex-shrink: 0; padding-top: 1px; }
+  .breakdown-item.pass .mk { color: var(--ok); }
+  .breakdown-item.fail .mk { color: var(--fg-faint); }
+  .breakdown-item.warn .mk { color: var(--warn); }
+  .breakdown-item.warn .text { color: var(--fg); }
+  .breakdown-item.fail .text { color: var(--fg-faint); }
+
+  /* Plan status badge */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px; border-radius: 3px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .status-badge.draft { background: var(--warn-soft); color: var(--warn); }
+  .status-badge.approved { background: var(--ok-soft); color: var(--ok); }
+
+  /* md preview */
+  .md-preview {
+    background: #0a0d12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 22px 24px; font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    color: #cdd4df; max-height: 580px; overflow: auto;
+  }
+  .md-preview .h-mark { color: var(--accent); }
+  .md-preview .yaml-mark { color: var(--fg-faint); }
+  .md-preview .key { color: var(--warn); }
+  .md-preview .val { color: var(--ok); }
+  .md-preview .comment { color: var(--fg-faint); font-style: italic; }
+  .md-preview code { background: var(--bg-elev-2); padding: 1px 5px; border-radius: 3px; color: var(--accent); font-size: 11.5px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0; padding: 0 16px; }
+  .tab { padding: 12px 16px; cursor: pointer; font-size: 13px; color: var(--fg-dim); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--fg); }
+  .tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+
+  /* Files */
+  .files { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .file-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border); background: var(--bg-elev-2);
+    padding: 6px 12px; border-radius: 999px; font-size: 12px;
+    font-family: var(--mono); color: var(--fg-dim);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .file-pill:hover { border-color: var(--accent); color: var(--fg); }
+  .file-pill .ext { color: var(--accent); font-weight: 600; }
+
+  /* Banners */
+  .banner {
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .banner.info { background: var(--bg-elev-2); border: 1px solid var(--border); }
+  .banner.ok { background: var(--ok-soft); border: 1px solid rgba(111,224,161,0.3); }
+  .banner.warn { background: var(--warn-soft); border: 1px solid rgba(255,184,102,0.3); }
+  .banner .icon { font-family: var(--mono); font-weight: 700; font-size: 13px; padding-top: 1px; }
+  .banner.info .icon { color: var(--accent); }
+  .banner.ok .icon { color: var(--ok); }
+  .banner.warn .icon { color: var(--warn); }
+  .banner b { color: var(--fg); font-weight: 600; }
+  .banner-content { flex: 1; color: var(--fg-dim); }
+
+  /* NB toggles (constructor) */
+  .nb-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border: 1px solid var(--border-soft); border-radius: 6px;
+    background: var(--bg-elev-2); cursor: pointer; font-size: 13px;
+  }
+  .nb-toggle:hover { border-color: var(--fg-faint); }
+  .nb-toggle.on { border-color: var(--accent); background: var(--accent-soft); }
+  .nb-toggle.locked { opacity: 0.85; cursor: not-allowed; }
+  .nb-toggle.locked:hover { border-color: var(--accent); }
+  .nb-toggle .name { display: flex; gap: 10px; align-items: center; flex: 1; }
+  .nb-toggle .nb-desc {
+    font-size: 11px; color: var(--fg-faint); margin-left: 32px; margin-top: 3px;
+    font-family: var(--sans); font-weight: normal;
+  }
+  .nb-toggle .nb-content { flex: 1; }
+  .nb-toggle .meta { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); }
+  .nb-toggle .lock-icon { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+  .nb-toggle .switch {
+    width: 30px; height: 18px; background: var(--border); border-radius: 999px;
+    position: relative; transition: background 0.15s; flex-shrink: 0;
+  }
+  .nb-toggle .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%; background: var(--fg-dim);
+    transition: all 0.15s;
+  }
+  .nb-toggle.on .switch { background: var(--accent); }
+  .nb-toggle.on .switch::after { left: 14px; background: #0a0d12; }
+  .nb-list { display: grid; gap: 8px; }
+
+  /* Demo csv selector */
+  .demo-csv-card {
+    background: var(--tour-soft); border: 1px solid rgba(122, 180, 255, 0.3);
+    border-radius: 8px; padding: 20px;
+  }
+  .demo-csv-card h3 { color: var(--tour); }
+  .csv-options { display: grid; gap: 8px; margin-top: 12px; }
+  .csv-option {
+    padding: 10px 14px; border: 1px solid var(--border-soft);
+    background: var(--bg-elev); border-radius: 6px; cursor: pointer;
+    font-size: 12px; transition: all 0.12s;
+  }
+  .csv-option:hover { border-color: var(--tour); }
+  .csv-option.selected { border-color: var(--tour); background: rgba(122, 180, 255, 0.08); }
+  .csv-option .name { font-family: var(--mono); font-size: 12px; color: var(--fg); font-weight: 500; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+  .csv-option .name .check { color: var(--tour); font-family: var(--mono); display: none; }
+  .csv-option.selected .name .check { display: inline; }
+  .csv-option .desc { font-size: 11px; color: var(--fg-dim); line-height: 1.4; }
+
+  /* Plan info card (constructor top) */
+  .plan-info {
+    background: var(--ok-soft); border: 1px solid rgba(111,224,161,0.2);
+    border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  }
+  .plan-info .plan-id {
+    font-family: var(--mono); font-size: 13px; color: var(--fg); font-weight: 600;
+  }
+  .plan-info .plan-id .label {
+    font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 2px;
+  }
+  .plan-info .params {
+    display: flex; gap: 18px; font-family: var(--mono); font-size: 11px; color: var(--fg-dim);
+  }
+  .plan-info .params .p-item .pk { color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; display: block; margin-bottom: 2px; }
+  .plan-info .params .p-item .pv { color: var(--fg); }
+
+  /* Stats / charts */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat { background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+  .stat .k { font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .stat .v { font-family: var(--serif); font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
+  .stat .v.pos { color: var(--ok); }
+  .stat .ci { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); margin-top: 2px; }
+
+  .chart { height: 240px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 6px; position: relative; overflow: hidden; }
+  .chart svg { width: 100%; height: 100%; }
+
+  .validation-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .validation-table th, .validation-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-soft); text-align: left; }
+  .validation-table th { font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+  .validation-table td { color: var(--fg-dim); }
+  .validation-table .num { font-family: var(--mono); color: var(--fg); }
+  .validation-table tr:last-child td { border-bottom: 0; }
+  .validation-table .match { color: var(--ok); font-family: var(--mono); font-size: 11px; }
+
+  footer.bottom {
+    margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border-soft);
+    font-family: var(--mono); font-size: 11px; color: var(--fg-faint);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    display: flex; justify-content: space-between;
+  }
+
+  @media (max-width: 960px) {
+    .grid-2, .grid-2-eq { grid-template-columns: 1fr; }
+    .stepper { grid-template-columns: 1fr 1fr; }
+    .step { border-right: 0; border-bottom: 1px solid var(--border); }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .start-options { grid-template-columns: 1fr; }
+    .start-hero h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body class="tour">
+<div class="shell">
+
+  <header class="top">
+    <div>
+      <span class="brand">stat<span class="dot">·</span>plan</span>
+      <span class="brand-sub">A/B planner · open source · no backend</span>
+    </div>
+    <div class="top-actions">
+      <button class="tour-btn" onclick="toggleTour()" id="tour-btn">✕ Закрыть тур</button>
+      <div class="top-meta">
+        <a href="#">docs</a> · <a href="#">github</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ START SCREEN ============ -->
+  <section class="start-screen">
+    <div class="tour-hint">
+      <span class="label">тур · старт</span>
+      <div>
+        <b>Это стартовый экран.</b> Если ты новый пользователь — иди по «Начать с брифа». Если у тебя уже есть <code>test_plan.md</code> — загружай его, попадёшь сразу на сборку ноутбука. Бриф при этом не теряется — восстановится из YAML frontmatter.
+      </div>
+    </div>
+
+    <div class="start-hero">
+      <h1>Спланируй A/B тест без боли с методологией</h1>
+      <p>Пройди бриф из 10 вопросов, получи тест-план с оценкой, собери ноутбук под свою конфигурацию. Без логина, без бэкенда, все артефакты — обычные файлы.</p>
+    </div>
+
+    <div class="start-options">
+      <div class="start-card" onclick="startFlow('brief')">
+        <div class="icon">01 · с нуля</div>
+        <h2>Начать с брифа</h2>
+        <p>Пройди дерево из 10 вопросов. Тул соберёт тест-план, оценит его и предложит конфигурацию ноутбука. ~5 минут.</p>
+        <div class="meta">
+          бриф → план → ноутбук → анализ → read-out
+          <span class="arrow">→</span>
+        </div>
+      </div>
+
+      <div class="start-card" onclick="startFlow('plan')">
+        <div class="icon">02 · продолжить</div>
+        <h2>У меня уже есть план</h2>
+        <p>Загрузи <code style="background:var(--bg-elev-2);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent)">test_plan.md</code>, который ты скачал раньше или прислал коллега. Бриф восстановится из YAML frontmatter.</p>
+        <div class="upload-mini">
+          ↑ Перетащи <code>test_plan.md</code> сюда или нажми
+        </div>
+        <div class="meta">
+          план → ноутбук → анализ → read-out
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="start-footnote">
+      кнопка «тур» в шапке проводит за руку через все шаги
+    </div>
+  </section>
+
+  <!-- ============ STEPPER ============ -->
+  <div class="stepper-wrap">
+    <nav class="stepper" id="stepper">
+      <div class="step active" data-step="1"><div class="num">01</div><div class="label">Бриф</div><div class="sub">10 вопросов</div></div>
+      <div class="step" data-step="2"><div class="num">02</div><div class="label">Тест-план</div><div class="sub">оценка · утверждение</div></div>
+      <div class="step locked" data-step="3"><div class="num">03</div><div class="label">Конструктор</div><div class="sub">ноутбук · demo csv</div></div>
+      <div class="step locked" data-step="4"><div class="num">04</div><div class="label">Анализ</div><div class="sub">валидация</div></div>
+      <div class="step locked" data-step="5"><div class="num">05</div><div class="label">Read-out</div><div class="sub">собрать всё</div></div>
+    </nav>
+  </div>
+
+  <!-- ============ STEP 1: BRIEF ============ -->
+  <section class="step-content active" data-step="1">
+    <div class="tour-hint">
+      <span class="label">тур · шаг 1</span>
+      <div><b>Бриф.</b> 10 вопросов, гипотеза идёт второй. Карта вопросов справа — кликни по любому, чтобы перейти, или раскрой стрелочкой <code>›</code>, чтобы посмотреть текущий ответ. Опциональный Data peek в конце — загрузка csv для проверки baseline.</div>
+    </div>
+
+    <div class="brief-progress">
+      <span class="meta"><b>7</b> / 10 вопросов</span>
+      <div class="track"><div class="fill" style="width: 70%"></div></div>
+      <span>обязательных осталось: 3</span>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="q-num">Вопрос 07 — MDE</div>
+        <h2 class="q-title">Минимальный эффект, который имеет смысл ловить</h2>
+        <div class="q-hint">Меньший эффект тест не «увидит» с заданной мощностью. Слишком маленький MDE → нереально длинный тест.</div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px;">Величина эффекта</label>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input type="number" placeholder="8" style="max-width: 120px;" />
+            <select style="max-width: 240px;">
+              <option>относительный %</option>
+              <option>абсолютные п.п.</option>
+              <option>абсолютная величина</option>
+            </select>
+          </div>
+          <div style="font-family: var(--mono); font-size: 11px; color: var(--fg-faint); margin-top: 8px;">
+            например: «конверсия вырастет на <span style="color: var(--accent)">8%</span> относительно текущих 3.1% → станет 3.35%»
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: var(--fg-dim); padding: 10px 12px; background: var(--bg-elev-2); border-radius: 6px; border: 1px solid var(--border-soft);">
+          <b style="color: var(--fg);">Расчётно при текущих параметрах:</b>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; font-family: var(--mono); font-size: 11px;">
+            <div>Sample size / arm: <span style="color: var(--accent)">~38 400</span></div>
+            <div>Длительность: <span style="color: var(--accent)">~5 дней</span></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div class="left"><button class="btn ghost">← Назад (06)</button></div>
+          <div class="right"><button class="btn primary">Дальше (08) →</button></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3>Карта вопросов</h3>
+          <div style="font-size: 11px; color: var(--fg-faint); margin-bottom: 10px;">Клик — перейти. Стрелочка — раскрыть.</div>
+          <div class="qmap">
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">01</span><span class="qmap-status done">✓</span><span class="qmap-name">Цель теста</span><span class="qmap-preview">product_change</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Ответ</span><span class="a-val">Изменение продукта</span></div></div></div>
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">02</span><span class="qmap-status done">✓</span><span class="qmap-name">Гипотеза</span><span class="qmap-preview">4/4 слотов</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Текст</span><span style="color: var(--fg-dim); font-size: 11px; line-height: 1.5; display: block; margin-top: 4px;">«Если показать новый блок с рекомендациями БК на главной, то CR в клик по партнёрке вырастет на 8%, потому что пользователь увидит релевантные офферы выше fold.»</span></div></div></div>
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">03</span><span class="qmap-status done">✓</span><span class="qmap-name">Тип метрики</span><span class="qmap-preview">proportion</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Ответ</span><span class="a-val">Конверсия / proportion</span></div></div></div>
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">04</span><span class="qmap-status done">✓</span><span class="qmap-name">Имя метрики</span><span class="qmap-preview">converted</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Название · колонка</span><span class="a-val">CR в клик · <span style="color:var(--accent)">converted</span></span></div></div></div>
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">05</span><span class="qmap-status done">✓</span><span class="qmap-name">Baseline</span><span class="qmap-preview">3.1%</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Значение</span><span class="a-val">3.1%</span></div></div></div>
+            <div class="qmap-item done"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">06</span><span class="qmap-status done">✓</span><span class="qmap-name">Единица рандомизации</span><span class="qmap-preview">user</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Что делим</span><span class="a-val">Пользователь</span></div></div></div>
+            <div class="qmap-item current"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">07</span><span class="qmap-status current">→</span><span class="qmap-name">MDE</span><span class="qmap-preview">не задано</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span class="a-key">Текущий ответ</span><span style="color: var(--fg-faint); font-style: italic;">заполни поле слева</span></div></div></div>
+            <div class="qmap-item"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">08</span><span class="qmap-status todo">·</span><span class="qmap-name">Трафик в день</span><span class="qmap-preview" style="color: var(--fg-faint);">не задано</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span style="color: var(--fg-faint); font-style: italic;">пока не отвечено</span></div></div></div>
+            <div class="qmap-item"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">09</span><span class="qmap-status todo">·</span><span class="qmap-name">Guardrails</span><span class="qmap-preview" style="color: var(--fg-faint);">не задано</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span style="color: var(--fg-faint); font-style: italic;">пока не отвечено</span></div></div></div>
+            <div class="qmap-item"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">10</span><span class="qmap-status todo">·</span><span class="qmap-name">Stop & Decision rules</span><span class="qmap-preview" style="color: var(--fg-faint);">не задано</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span style="color: var(--fg-faint); font-style: italic;">пока не отвечено</span></div></div></div>
+
+            <div class="qmap-divider">опционально</div>
+            <div class="qmap-item"><div class="qmap-header" onclick="toggleQmap(this)"><span class="qmap-num">+</span><span class="qmap-status todo">·</span><span class="qmap-name">Data peek</span><span class="qmap-preview" style="color: var(--fg-faint);">не загружено</span><span class="chevron">›</span></div><div class="qmap-body"><div class="qmap-answer"><span style="color: var(--fg-dim); font-size: 11px; line-height: 1.5; display: block;">Опционально. Загрузка csv для проверки baseline. Без data peek скор ≤ 80.</span></div></div></div>
+
+            <div class="qmap-divider" style="margin-top: 12px;">скрыто</div>
+            <div class="qmap-item"><div class="qmap-header" style="opacity: 0.65;"><span class="qmap-num" style="color: var(--fg-faint);">⚙</span><span class="qmap-status todo">·</span><span class="qmap-name" style="color: var(--fg-faint);">Продвинутые параметры</span><span class="qmap-preview">α=0.05 · power=0.80</span><span class="chevron">›</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2: TEST PLAN ============ -->
+  <section class="step-content" data-step="2">
+    <div class="tour-hint">
+      <span class="label">тур · шаг 2</span>
+      <div><b>Тест-план.</b> Сгенерированный план в md (слева) с YAML frontmatter. Оценка плана с разбивкой (справа). План в статусе <span class="status-badge draft" style="vertical-align: middle;">draft</span> — можно скачать, обсудить, загрузить отредактированный. После <code>✓ Утвердить</code> план фиксируется и открывается следующий шаг — конструктор.</div>
+    </div>
+
+    <div class="grid grid-2">
+      <div>
+        <div style="background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0;">
+            <div class="tabs" style="border: none; padding: 0;">
+              <div class="tab active" style="padding-left: 0;">Preview</div>
+              <div class="tab">Raw</div>
+              <div class="tab">Upload edited</div>
+            </div>
+            <span class="status-badge draft">DRAFT</span>
+          </div>
+          <div style="border-top: 1px solid var(--border); margin-top: 12px;"></div>
+          <div class="md-preview" style="border: 0; border-radius: 0;">
+<span class="yaml-mark">---</span>
+<span class="key">test_id:</span> <span class="val">bm-main-cta-v2</span>
+<span class="key">created:</span> <span class="val">2026-05-14</span>
+<span class="key">status:</span> <span class="val">draft</span>
+<span class="key">metric_type:</span> <span class="val">proportion</span>
+<span class="key">test_method:</span> <span class="val">z_test_proportions</span>
+<span class="key">randomization_unit:</span> <span class="val">user</span>
+<span class="key">alpha:</span> <span class="val">0.05</span>
+<span class="key">power:</span> <span class="val">0.80</span>
+<span class="key">mde:</span>
+  <span class="key">value:</span> <span class="val">8</span>
+  <span class="key">unit:</span> <span class="val">relative_percent</span>
+<span class="key">baseline:</span> <span class="val">0.031</span>
+<span class="key">sample_size_per_arm:</span> <span class="val">38400</span>
+<span class="key">duration_days:</span> <span class="val">5</span>
+<span class="yaml-mark">---</span>
+
+<span class="h-mark"># </span><span style="color:var(--fg);font-family:var(--serif);font-size:22px">Test Plan: bm-main-cta-v2</span>
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Hypothesis</span>
+Если показать новый блок с рекомендациями БК на главной, то CR в клик по партнёрке вырастет на +8% rel., потому что пользователь увидит релевантные офферы выше fold.
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Guardrails</span>
+- bounce_rate (max +5% rel.)
+- time_on_site (min −10% rel.)
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Stop conditions</span>
+- SRM detected (chi² p &lt; 0.001)
+- Guardrail breach &gt; 24h
+- Length cap: 10 days
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Decision rules</span>
+- <span class="val">SHIP</span> если CI not crossing 0 и нижняя граница ≥ +3% rel.
+- <span class="val">ITERATE</span> если ns но direction positive в 2+ сегментах
+- <span class="val">KILL</span> если guardrail breach или CI ≤ −3% rel.
+          </div>
+        </div>
+
+        <div class="files">
+          <div class="file-pill"><span class="ext">↓ .md</span> test_plan.md</div>
+          <div class="file-pill"><span class="ext">↑ .md</span> upload edited</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="score-label">Оценка тест-плана</div>
+          <div class="score-big">78<span class="denom">/100</span></div>
+          <div style="font-size: 12px; color: var(--fg-dim); margin-top: 10px; line-height: 1.5;">
+            Структура полная, методология консистентна. <b style="color: var(--warn);">2 замечания</b> — обсуди с аналитиком перед утверждением.
+          </div>
+
+          <div class="score-breakdown">
+            <div class="breakdown-group">
+              <div class="name"><span>Полнота гипотезы</span><span class="pts">20 / 20</span></div>
+              <div class="items"><div class="breakdown-item pass"><span class="mk">✓</span><span class="text">все 4 слота заполнены</span></div></div>
+            </div>
+            <div class="breakdown-group">
+              <div class="name"><span>Полнота дизайна</span><span class="pts">25 / 30</span></div>
+              <div class="items">
+                <div class="breakdown-item pass"><span class="mk">✓</span><span class="text">единица рандомизации, MDE, α/power</span></div>
+                <div class="breakdown-item pass"><span class="mk">✓</span><span class="text">guardrails, stop, decision rules</span></div>
+                <div class="breakdown-item fail"><span class="mk">·</span><span class="text">не указан holdback после ship</span></div>
+              </div>
+            </div>
+            <div class="breakdown-group">
+              <div class="name"><span>Методологическая консистентность</span><span class="pts">18 / 30</span></div>
+              <div class="items">
+                <div class="breakdown-item pass"><span class="mk">✓</span><span class="text">z-test подходит под proportion</span></div>
+                <div class="breakdown-item warn"><span class="mk">!</span><span class="text">MDE 8% rel. оптимистичен при baseline 3.1%</span></div>
+                <div class="breakdown-item warn"><span class="mk">!</span><span class="text">5 дней — рассмотри стратификацию</span></div>
+              </div>
+            </div>
+            <div class="breakdown-group">
+              <div class="name"><span>Pre-flight на данных</span><span class="pts">15 / 20</span></div>
+              <div class="items">
+                <div class="breakdown-item pass"><span class="mk">✓</span><span class="text">baseline посчитан из данных</span></div>
+                <div class="breakdown-item pass"><span class="mk">✓</span><span class="text">распределение проверено</span></div>
+                <div class="breakdown-item fail"><span class="mk">·</span><span class="text">AA-симуляция не запущена</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-soft);">
+            <button class="btn primary" style="width: 100%; justify-content: center;" onclick="approvePlan()">✓ Утвердить план</button>
+            <div style="font-size: 11px; color: var(--fg-faint); text-align: center; margin-top: 8px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em;">
+              после утверждения откроется конструктор
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="left"><button class="btn ghost" onclick="goTo(1)">← Бриф</button></div>
+      <div class="right"><button class="btn ghost" disabled>Конструктор → (сначала утверди план)</button></div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3: NOTEBOOK CONSTRUCTOR ============ -->
+  <section class="step-content" data-step="3">
+    <div class="tour-hint">
+      <span class="label">тур · шаг 3</span>
+      <div><b>Конструктор ноутбука.</b> План утверждён, теперь собираем <code>.ipynb</code> под него. Слева — список ячеек, обязательные включены и заблокированы (<span style="color: var(--accent); font-family: var(--mono); font-size: 11px;">🔒</span>), опциональные можно включить. Справа — синтетический csv для проверки, что ноутбук работает (нужен только если хочешь прогнать пайплайн на тестовых данных).</div>
+    </div>
+
+    <div class="plan-info">
+      <div class="plan-id">
+        <span class="label">Утверждённый план</span>
+        bm-main-cta-v2 <span class="status-badge approved" style="margin-left: 8px;">APPROVED</span>
+      </div>
+      <div class="params">
+        <div class="p-item"><span class="pk">Metric</span><span class="pv">proportion</span></div>
+        <div class="p-item"><span class="pk">Test</span><span class="pv">z-test</span></div>
+        <div class="p-item"><span class="pk">N / arm</span><span class="pv">38 400</span></div>
+        <div class="p-item"><span class="pk">Длит.</span><span class="pv">5 дней</span></div>
+      </div>
+      <button class="btn warn small" onclick="returnToDraft()" style="margin-left: auto;">↻ Вернуть в черновик</button>
+    </div>
+
+    <div class="grid grid-2">
+      <!-- LEFT: notebook cells -->
+      <div>
+        <div class="card">
+          <h3>Ячейки ноутбука</h3>
+          <h2 style="margin-bottom: 6px;">Что войдёт в analysis.ipynb</h2>
+          <div style="font-size: 12px; color: var(--fg-dim); margin-bottom: 18px;">
+            Обязательные ячейки заблокированы — без них пайплайн не имеет смысла. Опциональные можно включить вручную.
+          </div>
+
+          <div class="nb-list">
+            <div style="font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Обязательные</div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">01</span> Загрузка + EDA <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">Парсинг csv, базовые статистики, проверка целостности</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">02</span> SRM check <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">Sample Ratio Mismatch — критично для proportion-теста</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">03</span> Баланс по сегментам <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">Проверка баланса групп по geo, device и др.</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">04</span> Novelty effect <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">Сравнение дней 1-2 vs 3-5 (длительность ≥ 3 дней)</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">05</span> Основной z-test + CI <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">Главный расчёт: Δ, CI₉₅, p-value</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle on locked">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">06</span> Guardrails check <span class="lock-icon">🔒</span></div>
+                <div class="nb-desc">bounce_rate, time_on_site — проверка порогов</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div style="font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.1em; margin: 12px 0 4px;">Опциональные</div>
+
+            <div class="nb-toggle">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--fg-faint)">07</span> Сегментный анализ</div>
+                <div class="nb-desc">Эффект по сегментам: новые vs возвращающиеся, geo</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--fg-faint)">08</span> Bootstrap CI</div>
+                <div class="nb-desc">Альтернатива асимптотическим CI — для непараметрики</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+
+            <div class="nb-toggle">
+              <div class="nb-content">
+                <div class="name"><span style="font-family:var(--mono);font-size:11px;color:var(--fg-faint)">09</span> CUPED</div>
+                <div class="nb-desc">Variance reduction — требует pre-period колонку</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+          </div>
+
+          <button class="btn primary" style="width: 100%; margin-top: 20px; justify-content: center;">↓ Скачать analysis.ipynb</button>
+          <div style="font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-align: center; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em;">
+            6 ячеек · pandas, scipy, statsmodels
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: demo csv selector -->
+      <div>
+        <div class="demo-csv-card">
+          <h3>Схема данных + Demo CSV</h3>
+          <h2 style="margin-bottom: 8px; color: var(--fg);">Что ожидает ноутбук</h2>
+          <div style="font-size: 13px; color: var(--fg-dim); line-height: 1.55; margin-bottom: 14px;">
+            Ноутбук обращается к колонкам csv по именам. Вот схема, которую он ожидает — на этапе анализа (шаг 4) проверим, что твой csv ей соответствует.
+          </div>
+
+          <div style="background: var(--bg-elev); border: 1px solid var(--border-soft); border-radius: 6px; overflow: hidden; margin-bottom: 16px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+              <thead>
+                <tr style="background: var(--bg-elev-2);">
+                  <th style="padding: 8px 10px; text-align: left; font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; border-bottom: 1px solid var(--border-soft);">Колонка</th>
+                  <th style="padding: 8px 10px; text-align: left; font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; border-bottom: 1px solid var(--border-soft);">Тип</th>
+                  <th style="padding: 8px 6px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; border-bottom: 1px solid var(--border-soft); width: 50px;">обязат.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">user_id</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">int/string</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">variant</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">"control" / "treatment"</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">converted</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">int (0/1)</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">bounce_rate</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">float</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">time_on_site</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">float</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); font-family: var(--mono); color: var(--accent); font-size: 11px;">day</td><td style="padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--fg-dim); font-family: var(--mono); font-size: 11px;">int (1..N)</td><td style="padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--border-soft); color: var(--ok); font-family: var(--mono); font-size: 11px;">✓</td></tr>
+                <tr><td style="padding: 7px 10px; font-family: var(--mono); color: var(--fg-faint); font-size: 11px;">geo</td><td style="padding: 7px 10px; color: var(--fg-faint); font-family: var(--mono); font-size: 11px;">string</td><td style="padding: 7px 6px; text-align: center; color: var(--fg-faint); font-family: var(--mono); font-size: 11px;">опц.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size: 11px; color: var(--fg-faint); margin-bottom: 6px; padding-top: 4px; border-top: 1px dashed var(--border-soft);">
+            Схема собрана из плана + выбранных ячеек. Включи опциональные ячейки слева — в схеме появятся новые колонки.
+          </div>
+
+          <h3 style="margin-top: 18px; color: var(--tour);">Demo CSV для проверки ноутбука</h3>
+          <div style="font-size: 12px; color: var(--fg-dim); line-height: 1.5; margin-bottom: 12px;">
+            Синтетические данные под выбранную схему, с заложенным эффектом. Прогоняй <code style="background:var(--bg-elev-2);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent)">analysis.ipynb</code> на них, чтобы убедиться что пайплайн работает.
+          </div>
+
+          <div class="csv-options">
+            <div class="csv-option selected">
+              <div class="name"><span>demo_proportion.csv</span><span class="check">✓ выбран</span></div>
+              <div class="desc">~75k строк · Δ rel. +9.3% · novelty в первые 2 дня</div>
+            </div>
+            <div class="csv-option">
+              <div class="name"><span>demo_continuous.csv</span><span class="check">✓ выбран</span></div>
+              <div class="desc">~75k строк · схема для continuous-метрик · Δ +6%</div>
+            </div>
+            <div class="csv-option">
+              <div class="name"><span>demo_ratio.csv</span><span class="check">✓ выбран</span></div>
+              <div class="desc">~120k строк · session-level · Δ +7%</div>
+            </div>
+            <div class="csv-option">
+              <div class="name"><span>demo_count.csv</span><span class="check">✓ выбран</span></div>
+              <div class="desc">~75k строк · count events per user · Δ +12%</div>
+            </div>
+          </div>
+
+          <button class="btn" style="width: 100%; margin-top: 14px; justify-content: center; border-color: var(--tour); color: var(--tour); background: rgba(122, 180, 255, 0.08);">↓ Скачать demo_proportion.csv</button>
+          <div style="font-family: var(--mono); font-size: 10px; color: var(--fg-faint); text-align: center; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em;">
+            опционально · ~4 MB
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; padding: 12px 14px; background: var(--bg-elev-2); border: 1px solid var(--border-soft); border-radius: 6px; font-size: 12px; color: var(--fg-dim); line-height: 1.5;">
+          <b style="color: var(--fg);">Как использовать.</b> Скачай оба файла, положи рядом в одну папку, открой <code style="background:var(--bg-elev);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent)">.ipynb</code> в Jupyter — ноутбук подхватит csv по имени. Прогоняй ячейки сверху вниз и проверяй, что выводы выглядят разумно.
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="left"><button class="btn ghost" onclick="goTo(2)">← Тест-план</button></div>
+      <div class="right"><button class="btn primary" onclick="goTo(4)">К анализу результатов →</button></div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4: ANALYSIS ============ -->
+  <section class="step-content" data-step="4">
+    <div class="tour-hint">
+      <span class="label">тур · шаг 4</span>
+      <div><b>Независимая валидация.</b> После запуска теста загружаешь сюда <code>experiment_results.csv</code> с реальными результатами. Тул пересчитывает ключевые метрики и сравнивает с тем, что было в твоём ноутбуке. Это и есть «второе мнение».</div>
+    </div>
+
+    <!-- Toggle между empty / loaded для просмотра обоих состояний -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 14px; gap: 8px;">
+      <button class="btn small ghost" id="analysis-state-empty" onclick="setAnalysisState('empty')">▢ Пустое</button>
+      <button class="btn small ghost" id="analysis-state-loaded" onclick="setAnalysisState('loaded')">▣ Загружено</button>
+    </div>
+
+    <!-- EMPTY STATE: csv not uploaded yet -->
+    <div id="analysis-empty">
+      <div class="banner info">
+        <div class="icon">i</div>
+        <div class="banner-content">
+          <b>Загрузи csv с результатами эксперимента.</b> Тул пересчитает ключевые метрики и CI независимо от твоего ноутбука. Если расходимся — увидишь где.
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 700px; margin: 0 auto;">
+        <h3>Загрузка результатов теста</h3>
+        <h2>experiment_results.csv</h2>
+        <div class="card-desc">
+          Файл из ноутбука или выгрузка из аналитической системы. Парсим в браузере, наружу ничего не уходит.
+        </div>
+
+        <div style="border: 2px dashed var(--border); border-radius: 8px; padding: 48px 20px; text-align: center; background: var(--bg-elev-2); transition: all 0.15s; cursor: pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-soft)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg-elev-2)';" onclick="setAnalysisState('loaded')">
+          <div style="font-family: var(--serif); font-size: 22px; color: var(--fg); margin-bottom: 6px;">↑ Перетащи csv сюда</div>
+          <div style="font-size: 13px; color: var(--fg-dim); margin-bottom: 14px;">или нажми, чтобы выбрать файл</div>
+          <div style="font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em;">
+            до 50 MB · парсим на клиенте
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 14px 16px; background: var(--bg-elev-2); border: 1px solid var(--border-soft); border-radius: 6px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--fg); margin-bottom: 8px;">Ожидаемые колонки в csv:</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">user_id</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">variant</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">converted</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">bounce_rate</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">time_on_site</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--accent);">day</code>
+            <code style="background: var(--bg-elev); padding: 3px 8px; border-radius: 3px; font-family: var(--mono); font-size: 11px; color: var(--fg-faint);">geo (опц.)</code>
+          </div>
+          <div style="font-size: 11px; color: var(--fg-faint); margin-top: 10px; line-height: 1.5;">
+            Схема собрана из утверждённого плана. Если в csv не хватает обязательной колонки — покажем ошибку с указанием, какая ячейка ноутбука её использовала.
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.08em;">
+          можешь использовать <a href="#" style="color: var(--tour); text-decoration: none; border-bottom: 1px dashed var(--tour);" onclick="setAnalysisState('loaded'); return false;">demo_proportion.csv</a> со шага 3
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="left"><button class="btn ghost" onclick="goTo(3)">← Конструктор</button></div>
+        <div class="right"><button class="btn ghost" disabled>К read-out → (сначала загрузи csv)</button></div>
+      </div>
+    </div>
+
+    <!-- LOADED STATE: csv uploaded, validation done -->
+    <div id="analysis-loaded" style="display: none;">
+      <div class="banner info">
+        <div class="icon">i</div>
+        <div class="banner-content">
+          <b>Независимая валидация.</b> Грузишь csv с результатами эксперимента — пересчитываем ключевые метрики и CI независимо от твоего ноутбука. Если расходимся — увидишь где.
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>Загруженные данные</h3>
+              <h2>experiment_results.csv</h2>
+              <div class="card-desc">76 814 строк · user_id, variant, converted, bounce_rate, time_on_site, geo, day</div>
+            </div>
+            <button class="btn small ghost" onclick="setAnalysisState('empty')">↻ Заменить файл</button>
+          </div>
+
+          <h3 style="margin-top: 24px;">Сравнение: ноутбук vs независимый пересчёт</h3>
+          <table class="validation-table">
+            <thead><tr><th>Метрика</th><th>Ноутбук</th><th>Stat·plan</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Control CR</td><td class="num">3.12%</td><td class="num">3.12%</td><td class="match">match</td></tr>
+              <tr><td>Treatment CR</td><td class="num">3.41%</td><td class="num">3.41%</td><td class="match">match</td></tr>
+              <tr><td>Δ rel.</td><td class="num">+9.3%</td><td class="num">+9.3%</td><td class="match">match</td></tr>
+              <tr><td>CI₉₅ (rel.)</td><td class="num">[+4.1, +14.5]</td><td class="num">[+4.0, +14.6]</td><td class="match">~ match</td></tr>
+              <tr><td>p-value</td><td class="num">0.0008</td><td class="num">0.0008</td><td class="match">match</td></tr>
+              <tr><td>SRM p</td><td class="num">0.79</td><td class="num">0.79</td><td class="match">match</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Визуализации</h3>
+          <h2 style="margin-bottom: 16px;">Готовы к экспорту</h2>
+
+          <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="stat"><div class="k">Δ rel.</div><div class="v pos">+9.3%</div><div class="ci">CI: [+4.0, +14.6]</div></div>
+            <div class="stat"><div class="k">Decision</div><div class="v" style="color: var(--ok);">SHIP</div><div class="ci">по правилам плана</div></div>
+          </div>
+
+          <div class="chart" style="margin-top: 12px;">
+            <svg viewBox="0 0 400 240" preserveAspectRatio="none">
+              <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#c9f25c" stop-opacity="0.3"/><stop offset="100%" stop-color="#c9f25c" stop-opacity="0"/></linearGradient></defs>
+              <line x1="20" x2="380" y1="200" y2="200" stroke="#2a313d" stroke-width="1"/>
+              <line x1="20" x2="20" y1="20" y2="200" stroke="#2a313d" stroke-width="1"/>
+              <text x="24" y="36" fill="#5b6473" font-family="JetBrains Mono" font-size="10">CR по дням</text>
+              <path d="M 40 70 L 110 90 L 180 130 L 250 145 L 320 138" stroke="#c9f25c" stroke-width="2" fill="none"/>
+              <path d="M 40 70 L 110 90 L 180 130 L 250 145 L 320 138 L 320 200 L 40 200 Z" fill="url(#g1)"/>
+              <path d="M 40 160 L 110 158 L 180 162 L 250 159 L 320 161" stroke="#9aa3b2" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+              <text x="50" y="62" fill="#c9f25c" font-family="JetBrains Mono" font-size="10">novelty</text>
+              <text x="270" y="130" fill="#c9f25c" font-family="JetBrains Mono" font-size="10">stable +9.3%</text>
+              <text x="340" y="160" fill="#9aa3b2" font-family="JetBrains Mono" font-size="9" text-anchor="end">control</text>
+              <text x="340" y="135" fill="#c9f25c" font-family="JetBrains Mono" font-size="9" text-anchor="end">treatment</text>
+            </svg>
+          </div>
+
+          <div style="display: grid; gap: 8px; margin-top: 16px;">
+            <button class="btn ghost" style="width: 100%; justify-content: center;">↓ График PNG</button>
+            <button class="btn ghost" style="width: 100%; justify-content: center;">↓ Отчёт PDF</button>
+            <button class="btn primary" style="width: 100%; justify-content: center;">↓ validation.md</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="left"><button class="btn ghost" onclick="goTo(3)">← Конструктор</button></div>
+        <div class="right"><button class="btn primary" onclick="goTo(5)">К read-out →</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 5: READ-OUT ============ -->
+  <section class="step-content" data-step="5">
+    <div class="tour-hint">
+      <span class="label">тур · шаг 5</span>
+      <div><b>Финал.</b> Все артефакты собраны: бриф, тест-план, ноутбук, csv с результатами, валидация, read-out. Скачиваешь zip и заливаешь в Confluence/Jira. <b>В пакете НЕТ demo-csv</b> — там только реальные артефакты теста.</div>
+    </div>
+
+    <div class="banner ok">
+      <div class="icon">✓</div>
+      <div class="banner-content">
+        <b>Все артефакты собраны.</b> Скачай zip. Решение «катить / итерировать / убить» оставляем тебе — тул только проверил, что чеки пройдены.
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div style="background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding-top: 4px;">
+        <div class="tabs"><div class="tab active">Read-out preview</div></div>
+        <div class="md-preview" style="border: 0; border-radius: 0;">
+<span class="yaml-mark">---</span>
+<span class="key">test_id:</span> <span class="val">bm-main-cta-v2</span>
+<span class="key">sealed:</span> <span class="val">2026-05-14</span>
+<span class="key">duration_days:</span> <span class="val">5</span>
+<span class="key">n_users:</span> <span class="val">76814</span>
+<span class="key">recommended_decision:</span> <span class="val">SHIP</span>
+<span class="yaml-mark">---</span>
+
+<span class="h-mark"># </span><span style="color:var(--fg);font-family:var(--serif);font-size:22px">Read-out: bm-main-cta-v2</span>
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">TL;DR</span>
+Новый блок повышает <b>CR в клик</b> на <b>+9.3% rel.</b> (CI [+4.0, +14.6], p = 0.0008). Guardrails не нарушены.
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Что знаем точно</span>
+- Эффект статзначим и направлен куда ожидали
+- Bounce rate и time_on_site не просели
+- Стабилен после novelty (дни 3–5)
+- SRM не обнаружен (p = 0.79)
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Чего не знаем</span>
+- Эффект на retention (тест 5 дней)
+- Гетерогенность по сегментам
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Follow-up</span>
+- [ ] Holdback 5% на 4 недели для retention
+- [ ] Сегментный анализ
+
+<span class="h-mark">## </span><span style="color:var(--fg);font-family:var(--serif);font-size:16px">Принятое решение</span>
+<span class="comment"># заполняется руками</span>
+- [ ] SHIP
+- [ ] ITERATE
+- [ ] KILL
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Пакет артефактов</h3>
+        <h2>7 файлов · 4.3 MB</h2>
+        <div style="font-size: 12px; color: var(--fg-dim); margin: 14px 0;">
+          Все артефакты связаны через <code style="background:var(--bg-elev-2);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent)">test_id: bm-main-cta-v2</code> в YAML.
+        </div>
+
+        <div style="display: grid; gap: 8px;">
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.md</span> brief.md</span><span style="color: var(--fg-faint); font-size: 11px;">2.1 KB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.md</span> test_plan.md</span><span style="color: var(--fg-faint); font-size: 11px;">2.8 KB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.ipynb</span> analysis.ipynb</span><span style="color: var(--fg-faint); font-size: 11px;">22 KB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.csv</span> experiment_results.csv</span><span style="color: var(--fg-faint); font-size: 11px;">4.2 MB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.md</span> validation.md</span><span style="color: var(--fg-faint); font-size: 11px;">3.4 KB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.pdf</span> validation_report.pdf</span><span style="color: var(--fg-faint); font-size: 11px;">180 KB</span></div>
+          <div class="file-pill" style="justify-content: space-between; width: 100%;"><span><span class="ext">.md</span> readout.md</span><span style="color: var(--fg-faint); font-size: 11px;">3.1 KB</span></div>
+        </div>
+
+        <button class="btn primary" style="width: 100%; margin-top: 20px; justify-content: center;">↓ Скачать всё (.zip)</button>
+        <button class="btn ghost" style="width: 100%; margin-top: 8px; justify-content: center;">Скопировать markdown-индекс</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="left"><button class="btn ghost" onclick="goTo(4)">← Анализ</button></div>
+      <div class="right"><button class="btn ghost" onclick="resetToStart()">Новый тест</button></div>
+    </div>
+  </section>
+
+  <footer class="bottom">
+    <div>stat·plan · v0.0.4 mockup · MIT</div>
+    <div>github.com/—/stat-plan</div>
+  </footer>
+
+</div>
+
+<script>
+  function toggleTour() {
+    document.body.classList.toggle('tour');
+    const btn = document.getElementById('tour-btn');
+    btn.innerHTML = document.body.classList.contains('tour') ? '✕ Закрыть тур' : '? Включить тур';
+  }
+
+  function startFlow(mode) {
+    document.body.classList.add('started');
+    if (mode === 'plan') {
+      // Skipped brief, plan already approved, jump to constructor
+      goTo(3);
+      document.querySelectorAll('.step').forEach(el => {
+        const n = parseInt(el.dataset.step);
+        if (n <= 2) el.classList.add('done');
+        el.classList.remove('locked');
+      });
+    } else {
+      goTo(1);
+    }
+  }
+
+  function goTo(stepNum) {
+    document.querySelectorAll('.step').forEach(el => {
+      const n = parseInt(el.dataset.step);
+      el.classList.remove('active');
+      if (n < stepNum && !el.classList.contains('locked')) el.classList.add('done');
+      else if (n > stepNum) el.classList.remove('done');
+      if (n === stepNum) {
+        el.classList.add('active');
+        el.classList.remove('locked');
+      }
+    });
+    document.querySelectorAll('.step-content').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.step) === stepNum);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function approvePlan() {
+    // Unlock step 3, navigate there
+    document.querySelectorAll('.step[data-step="3"]').forEach(el => el.classList.remove('locked'));
+    goTo(3);
+  }
+
+  function returnToDraft() {
+    if (confirm('Текущая конфигурация ноутбука будет сброшена. Продолжить?')) {
+      goTo(2);
+    }
+  }
+
+  function resetToStart() {
+    document.body.classList.remove('started');
+    document.querySelectorAll('.step').forEach((el, idx) => {
+      el.classList.remove('done', 'active');
+      if (idx >= 2) el.classList.add('locked');
+    });
+    document.querySelectorAll('.step[data-step="1"]').forEach(el => el.classList.add('active'));
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.step-content[data-step="1"]').forEach(el => el.classList.add('active'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.querySelectorAll('.step').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!el.classList.contains('locked')) {
+        goTo(parseInt(el.dataset.step));
+      }
+    });
+  });
+  document.querySelectorAll('.nb-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!el.classList.contains('locked')) el.classList.toggle('on');
+    });
+  });
+  document.querySelectorAll('.csv-option').forEach(el => {
+    el.addEventListener('click', () => {
+      el.parentElement.querySelectorAll('.csv-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+  function toggleQmap(headerEl) {
+    headerEl.parentElement.classList.toggle('expanded');
+  }
+
+  function setAnalysisState(state) {
+    document.getElementById('analysis-empty').style.display = state === 'empty' ? 'block' : 'none';
+    document.getElementById('analysis-loaded').style.display = state === 'loaded' ? 'block' : 'none';
+    document.getElementById('analysis-state-empty').classList.toggle('primary', state === 'empty');
+    document.getElementById('analysis-state-loaded').classList.toggle('primary', state === 'loaded');
+  }
+  // Инициализируем шаг 4 в empty состоянии, чтобы можно было увидеть форму загрузки
+  setAnalysisState('empty');
+</script>
+</body>
+</html>

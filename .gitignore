@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Local env / temp
+.env
+.env.local
+*.tmp
+
+# Если в будущем появится тулинг — добавим тогда (node_modules, dist и т.п.)
