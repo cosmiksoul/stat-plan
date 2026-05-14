@@ -21,7 +21,7 @@ export default function Header() {
         className={`mono-label font-semibold border rounded-md px-3.5 py-1.5 inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
           tour
             ? 'bg-tour text-bg border-tour'
-            : 'bg-tour-soft text-tour border-tour hover:bg-[rgba(122,180,255,0.2)]'
+            : 'bg-tour-soft text-tour border-tour hover:bg-tour-hover'
         }`}
         aria-pressed={tour}
       >

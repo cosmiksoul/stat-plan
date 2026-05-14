@@ -94,7 +94,7 @@ export default function StartScreen() {
           {dropMessage && (
             <div
               role="status"
-              className="text-xs text-warn bg-[rgba(255,184,102,0.08)] border border-[rgba(255,184,102,0.25)] rounded-md px-3 py-2 mb-3.5"
+              className="text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2 mb-3.5"
             >
               {dropMessage}
             </div>
