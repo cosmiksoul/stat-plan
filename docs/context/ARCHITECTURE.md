@@ -2,62 +2,104 @@
 
 ## Деплой
 
-GitHub Pages. Один статический сайт, никакого сервера. Все операции — на клиенте.
+GitHub Pages, источник = **GitHub Actions**. Push в `main` → workflow: `npm install` → `npm test` → `vite build` → upload `dist/` → deploy. Конфиг — `.github/workflows/deploy.yml`. См. ADR-010.
+
+В Settings → Pages источник должен быть выставлен как «GitHub Actions», не «Deploy from a branch».
+
+Все операции — на клиенте. Никакого бэкенда, баз, авторизации (ADR-001).
 
 ## Стек
 
-| Слой | Решение | Зачем |
-|------|---------|-------|
-| UI | HTML + CSS + vanilla JS (или + Alpine.js) | Минимум зависимостей, легко поддерживать |
-| Парсинг md | [js-yaml](https://github.com/nodeca/js-yaml) + кастомный парсер секций | Чтение YAML frontmatter и markdown-секций |
-| Статистика на клиенте | [simple-statistics](https://simplestatistics.org/) или [jStat](http://jstat.github.io/) | Расчёт z-test, CI, базовая описательная статистика |
-| Визуализация | D3.js или Chart.js | Графики на странице анализа |
-| Экспорт PDF | jsPDF или html2pdf | Скачивание отчёта валидации |
-| Экспорт изображений | dom-to-image или html2canvas | Скачивание графиков как PNG |
-| Сборка zip | [JSZip](https://stuk.github.io/jszip/) | Финальный пакет на шаге read-out |
-| Хранение между шагами | localStorage | Состояние формы при перезагрузке |
+См. ADR-010 для обоснования. Версии библиотек — последние стабильные на момент `npm install`, фиксируются в `package-lock.json`.
 
-**Pyodide рассматривался, но отвергнут для v1.** Тащить ~10MB рантайма ради того, что можно посчитать вручную — оверкилл. Если в будущем понадобится bootstrap-симуляция или сложный CUPED-расчёт прямо в браузере — можно добавить как отдельную опцию.
+| Слой | Решение | Когда подключается |
+|------|---------|---------------------|
+| UI runtime | React 19 | Sprint 1 |
+| Bundler / dev server | Vite (последняя стабильная) | Sprint 1 |
+| Стили | Tailwind (последняя стабильная) | Sprint 1 |
+| Роутинг | `react-router-dom` v7 с `HashRouter` | Sprint 1 (HashRouter обязателен для GitHub Pages — нет server-side fallback) |
+| Тесты | Vitest | По мере появления math/parse-кода |
+| State | `useReducer` + Context (без сторонних state-менеджеров) | По мере появления state между шагами |
+| Персистентность сессии | localStorage | Отдельный спринт |
+| Парсинг md / YAML | [js-yaml](https://github.com/nodeca/js-yaml) + кастомный парсер секций | Спринт парсинга `test_plan.md` |
+| Парсинг csv | [papaparse](https://www.papaparse.com/) | Спринт data peek / анализа |
+| Статистика на клиенте | [simple-statistics](https://simplestatistics.org/) или собственный модуль | Спринт sample size / scoring |
+| Визуализация | recharts (как в `retention-calculator`) | Спринт анализа |
+| Экспорт PNG | `html-to-image` | Спринт экспорта |
+| Экспорт PDF | `html2pdf` или `jspdf` | Спринт экспорта |
+| Сборка zip | [JSZip](https://stuk.github.io/jszip/) | Спринт read-out |
+
+**Правило подключения зависимостей:** каждая новая зависимость добавляется в фазе PLAN конкретного спринта с осознанным решением (не «накапливать на будущее»). См. ADR-010.
+
+**Pyodide рассматривался и отвергнут.** Тащить ~10MB рантайма ради scipy-функций — оверкилл, когда формулы можно посчитать самостоятельно. См. ADR-009.
 
 ## Структура проекта
 
 ```
-stat-plan/
-├── index.html                  # точка входа, все 4 шага в одном SPA
-├── assets/
-│   ├── styles.css
-│   ├── app.js                  # роутинг между шагами, общее состояние
-│   ├── brief/
-│   │   ├── questions.js        # дерево вопросов
-│   │   ├── validators.js       # правила консистентности
-│   │   └── data-peek.js        # парсинг загруженного csv для baseline
-│   ├── plan/
-│   │   ├── render.js           # генерация md из ответов
-│   │   ├── parser.js           # парсинг загруженного md обратно в состояние
-│   │   ├── scoring.js          # расчёт оценки
-│   │   └── notebook-builder.js # сборка .ipynb из шаблонов ячеек
-│   ├── analysis/
-│   │   ├── csv-parser.js
-│   │   ├── recalc.js           # независимый пересчёт метрик
-│   │   ├── compare.js          # сравнение с цифрами из ноутбука
-│   │   └── charts.js
-│   └── readout/
-│       ├── render.js
-│       └── zip-builder.js
-├── templates/
-│   ├── test_plan.md.tmpl       # шаблон тест-плана с плейсхолдерами
+stat_plan/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # npm install → test → build → deploy на Pages
+├── public/                     # копируется в dist/ как есть
+│   └── demo/                   # demo_proportion.csv и т.д. (когда появятся)
+├── src/
+│   ├── main.jsx                # точка входа, монтирует <App /> в #root
+│   ├── App.jsx                 # HashRouter + layout (Header, Stepper)
+│   ├── components/             # переиспользуемые UI-компоненты
+│   │   ├── Header.jsx
+│   │   ├── Stepper.jsx
+│   │   └── ...
+│   ├── pages/                  # компоненты-страницы под каждый шаг флоу
+│   │   ├── StartScreen.jsx
+│   │   ├── BriefPage.jsx
+│   │   ├── PlanPage.jsx
+│   │   ├── NotebookBuilderPage.jsx
+│   │   ├── AnalysisPage.jsx
+│   │   └── ReadoutPage.jsx
+│   ├── lib/                    # чистая логика, без зависимости от React
+│   │   ├── brief/              # дерево вопросов, валидаторы, data-peek
+│   │   ├── plan/               # генерация md, парсинг, scoring, notebook-builder
+│   │   ├── analysis/           # пересчёт, сравнение, csv-utils
+│   │   └── readout/            # render, zip-builder
+│   ├── state/
+│   │   ├── AppStateContext.jsx # Context provider
+│   │   └── reducer.js          # reducer + types
+│   └── styles/
+│       └── index.css           # Tailwind directives + глобальные стили
+├── tests/                      # Vitest. Зеркалит структуру src/lib/
+│   └── lib/
+│       └── ...
+├── templates/                  # шаблоны контента (md, .ipynb-ячейки) — статика
+│   ├── test_plan.md.tmpl
 │   ├── readout.md.tmpl
 │   └── notebook/
-│       ├── 01-load.ipynb.json  # шаблонные ячейки ноутбука
-│       ├── 02-srm.ipynb.json
-│       ├── 03-balance.ipynb.json
 │       └── ...
-└── docs/                       # эти файлы
+├── mockups/                    # визуальные референсы (не код)
+├── docs/                       # проектная документация (этот файл и др.)
+├── index.html                  # Vite entry, <div id="root"></div>
+├── vite.config.js              # base: '/stat-plan/' (под GitHub Pages)
+├── tailwind.config.js          # либо @config в src/styles/index.css если Tailwind v4
+├── postcss.config.js           # если Tailwind v3
+├── package.json
+├── package-lock.json
+├── vitest.config.js            # или внутри vite.config.js
+├── .gitignore
+├── CLAUDE.md
+└── README.md
 ```
+
+**Принципы организации:**
+
+- **`src/lib/` — без зависимости от React.** Только чистые функции и классы. Это упрощает unit-тестирование и потенциально позволяет переиспользовать логику в node-скриптах.
+- **`src/components/` vs `src/pages/`** — `pages/` это то, что монтируется как роут, `components/` это переиспользуемые куски. Делим по принципу «один раз использовалось = pages, два-три раза = components».
+- **`templates/` — статика, не код.** Файлы вида `test_plan.md.tmpl` с плейсхолдерами `{{...}}`. Подставляются на лету в `src/lib/plan/render.js`.
+- **`public/` — копируется в `dist/` один-в-один.** Сюда кладутся ассеты, доступные по абсолютному пути (favicon, demo-csv).
 
 ## Состояние приложения
 
-Одна JS-структура, которая живёт в памяти и опционально сохраняется в localStorage:
+Одна JS-структура (схема ниже), которая живёт в React-state через `useReducer` + Context (`src/state/AppStateContext.jsx`). Опционально мирорится в `localStorage` для восстановления между перезагрузками вкладки (отдельная задача).
+
+Все мутации — через `dispatch` с типизированными actions; никакого прямого изменения объекта компонентами. Структура:
 
 ```javascript
 {
@@ -158,4 +200,6 @@ stat-plan/
 
 - **Размер csv в браузере.** Парсить 100MB файлов на клиенте — не очень. Ставим лимит 50MB и предупреждаем пользователя.
 - **Точность статистики в JS.** Для большинства задач simple-statistics достаточно, но для bootstrap-CI на больших выборках лучше отправлять в ноутбук.
-- **localStorage квота** — 5-10MB, csv туда не пихаем, только state.brief и state.plan.
+- **localStorage квота** — 5-10MB, csv туда не пихаем, только `state.brief` и `state.plan`.
+- **Base path GitHub Pages.** Сайт публикуется по `https://<user>.github.io/stat-plan/`. В `vite.config.js` обязателен `base: '/stat-plan/'`, иначе пути к ассетам в собранном `dist/` будут вести на root и ломаться на Pages. Локально через `npm run dev` Vite учитывает base автоматически.
+- **HashRouter, не BrowserRouter.** GitHub Pages не делает server-side fallback на `index.html` для произвольных URL — поэтому используется hash-routing. URLы вида `https://<user>.github.io/stat-plan/#/step1`.

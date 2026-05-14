@@ -10,12 +10,21 @@ desktop.ini
 *.swo
 *~
 
-# Logs
+# Node / Vite
+node_modules/
+dist/
+.vite/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.nyc_output/
 
 # Local env / temp
 .env
 .env.local
+.env.*.local
 *.tmp
-
-# Если в будущем появится тулинг — добавим тогда (node_modules, dist и т.п.)

@@ -48,7 +48,7 @@
 
 | # | Название | Status | Date |
 |---|----------|--------|------|
-| 001 | No backend, всё на клиенте | Accepted | 2026-05-14 |
+| 001 | No backend, всё на клиенте | Accepted (стек уточнён в ADR-010) | 2026-05-14 |
 | 002 | Артефакты как переносимое состояние, строгий YAML frontmatter | Accepted | 2026-05-14 |
 | 003 | Структурная оценка плана вместо оценки качества | Accepted | 2026-05-14 |
 | 004 | Тул не принимает продуктовых решений | Accepted | 2026-05-14 |
@@ -57,12 +57,89 @@
 | 007 | Demo-csv как статические файлы под metric_type | Accepted | 2026-05-14 |
 | 008 | Тур-плашки без подсветки и без guided overlay | Accepted | 2026-05-14 |
 | 009 | Sample size: точные формулы где возможно, приближения с warning где нет | Accepted | 2026-05-14 |
+| 010 | UI на React 19 + Vite + Tailwind, деплой через GitHub Actions | Accepted | 2026-05-14 |
 
 ---
 
 ## Records
 
 > ADR в обратном хронологическом порядке (новые сверху).
+
+---
+
+## ADR-010 — UI на React 19 + Vite + Tailwind, деплой через GitHub Actions
+
+**Date:** 2026-05-14
+**Status:** Accepted
+
+**Context:**
+ADR-001 зафиксировал «всё на клиенте, минимум зависимостей, vanilla JS (или с лёгкой реактивной либой)». Изначальная мотивация — pet-проект, нет ресурсов на тулинг и поддержку. По мере детализации UI стало видно, что объём интерактивного кода большой: 5 шагов, формы с динамическим UI, реактивная карта вопросов, drag-and-drop, рендер графиков, парсинг csv в браузере, переключение draft/approved с readonly-режимом, рендер md preview. На чистом vanilla это решается через ручной DOM-render и самописное управление состоянием, что для проекта такого объёма даёт медленные итерации и больше поверхности для багов.
+
+Параллельно у автора есть успешный prior project (`retention-calculator`) на стеке React 18 + Vite + Tailwind + react-router-dom HashRouter + Vitest, задеплоенный на GitHub Pages через GitHub Actions. Стек проверен на UI похожей сложности (формы, графики, экспорт).
+
+Решено пересмотреть стек до начала кодинга, чтобы избежать болезненной миграции после первого спринта.
+
+**Decision:**
+
+1. **UI-стек: React 19 + Vite + Tailwind (последние стабильные версии)** + `react-router-dom` v7 с `HashRouter`. HashRouter обязателен, потому что GitHub Pages не делает server-side fallback для clean URLs (это уже было применено в `retention-calculator`).
+
+2. **Тесты: Vitest** для unit-тестов math-ядра (формулы sample size, scoring), парсинга md/csv, нормализации данных. UI-тесты не пишем — ловит ручное QA (см. CLAUDE.md project-specific правила).
+
+3. **Деплой: GitHub Actions** → `npm install` → `npm test` → `npm run build` → деплой `dist/` на GitHub Pages. Workflow живёт в `.github/workflows/deploy.yml`. В Settings → Pages источник = «GitHub Actions», не «Deploy from a branch».
+
+4. **Состояние:** React state (`useReducer` + `Context` или эквивалент) внутри сессии; `localStorage` для персистентности между перезагрузками вкладки. Никаких сторонних state-менеджеров (Redux, Zustand, MobX) без отдельного ADR.
+
+5. **Структура папок:**
+   ```
+   stat_plan/
+   ├── .github/workflows/deploy.yml
+   ├── public/                 # статика, копируется как есть (favicon, demo-csv)
+   ├── src/
+   │   ├── main.jsx            # точка входа
+   │   ├── App.jsx             # routing + layout
+   │   ├── components/         # переиспользуемые UI-компоненты
+   │   ├── pages/              # компоненты-страницы под каждый шаг флоу
+   │   ├── lib/                # math, парсинг, генерация (unit-tested)
+   │   └── state/              # state context + reducer
+   ├── tests/                  # vitest-тесты
+   ├── index.html              # vite entry
+   ├── vite.config.js          # base path = '/stat-plan/'
+   ├── tailwind.config.js      # либо @config в CSS если Tailwind v4
+   ├── package.json
+   └── docs/                   # без изменений — проектная документация
+   ```
+
+6. **Подключение тяжёлых либ — по факту необходимости, отдельным коммитом:**
+   - `js-yaml` — при работе с YAML frontmatter (Sprint парсинга плана)
+   - `simple-statistics` или собственный модуль — при реализации sample size / scoring
+   - `recharts` (предпочтительно, как в retention-calculator) или `chart.js` — при реализации визуализаций анализа
+   - `papaparse` — при парсинге csv
+   - `JSZip` — при сборке финального read-out пакета
+   - `html2pdf` / `html-to-image` — при экспорте PDF/PNG
+
+   Каждая новая зависимость должна быть осмыслена в фазе PLAN соответствующего спринта, а не «накапливаться» без явного решения.
+
+**Consequences:**
+
+- ADR-001 пункт «vanilla JS (или с лёгкой реактивной либой)» **уточняется** этим ADR (не суперседится). Все остальные пункты ADR-001 в силе: no backend, GitHub Pages, состояние клиентское, тяжёлые вычисления уходят в генерируемый ноутбук.
+- Появляются `node_modules/` и `dist/` (ignored), `package.json`, `package-lock.json`, build step.
+- Деплой требует GitHub Actions — простой push в main без билда сайт не обновит.
+- Структура папок из изначальной `ARCHITECTURE.md` пересматривается (см. обновлённый документ).
+- Sprint 1 prompt переписывается под новый стек до начала кодинга.
+- Будущая возможность писать на vanilla при необходимости (например, тяжёлый чистый модуль) сохраняется — модули в `src/lib/` без зависимостей от React, это улучшает тестируемость.
+
+**Alternatives considered:**
+
+- **Остаться на vanilla JS** — отклонено: проект сложнее retention-calculator по UI, а автору комфортнее в React-парадигме. Экономия зависимостей не оправдывает потерю скорости разработки.
+- **Alpine.js (как было допущено в ADR-001)** — отклонено: компромисс между «vanilla» и «full React», без сильной экосистемы (компоненты, тестирование). Если уж брать реактивность — брать инструмент, в котором у автора есть опыт.
+- **Svelte / Solid** — отклонены: незнакомый автору стек, риск увеличения времени разработки на изучение.
+- **Next.js / Remix** — отклонены: SSR/SSG противоречит ADR-001 (no backend) — статическая сборка через Vite достаточна.
+
+**Related:**
+
+- ADR-001 (no backend) — этот ADR уточняет пункт про vanilla
+- `ARCHITECTURE.md` — обновлён под новую структуру и стек
+- `CLAUDE.md` — раздел «Деплой» обновлён
 
 ---
 
@@ -376,7 +453,7 @@
 ## ADR-001 — No backend, всё на клиенте
 
 **Date:** 2026-05-14
-**Status:** Accepted
+**Status:** Accepted (стек уточнён в ADR-010 — vanilla JS заменён на React 19 + Vite + Tailwind, остальные пункты в силе)
 
 **Context:**
 Базовое архитектурное решение, определяющее всю последующую разработку. Альтернативы рассматривались: SaaS-сервис с бэкендом, гибрид (бэк для тяжёлых вычислений, фронт для UI), полный self-hosted.

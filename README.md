@@ -48,14 +48,14 @@ stat·plan решает это через двухслойный подход:
 
 ## Технический стек
 
-- HTML / CSS / vanilla JS или с одной лёгкой реактивной либой (Alpine.js рассматривается)
-- js-yaml для парсинга YAML frontmatter
-- simple-statistics или аналог для расчётов на клиенте
-- D3 или Chart.js для визуализаций
-- JSZip для сборки финального пакета
-- Опционально Pyodide, если соберёмся гонять полноценный pandas/scipy в браузере (вряд ли в v1)
+- React 19 + Vite + Tailwind + react-router-dom (HashRouter)
+- Vitest для unit-тестов math/parse-логики
+- Деплой: GitHub Pages через GitHub Actions
+- Подключаются по мере нужды: js-yaml (парсинг YAML frontmatter), papaparse (csv), simple-statistics (расчёты), recharts (визуализации), JSZip (read-out пакет), html-to-image / html2pdf (экспорт)
 
-См. [ARCHITECTURE.md](ARCHITECTURE.md) для деталей.
+Pyodide отвергнут — 10MB рантайма ради scipy не оправданы (ADR-009).
+
+См. [docs/context/ARCHITECTURE.md](docs/context/ARCHITECTURE.md) для деталей и [docs/context/decisions-log.md](docs/context/decisions-log.md), особенно ADR-001 и ADR-010.
 
 ## Документация
 

@@ -8,7 +8,7 @@
 **`stat_plan`** — `Открытый инструмент для планирования и валидации A/B тестов. Помогает продуктовым менеджерам и аналитикам пройти полный цикл — от формулировки гипотезы до пост-анализа — без необходимости вручную выбирать статистический критерий и без риска получить методологически сломанный тест.
 
 
-Деплой: GitHub Pages из ветки main
+Стек: React 19 + Vite + Tailwind + react-router-dom (HashRouter). Деплой: GitHub Pages через GitHub Actions из `main` (см. ADR-010).
 
 Полное описание: `docs/context/concept.md`. Архитектура: `docs/context/architecture.md`. Принятые решения: `docs/context/decisions-log.md`.
 
