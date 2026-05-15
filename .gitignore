@@ -31,3 +31,6 @@ coverage/
 
 # Claude Code local agent state
 .claude/
+
+# Obsidian editor
+.obsidian/

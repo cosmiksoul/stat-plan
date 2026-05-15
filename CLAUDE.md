@@ -113,11 +113,39 @@
 
 > Здесь живут правила специфичные для этого проекта (стандарты кода, naming, локальные конвенции), которые не покрываются общими правилами выше. На старте секция пустая.
 
-### Пример
+### P-1. Зоны ответственности по коммитам
+
+> Зафиксировано в Sprint 2 FIX phase 2026-05-16 после того как stale `.git/index.lock` и пересечение Code/Cowork изменений вызывали путаницу.
+
+**Claude Code коммитит:**
+- `src/**` — весь application code
+- `tests/**` — unit-тесты
+- `public/**` — статические ассеты приложения
+- `package.json`, `package-lock.json` — зависимости
+- `vite.config.js`, `tailwind.config.js`, `postcss.config.js`, `vitest.config.js` — build/test configs (с одной оговоркой: Cowork может править их **строго для целей вне application-кода**, например `server.watch.ignored` для процесса QA; такие правки уведомляются в sprint-prompt'е)
+- `.github/workflows/**` — CI/CD
+- `index.html` — entry point
+
+**Cowork коммитит:**
+- `docs/**` — вся проектная документация (включая sprint-prompts, code-reviews, test-cases, sprint-reports когда они правятся при CLOSE, JTBD, CONTEXT, ADR-список)
+- `CLAUDE.md`, `README.md`
+- `.gitignore`, `.gitattributes`
+- `mockups/**`
+
+**Порядок коммитов в одной фазе:**
+- Code сначала коммитит **свои зоны** (даже до того как Cowork сделал code review), формирует «code-готов» state
+- Cowork после code review коммитит **свои зоны** одним batch'ем (code-review.md + test-cases.md + любые правки JTBD/CONTEXT)
+- Перед push'ем `git status` должен быть чистым — никаких modified file'ов, кроме того, что только что добавили
+
+**Что НЕ делаем:**
+- Один инстанс не коммитит файлы из зоны другого. Если надо — эскалация: «есть untracked файл `X`, попадает в твою зону, можешь закоммитить?»
+- Не оставляем stale `.git/index.lock` после `git commit` сессии — если процесс упал, надо удалять lock руками.
+
+### Пример (нереализованные шаблоны)
 
 - **Naming**: компоненты в PascalCase, утилиты в camelCase, файлы — kebab-case.
-- **State management**: использовать только `useState` + `useReducer`. Никаких state-библиотек без обсуждения.
-- **Тесты**: для каждой публичной функции в `lib/` — unit-тест с примерами входа-выхода. UI-тестов не пишем (всё ловит ручное QA).
+- **State management**: использовать только `useState` + `useReducer`. Никаких state-библиотек без обсуждения. *(Реализовано в ADR-010.)*
+- **Тесты**: для каждой публичной функции в `lib/` — unit-тест с примерами входа-выхода. UI-тестов не пишем (всё ловит ручное QA). *(Реализуется по факту; добавим как правило после Sprint 3.)*
 
 ---
 
