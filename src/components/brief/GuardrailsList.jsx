@@ -90,26 +90,26 @@ export default function GuardrailsList({ question }) {
           {list.map((g, i) => (
             <div
               key={i}
-              className="border border-border rounded-md bg-bg-elev p-3 grid sm:grid-cols-[1.2fr_1fr_1fr_1.1fr_auto] gap-2 items-start"
+              className="border border-border rounded-md bg-bg-elev p-3 grid sm:grid-cols-[1.2fr_1fr_1.1fr_0.7fr_0.6fr_auto] gap-2 items-start"
             >
               <input
                 type="text"
                 value={g.name}
                 onChange={(e) => patch(i, { name: e.target.value })}
                 placeholder="название"
-                className="bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent"
+                className="min-w-0 bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent"
               />
               <input
                 type="text"
                 value={g.column}
                 onChange={(e) => patch(i, { column: e.target.value })}
                 placeholder="column"
-                className="bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent font-mono"
+                className="min-w-0 bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent font-mono"
               />
               <select
                 value={g.direction}
                 onChange={(e) => patch(i, { direction: e.target.value })}
-                className="bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg focus:outline-none focus:border-accent cursor-pointer"
+                className="min-w-0 bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg focus:outline-none focus:border-accent cursor-pointer"
               >
                 {DIRECTION_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -117,41 +117,39 @@ export default function GuardrailsList({ question }) {
                   </option>
                 ))}
               </select>
-              <div className="flex gap-1.5">
-                <input
-                  type="number"
-                  step="any"
-                  value={g.threshold?.value ?? ''}
-                  onChange={(e) =>
-                    patch(i, {
-                      threshold: {
-                        ...g.threshold,
-                        value:
-                          e.target.value === ''
-                            ? null
-                            : Number(e.target.value),
-                      },
-                    })
-                  }
-                  placeholder="порог"
-                  className="flex-1 min-w-0 bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent"
-                />
-                <select
-                  value={g.threshold?.unit ?? 'relative_percent'}
-                  onChange={(e) =>
-                    patch(i, {
-                      threshold: { ...g.threshold, unit: e.target.value },
-                    })
-                  }
-                  className="bg-bg-elev-2 border border-border rounded px-2 py-2 text-sm text-fg focus:outline-none focus:border-accent cursor-pointer"
-                >
-                  {THRESHOLD_UNIT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <input
+                type="number"
+                step="any"
+                value={g.threshold?.value ?? ''}
+                onChange={(e) =>
+                  patch(i, {
+                    threshold: {
+                      ...g.threshold,
+                      value:
+                        e.target.value === ''
+                          ? null
+                          : Number(e.target.value),
+                    },
+                  })
+                }
+                placeholder="порог"
+                className="min-w-0 bg-bg-elev-2 border border-border rounded px-2.5 py-2 text-sm text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent"
+              />
+              <select
+                value={g.threshold?.unit ?? 'relative_percent'}
+                onChange={(e) =>
+                  patch(i, {
+                    threshold: { ...g.threshold, unit: e.target.value },
+                  })
+                }
+                className="min-w-0 bg-bg-elev-2 border border-border rounded px-1.5 py-2 text-sm text-fg focus:outline-none focus:border-accent cursor-pointer"
+              >
+                {THRESHOLD_UNIT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={() => remove(i)}

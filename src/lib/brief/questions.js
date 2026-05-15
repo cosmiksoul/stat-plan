@@ -60,8 +60,8 @@ export const MDE_UNIT_OPTIONS = [
 ]
 
 export const TRAFFIC_UNIT_OPTIONS = [
-  { value: 'user', label: 'пользователей в день' },
-  { value: 'session', label: 'сессий в день' },
+  { value: 'user', label: 'польз./день' },
+  { value: 'session', label: 'сессий/день' },
 ]
 
 export function baselineUnitOptionsFor(metricType) {
