@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import SingleSelect from './SingleSelect.jsx'
 import TextInput from './TextInput.jsx'
 import NumberWithUnit from './NumberWithUnit.jsx'
@@ -8,9 +8,6 @@ import StopAndDecisionRules from './StopAndDecisionRules.jsx'
 import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
 import { baselineUnitOptionsFor } from '../../lib/brief/questions.js'
-import {
-  extractMetricName,
-} from '../../lib/brief/hypothesis-parser.js'
 
 function toSnakeCase(s) {
   return (s ?? '')
@@ -27,21 +24,6 @@ function MetricNameInput() {
   const [columnTouched, setColumnTouched] = useState(
     () => brief.metric_column?.trim() !== '',
   )
-
-  // Auto-prefill from hypothesis on first mount when empty.
-  useEffect(() => {
-    if (!brief.metric_name) {
-      const fromHypothesis = extractMetricName(brief.hypothesis.text)
-      if (fromHypothesis) {
-        dispatch({
-          type: Actions.ANSWER_QUESTION,
-          field: 'metric_name',
-          value: fromHypothesis,
-        })
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   function handleNameChange(value) {
     dispatch({ type: Actions.ANSWER_QUESTION, field: 'metric_name', value })

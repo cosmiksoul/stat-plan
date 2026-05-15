@@ -1,4 +1,6 @@
 import { parseHypothesis } from '../lib/brief/hypothesis-parser.js'
+import { applyEnterDefaults } from '../lib/brief/defaults.js'
+import { getQuestion } from '../lib/brief/questions.js'
 
 const initialBrief = {
   currentQuestion: 1,
@@ -38,6 +40,10 @@ const initialBrief = {
     holdback_percent: null,
   },
   advancedExpanded: false,
+  defaultsApplied: {
+    metric_name: false,
+    decision_rules: false,
+  },
 }
 
 export const initialState = {
@@ -99,7 +105,14 @@ export function reducer(state, action) {
     case Actions.GOTO_QUESTION: {
       const num = action.num
       if (typeof num !== 'number' || num < 1 || num > 10) return state
-      return setBrief(state, { currentQuestion: num })
+      const target = getQuestion(num)
+      const briefWithDefaults = target
+        ? applyEnterDefaults(state.brief, target.id)
+        : state.brief
+      return {
+        ...state,
+        brief: { ...briefWithDefaults, currentQuestion: num },
+      }
     }
 
     case Actions.TOGGLE_ADVANCED:

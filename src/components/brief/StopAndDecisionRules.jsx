@@ -1,39 +1,9 @@
-import { useEffect } from 'react'
 import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
 
-function mdeRel(mde) {
-  if (mde?.unit === 'relative_percent' && mde.value != null) {
-    return `${mde.value / 2}% rel.`
-  }
-  return 'MDE/2 rel.'
-}
-
-function defaultRules(mde) {
-  const half = mdeRel(mde)
-  return {
-    ship: `CI не пересекает 0 и нижняя граница ≥ +${half}.`,
-    iterate:
-      'Статистически незначимо, но направление positive в 2+ сегментах — итерируем.',
-    kill: `Guardrail breach или CI ≤ −${half}.`,
-  }
-}
-
 export default function StopAndDecisionRules() {
   const { state, dispatch } = useAppState()
-  const { stop_conditions: stop, decision_rules: rules, mde } = state.brief
-
-  // Prefill decision rules with defaults on first visit if empty.
-  useEffect(() => {
-    if (!rules.ship && !rules.iterate && !rules.kill) {
-      dispatch({
-        type: Actions.ANSWER_QUESTION,
-        field: 'decision_rules',
-        value: defaultRules(mde),
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const { stop_conditions: stop, decision_rules: rules } = state.brief
 
   function patchStop(p) {
     dispatch({
