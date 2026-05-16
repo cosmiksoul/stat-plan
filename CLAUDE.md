@@ -132,6 +132,9 @@
 - `.gitignore`, `.gitattributes`
 - `mockups/**`
 
+**Исключения для Code-зоны:**
+- `docs/project/sprint-report-N.md` и `docs/project/sprint-N-fix-report.md` — это отчёты Code о своей работе. Code пишет их и **сам коммитит** в фазе DEV/FIX (как часть «code-готов» state). Cowork может редактировать их позже в CLOSE-фазе при необходимости.
+
 **Порядок коммитов в одной фазе:**
 - Code сначала коммитит **свои зоны** (даже до того как Cowork сделал code review), формирует «code-готов» state
 - Cowork после code review коммитит **свои зоны** одним batch'ем (code-review.md + test-cases.md + любые правки JTBD/CONTEXT)

@@ -664,4 +664,4 @@ Architecture sprint **завершается** передачей в следу�
 | Sprint | Type | Status | Старт | Финиш | Длительность | Заметки |
 |---|---|---|---|---|---|---|
 | 1 | Code | CLOSED | 2026-05-14 23:54 | 2026-05-15 00:45 | 51 мин | Foundation React+Vite+Tailwind. 0 багов в QA. FIX-фазы не было. См. `CONTEXT.md` Timeline. |
-| 2 | Code | FIX prompt готов, передаётся в Claude Code | 2026-05-15 01:10 | DEV: 01:38; QA ≈ +1 ч | DEV: 28 мин; QA: ~60 мин | FIX-prompt: BUG-1/2/3 + Concern #1 (useEffect→reducer) + информирование про vite.config.js. См. `sprint-2-fix-prompt.md`. |
+| 2 | Code | CLOSED | 2026-05-15 01:10 | 2026-05-16 ~17:30 | DEV: 28 мин · QA: ~60 мин · FIX: ~25 мин · Total: ~2.5 ч | 3 бага в QA (1 High BUG-3, 2 Medium BUG-1/2) — закрыты в FIX. 47 unit-тестов. См. `CONTEXT.md` Timeline. |
