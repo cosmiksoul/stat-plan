@@ -1,12 +1,27 @@
+import { useNavigate } from 'react-router-dom'
+
 const STEPS = [
-  { num: '01', label: 'Бриф' },
-  { num: '02', label: 'Тест-план' },
-  { num: '03', label: 'Конструктор' },
-  { num: '04', label: 'Анализ' },
-  { num: '05', label: 'Read-out' },
+  { num: '01', label: 'Бриф', route: '/step1' },
+  { num: '02', label: 'Тест-план', route: '/step2' },
+  { num: '03', label: 'Конструктор', route: '/step3' },
+  { num: '04', label: 'Анализ', route: null },
+  { num: '05', label: 'Read-out', route: null },
 ]
 
-export default function Stepper({ currentStep }) {
+function isStepUnlocked(stepNum, planStatus, briefSubmitted) {
+  if (stepNum === 1) return true
+  if (stepNum === 2) return briefSubmitted === true
+  if (stepNum === 3) return planStatus === 'approved'
+  return false // steps 4-5 are always locked in Sprint 3
+}
+
+export default function Stepper({
+  currentStep,
+  planStatus = 'draft',
+  briefSubmitted = false,
+}) {
+  const navigate = useNavigate()
+
   return (
     <nav
       aria-label="Шаги планирования теста"
@@ -16,17 +31,32 @@ export default function Stepper({ currentStep }) {
         const stepNum = idx + 1
         const isActive = stepNum === currentStep
         const isDone = stepNum < currentStep
-        const isLocked = stepNum > currentStep
+        const isUnlocked = isStepUnlocked(stepNum, planStatus, briefSubmitted)
+        const isLocked = !isUnlocked
+        const isClickable = isUnlocked && !isActive && step.route
 
         return (
           <div
             key={step.num}
+            role={isClickable ? 'button' : undefined}
+            tabIndex={isClickable ? 0 : undefined}
             aria-current={isActive ? 'step' : undefined}
             aria-disabled={isLocked || undefined}
+            onClick={() => isClickable && navigate(step.route)}
+            onKeyDown={(e) => {
+              if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                navigate(step.route)
+              }
+            }}
             className={[
               'relative px-4 py-3.5 border-r border-border last:border-r-0 select-none',
               isActive ? 'bg-bg-elev-2' : '',
-              isLocked ? 'opacity-45 cursor-not-allowed' : 'cursor-default',
+              isLocked
+                ? 'opacity-45 cursor-not-allowed'
+                : isClickable
+                  ? 'cursor-pointer hover:bg-bg-elev-2 transition-colors'
+                  : 'cursor-default',
             ].join(' ')}
           >
             <div

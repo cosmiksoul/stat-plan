@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
 import ProgressBar from '../components/brief/ProgressBar.jsx'
 import QuestionRenderer from '../components/brief/QuestionRenderer.jsx'
@@ -6,7 +7,9 @@ import QuestionNav from '../components/brief/QuestionNav.jsx'
 import QuestionMap from '../components/brief/QuestionMap.jsx'
 import AdvancedParams from '../components/brief/AdvancedParams.jsx'
 import { useAppState } from '../state/AppStateContext.jsx'
+import { Actions } from '../state/reducer.js'
 import { getQuestion } from '../lib/brief/questions.js'
+import { calculateSampleSize } from '../lib/plan/sample-size.js'
 import {
   validateBaseline,
   validateMde,
@@ -32,16 +35,123 @@ function activeValidation(brief, questionId) {
   }
 }
 
+function SampleSizeDisplay({ brief }) {
+  // Memoize per the inputs that affect the calculation. If any of these
+  // changes, recompute reactively.
+  const result = useMemo(
+    () => calculateSampleSize(brief),
+    [
+      brief.metric_type,
+      brief.baseline?.value,
+      brief.baseline?.unit,
+      brief.mde?.value,
+      brief.mde?.unit,
+      brief.daily_traffic?.value,
+      brief.randomization_unit,
+      brief.advanced?.alpha,
+      brief.advanced?.power,
+      brief.advanced?.two_sided,
+      brief.advanced?.test_method,
+      brief.data_peek,
+    ],
+  )
+
+  const { sample_size_per_arm, duration_days, test_method, warnings } = result
+
+  if (sample_size_per_arm == null) {
+    return (
+      <div className="mt-4 text-xs text-fg-faint bg-bg-elev-2 border border-border-soft rounded-md px-3 py-2">
+        Sample size будет рассчитан, как только заполнены baseline (Q05), MDE
+        (Q07) и трафик (Q08).
+        {warnings.length > 0 && (
+          <ul className="mt-2 m-0 pl-4 space-y-0.5">
+            {warnings.map((w, i) => (
+              <li key={i} className="text-warn">
+                {w}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 bg-bg-elev-2 border border-border rounded-md px-4 py-3">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
+        <div>
+          <span className="mono-label text-fg-faint mr-2">SAMPLE / ARM</span>
+          <span className="font-serif text-xl font-medium text-accent">
+            ~{sample_size_per_arm.toLocaleString('ru-RU')}
+          </span>
+        </div>
+        <div>
+          <span className="mono-label text-fg-faint mr-2">ДЛИТЕЛЬНОСТЬ</span>
+          <span className="text-fg">
+            {duration_days != null ? `~${duration_days} дн.` : '—'}
+          </span>
+        </div>
+        <div>
+          <span className="mono-label text-fg-faint mr-2">МЕТОД</span>
+          <span className="text-fg font-mono text-xs">{test_method}</span>
+        </div>
+      </div>
+      {warnings.length > 0 && (
+        <ul className="mt-3 m-0 pl-0 list-none space-y-1">
+          {warnings.map((w, i) => (
+            <li
+              key={i}
+              className="text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-2.5 py-1.5"
+            >
+              ⚠ {w}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function BriefPage() {
-  const { state } = useAppState()
+  const { state, dispatch } = useAppState()
+  const navigate = useNavigate()
   const { brief } = state
   const question = getQuestion(brief.currentQuestion)
-  const [finished, setFinished] = useState(false)
   const validation = activeValidation(brief, question.id)
+  const isApproved = state.plan.status === 'approved'
+
+  function handleFinish() {
+    dispatch({ type: Actions.MARK_BRIEF_SUBMITTED })
+    dispatch({ type: Actions.RECOMPUTE_PLAN })
+    navigate('/step2')
+  }
 
   return (
     <div>
-      <Stepper currentStep={1} />
+      <Stepper
+        currentStep={1}
+        planStatus={state.plan.status}
+        briefSubmitted={state.plan.briefSubmitted}
+      />
+
+      {isApproved && (
+        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap text-sm bg-accent-soft border border-accent rounded-md px-4 py-3 text-accent">
+          <span>
+            <span className="mono-label font-semibold mr-2">
+              ПЛАН УТВЕРЖДЁН
+            </span>
+            Бриф в режиме только-чтения. Чтобы внести правки — верни план в
+            черновик.
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate('/step2')}
+            className="mono-label text-accent underline-offset-2 hover:underline cursor-pointer"
+          >
+            ↗ К ТЕСТ-ПЛАНУ
+          </button>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-[1.4fr_1fr] gap-6">
         <div className="space-y-6 min-w-0">
@@ -64,7 +174,9 @@ export default function BriefPage() {
               )}
             </div>
 
-            <QuestionRenderer question={question} />
+            <fieldset disabled={isApproved} className="border-0 p-0 m-0 min-w-0">
+              <QuestionRenderer question={question} />
+            </fieldset>
 
             {!validation.ok && (
               <div
@@ -75,23 +187,11 @@ export default function BriefPage() {
               </div>
             )}
 
-            {question.id === 'daily_traffic' && (
-              <div className="mt-4 text-xs text-fg-faint bg-bg-elev-2 border border-border-soft rounded-md px-3 py-2">
-                Sample size и длительность будут рассчитаны на шаге{' '}
-                <span className="text-fg-dim">«Тест-план»</span> (Sprint 3).
-              </div>
-            )}
+            {question.id === 'daily_traffic' && <SampleSizeDisplay brief={brief} />}
 
             <div className="mt-6">
-              <QuestionNav onFinish={() => setFinished(true)} />
+              <QuestionNav onFinish={handleFinish} />
             </div>
-
-            {finished && question.num === 10 && (
-              <div className="mt-5 text-sm bg-tour-soft border border-tour rounded-md px-4 py-3 text-tour">
-                Бриф заполнен. Шаг «Тест-план» будет разблокирован в следующем
-                спринте.
-              </div>
-            )}
           </section>
 
           <AdvancedParams />

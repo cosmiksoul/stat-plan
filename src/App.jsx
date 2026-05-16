@@ -3,11 +3,19 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import StartScreen from './pages/StartScreen.jsx'
 import BriefPage from './pages/BriefPage.jsx'
+import PlanPage from './pages/PlanPage.jsx'
+import NotebookBuilderPage from './pages/NotebookBuilderPage.jsx'
 import { useAppState } from './state/AppStateContext.jsx'
 
-function ProtectedStep({ children }) {
+function ProtectedStep({ requires = 'started', children }) {
   const { state } = useAppState()
   if (!state.started) return <Navigate to="/" replace />
+  if (requires === 'briefSubmitted' && !state.plan.briefSubmitted) {
+    return <Navigate to="/step1" replace />
+  }
+  if (requires === 'approved' && state.plan.status !== 'approved') {
+    return <Navigate to="/step2" replace />
+  }
   return children
 }
 
@@ -33,6 +41,22 @@ export default function App() {
               element={
                 <ProtectedStep>
                   <BriefPage />
+                </ProtectedStep>
+              }
+            />
+            <Route
+              path="/step2"
+              element={
+                <ProtectedStep requires="briefSubmitted">
+                  <PlanPage />
+                </ProtectedStep>
+              }
+            />
+            <Route
+              path="/step3"
+              element={
+                <ProtectedStep requires="approved">
+                  <NotebookBuilderPage />
                 </ProtectedStep>
               }
             />
