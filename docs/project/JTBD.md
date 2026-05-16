@@ -173,14 +173,14 @@
 
 > Отдельный раздел продукта с объяснениями статистических концепций, формул и assumption'ов. Усиливает принцип №5 концепции «Открытость данных и правил» (см. `docs/context/concept.md`).
 >
-> **Источник:** Sprint 2 QA brainstorm 2026-05-16, по аналогии с methodology-страницей в `retention-calculator`. Приоритет MVP vs v2 — обсуждается в PLAN Sprint 3.
+> **Источник:** Sprint 2 QA brainstorm 2026-05-16, по аналогии с methodology-страницей в `retention-calculator`. **Зафиксировано как v1 scope, Sprint 8** (content-спринт после функционального ядра шагов 1-5 + парсера).
 
-- [ ] ◆ Как пользователь я хочу открыть отдельную страницу `/#/methodology` со sticky TOC, чтобы прочитать объяснения статистических концепций (выбор test_method, MDE, sample size, SRM, novelty, guardrails) без выхода из инструмента `[ui]` `[render]`
-- [ ] ◆ Как пользователь брифа я хочу видеть линки `?` рядом с каждым ключевым понятием (test_method, baseline, MDE, σ, randomization unit, guardrails) с переходом на соответствующий якорь в `/methodology`, чтобы быстро узнать «почему» без отрыва от заполнения `[ui]`
-- [ ] ◆ Как пользователь я хочу видеть в methodology раздел «Как мы выбираем test_method» с матрицей `metric_type × test_method` и обоснованиями, чтобы понять логику рекомендации `[render]`
-- [ ] ◆ Как пользователь я хочу видеть в methodology формулы расчёта sample size с пояснениями (z-test, t-test, MW-приближение, delta method, bootstrap), чтобы доверять цифрам `[render]`
-- [ ] ◆ Как пользователь я хочу видеть в methodology объяснение SRM, novelty effect, CUPED, стратификации, чтобы знать что значат checkbox'ы в продвинутых параметрах `[render]`
-- [ ] Как пользователь я хочу видеть честный disclaimer-блок «Что мы НЕ делаем» (sequential testing, HTE, causal inference) с объяснением почему, чтобы знать ограничения инструмента `[render]`
+- [ ] ◆ Как пользователь я хочу открыть отдельную страницу `/#/methodology` со sticky TOC, чтобы прочитать объяснения статистических концепций (выбор test_method, MDE, sample size, SRM, novelty, guardrails) без выхода из инструмента `[ui]` `[render]` *(Sprint 8)*
+- [ ] ◆ Как пользователь брифа я хочу видеть линки `?` рядом с каждым ключевым понятием (test_method, baseline, MDE, σ, randomization unit, guardrails) с переходом на соответствующий якорь в `/methodology`, чтобы быстро узнать «почему» без отрыва от заполнения `[ui]` *(Sprint 8)*
+- [ ] ◆ Как пользователь я хочу видеть в methodology раздел «Как мы выбираем test_method» с матрицей `metric_type × test_method` и обоснованиями, чтобы понять логику рекомендации `[render]` *(Sprint 8)*
+- [ ] ◆ Как пользователь я хочу видеть в methodology формулы расчёта sample size с пояснениями (z-test, t-test, MW-приближение, delta method, bootstrap), чтобы доверять цифрам `[render]` *(Sprint 8)*
+- [ ] ◆ Как пользователь я хочу видеть в methodology объяснение SRM, novelty effect, CUPED, стратификации, чтобы знать что значат checkbox'ы в продвинутых параметрах `[render]` *(Sprint 8)*
+- [ ] Как пользователь я хочу видеть честный disclaimer-блок «Что мы НЕ делаем» (sequential testing, HTE, causal inference) с объяснением почему, чтобы знать ограничения инструмента `[render]` *(Sprint 8)*
 
 ---
 

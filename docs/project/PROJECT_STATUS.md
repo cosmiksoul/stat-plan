@@ -13,7 +13,8 @@
 |---|---|---|---|
 | 1 | Code | Closed | 51 мин |
 | 2 | Code + FIX | Closed | ~2.5 ч |
-| 3 | — | Ждёт PLAN-фазы | — |
+| 3 | Code | DEV в работе у Claude Code | ~3-5 ч (план) |
+| 4-8 | — | Запланированы (см. Roadmap до v1 ниже) | ~16-23 ч (план) |
 
 ---
 
@@ -78,22 +79,24 @@ React 19 + Vite + Tailwind v4 + react-router-dom HashRouter + Vitest. Депло
 
 ---
 
-## Открытые идеи на стол PLAN Sprint 3
+## Roadmap до v1
 
-Из JTBD (приоритет обсуждается):
+Цель: full-functionality v1 со всеми 5 шагами флоу + парсером загружаемых планов + methodology разделом. Пользователь зафиксировал «релизим только в полном объёме».
 
-- **Sample size + duration derive** из Q05/Q07/Q08 после Q08. ADR-009 + `SAMPLE_SIZE_CALC.md` фиксируют формулы (z-test, t-test, MW approx, delta method, bootstrap). 7 предопределённых test cases.
-- **MDE direction derive из глагола гипотезы** (вырастет → increase, упадёт → decrease). Технически — расширить `parseHypothesis`.
-- **localStorage persistence** state'а.
-- **«Начать сначала»** в шапке (с confirmation) — критично с localStorage, иначе reload не сбросит.
-- **Разблокировка шага 2** (`state.brief.briefSubmitted` + соответствующий unlock UI).
-- **Methodology раздел** `/#/methodology` (новая §10 в JTBD — 6 user stories).
-- **Sensitivity helper Q07** (MDE × duration slider/таблица). Зависит от sample size calc.
-- **Click→file picker** fallback для drag-and-drop карточки.
-- **@fontsource swap** (low-priority).
-- **Mobile responsive** для GuardrailsList.
+| # | Скоуп | Wall-clock | QA-стратегия | Главный риск |
+|---|---|---|---|---|
+| **Sprint 3** (в работе) | Sample size + Шаг 2 (preview + scoring + approve) + localStorage + restart | ~3-5 ч | Полный QA (статистика критична) | Sample size формулы — нужны точные test cases из SAMPLE_SIZE_CALC.md |
+| **Sprint 4** | Шаг 3 «Конструктор ноутбука» — ipynb template cells, toggling UI, demo CSV (4 файла под metric_type), schema rendering | ~3-4 ч | **Smoke 8-12 кейсов** — логика простая, юнит-тесты ipynb-сборки покрывают | Сборка `.ipynb` JSON правильно для всех toggle-комбинаций |
+| **Sprint 5** | Шаг 4 «Анализ» — CSV parse (papaparse), independent recalc, SRM, novelty, recharts графики, PNG/PDF export | ~4-5 ч | Полный QA (статистика + новые либы) | Самый рисковый: 3+ новые npm-зависимости (papaparse, recharts, html2pdf/jspdf), CSV edge cases |
+| **Sprint 6** | Шаг 5 «Read-out» — readout.md шаблон, JSZip bundle, copy markdown-index | ~2-3 ч | **Smoke 6-8 кейсов** — простая склейка артефактов | Корректность zip-сборки на больших артефактах |
+| **Sprint 7** | Парсер `test_plan.md` (js-yaml) — drag-drop восстановление state, roundtrip validation | ~3-4 ч | Полный QA (roundtrip с разными конфигурациями) | Roundtrip: render → save → load → должен дать identical state |
+| **Sprint 8** | Methodology раздел `/#/methodology` (§10 JTBD, 6 stories) + click→file picker + @fontsource swap + a11y/mobile audit | ~4-5 ч | **Smoke + content review** — раздел типа Content sprint | Корректность объяснений статистических концепций |
 
-Скоуп Sprint 3 — обсуждаем когда дойдём до PLAN.
+**Итого до v1:** ~19-26 ч wall-clock (медиана ~22 ч). За 2-3 фокус-дня реалистично, при условии что Sprint 5 не уйдёт в 1-2 FIX-итерации.
+
+**Smoke QA в Sprint 4, 6, 8:** 6-12 ключевых кейсов вместо 60-70 кейсов полного pass. Делается в браузере за 10-15 минут. Если smoke зелёный — закрываем спринт без full pass. Решение совместное на CLOSE Sprint 2.
+
+**Sprint 7 — архитектурно важен.** Парсер `test_plan.md` это roundtrip-критичный кусок (если он ломается — артефакты теряются). Sprint 3 должен **строго** соблюдать схему DATA_MODEL.md в render.js — это контракт, по которому Sprint 7 будет читать обратно.
 
 ---
 
