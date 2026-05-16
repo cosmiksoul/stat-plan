@@ -1,6 +1,9 @@
 import { parseHypothesis } from '../lib/brief/hypothesis-parser.js'
 import { applyEnterDefaults } from '../lib/brief/defaults.js'
 import { getQuestion } from '../lib/brief/questions.js'
+import { deriveDirection } from '../lib/plan/direction.js'
+import { calculateSampleSize } from '../lib/plan/sample-size.js'
+import { scorePlan } from '../lib/plan/scoring.js'
 
 const initialBrief = {
   currentQuestion: 1,
@@ -46,11 +49,23 @@ const initialBrief = {
   },
 }
 
+const initialPlan = {
+  status: 'draft',
+  approvedAt: null,
+  derived: {},
+  score: {},
+  // editedExternally is reserved for the Sprint 4+ test_plan.md parser
+  // (when uploaded MD diverges from current brief). Always false in Sprint 3.
+  editedExternally: false,
+  briefSubmitted: false,
+}
+
 export const initialState = {
   started: false,
   currentStep: 1,
   tourEnabled: false,
   brief: initialBrief,
+  plan: initialPlan,
 }
 
 export const Actions = {
@@ -64,10 +79,19 @@ export const Actions = {
   ADD_GUARDRAIL: 'ADD_GUARDRAIL',
   REMOVE_GUARDRAIL: 'REMOVE_GUARDRAIL',
   UPDATE_GUARDRAIL: 'UPDATE_GUARDRAIL',
+  MARK_BRIEF_SUBMITTED: 'MARK_BRIEF_SUBMITTED',
+  APPROVE_PLAN: 'APPROVE_PLAN',
+  RETURN_PLAN_TO_DRAFT: 'RETURN_PLAN_TO_DRAFT',
+  RECOMPUTE_PLAN: 'RECOMPUTE_PLAN',
+  RESET_STATE: 'RESET_STATE',
 }
 
 function setBrief(state, patch) {
   return { ...state, brief: { ...state.brief, ...patch } }
+}
+
+function setPlan(state, patch) {
+  return { ...state, plan: { ...state.plan, ...patch } }
 }
 
 function answerQuestion(state, field, value) {
@@ -84,6 +108,12 @@ function answerQuestion(state, field, value) {
   return setBrief(state, patch)
 }
 
+function recomputePlan(state) {
+  const derived = calculateSampleSize(state.brief)
+  const score = scorePlan(state.brief, derived)
+  return setPlan(state, { derived, score })
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     case Actions.START_BRIEF:
@@ -97,8 +127,10 @@ export function reducer(state, action) {
 
     case Actions.UPDATE_HYPOTHESIS: {
       const text = action.text ?? ''
+      const direction = deriveDirection(text)
       return setBrief(state, {
         hypothesis: { text, slots: parseHypothesis(text) },
+        mde: { ...state.brief.mde, direction },
       })
     }
 
@@ -139,6 +171,24 @@ export function reducer(state, action) {
       )
       return setBrief(state, { guardrails: next })
     }
+
+    case Actions.MARK_BRIEF_SUBMITTED:
+      return setPlan(state, { briefSubmitted: true })
+
+    case Actions.APPROVE_PLAN:
+      return setPlan(state, {
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+      })
+
+    case Actions.RETURN_PLAN_TO_DRAFT:
+      return setPlan(state, { status: 'draft', approvedAt: null })
+
+    case Actions.RECOMPUTE_PLAN:
+      return recomputePlan(state)
+
+    case Actions.RESET_STATE:
+      return initialState
 
     default:
       return state
