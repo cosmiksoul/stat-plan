@@ -1,0 +1,60 @@
+---
+test_id: {{test_id}}
+title: {{title}}
+created: {{created}}
+status: {{status}}
+approved_at: {{approved_at}}
+
+# Test design
+metric_type: {{metric_type}}
+metric_name: {{metric_name}}
+baseline: {{baseline}}
+test_method: {{test_method}}
+randomization_unit: {{randomization_unit}}
+alpha: {{alpha}}
+power: {{power}}
+
+# Effect
+mde:
+  value: {{mde_value}}
+  unit: {{mde_unit}}
+direction: {{direction}}
+
+# Sample
+sample_size_per_arm: {{sample_size_per_arm}}
+duration_days: {{duration_days}}
+daily_traffic_available: {{daily_traffic_available}}
+
+# Optional techniques
+variance_reduction: {{variance_reduction}}
+stratification_by: {{stratification_by}}
+holdback_percent: {{holdback_percent}}
+
+# Guardrails
+guardrails:
+{{guardrails_yaml}}
+
+# Data peek info
+data_peek:
+{{data_peek_yaml}}
+
+# Scoring snapshot (информационно, при загрузке игнорируется и пересчитывается)
+score: {{score}}
+---
+
+# Test Plan: {{title}}
+
+## Hypothesis
+{{hypothesis_text}}
+
+## Guardrails
+{{guardrails_md}}
+
+## Stop conditions
+{{stop_conditions_md}}
+
+## Decision rules
+{{decision_rules_md}}
+
+## Notes
+{{notes}}
