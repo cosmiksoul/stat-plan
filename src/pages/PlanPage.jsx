@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
 import MdPreview from '../components/plan/MdPreview.jsx'
 import ScoringCard from '../components/plan/ScoringCard.jsx'
@@ -26,7 +25,6 @@ function downloadMd(filename, content) {
 
 export default function PlanPage() {
   const { state, dispatch } = useAppState()
-  const navigate = useNavigate()
 
   const md = useMemo(() => renderTestPlanMd(state), [state])
   const score = state.plan.score
@@ -91,25 +89,13 @@ export default function PlanPage() {
         <ScoringCard score={score} />
       </div>
 
-      <section className="bg-bg-elev border border-border rounded-lg p-5">
-        <PlanActions
-          status={status}
-          onDownload={handleDownload}
-          onUpload={handleUpload}
-          onApprove={handleApprove}
-          onReturnToDraft={handleReturnToDraft}
-        />
-      </section>
-
-      <div className="mt-4 text-xs text-fg-faint">
-        <button
-          type="button"
-          onClick={() => navigate('/step1')}
-          className="underline-offset-2 hover:underline cursor-pointer"
-        >
-          ← Вернуться к брифу
-        </button>
-      </div>
+      <PlanActions
+        status={status}
+        onDownload={handleDownload}
+        onUpload={handleUpload}
+        onApprove={handleApprove}
+        onReturnToDraft={handleReturnToDraft}
+      />
     </div>
   )
 }

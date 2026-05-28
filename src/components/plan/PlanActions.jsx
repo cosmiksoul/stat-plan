@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import StepFooter from '../layout/StepFooter.jsx'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 
@@ -42,8 +43,18 @@ export default function PlanActions({
     reader.readAsText(file)
   }
 
-  return (
-    <div className="flex flex-wrap items-center gap-3">
+  const back = (
+    <button
+      type="button"
+      onClick={() => navigate('/step1')}
+      className="text-xs text-fg-faint underline-offset-2 hover:underline cursor-pointer"
+    >
+      ← К БРИФУ
+    </button>
+  )
+
+  const secondary = (
+    <>
       <button
         type="button"
         onClick={onDownload}
@@ -51,7 +62,6 @@ export default function PlanActions({
       >
         ↓ СКАЧАТЬ TEST_PLAN.MD
       </button>
-
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -66,9 +76,6 @@ export default function PlanActions({
         onChange={handleFileChange}
         className="hidden"
       />
-
-      <div className="flex-1" />
-
       {isApproved && (
         <button
           type="button"
@@ -78,36 +85,44 @@ export default function PlanActions({
           ↻ ВЕРНУТЬ В ЧЕРНОВИК
         </button>
       )}
+    </>
+  )
 
-      {!isApproved && (
-        <button
-          type="button"
-          onClick={onApprove}
-          className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          ✓ УТВЕРДИТЬ ПЛАН
-        </button>
-      )}
+  const primary = !isApproved ? (
+    <button
+      type="button"
+      onClick={onApprove}
+      className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      ✓ УТВЕРДИТЬ ПЛАН
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => navigate('/step3')}
+      className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      ПЕРЕЙТИ К КОНСТРУКТОРУ →
+    </button>
+  )
 
-      {isApproved && (
-        <button
-          type="button"
-          onClick={() => navigate('/step3')}
-          className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          ПЕРЕЙТИ К КОНСТРУКТОРУ →
-        </button>
-      )}
+  const alert = uploadError && (
+    <div
+      role="alert"
+      className="text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2"
+    >
+      {uploadError}
+    </div>
+  )
 
-      {uploadError && (
-        <div
-          role="alert"
-          className="w-full text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2 mt-2"
-        >
-          {uploadError}
-        </div>
-      )}
-
+  return (
+    <>
+      <StepFooter
+        back={back}
+        secondary={secondary}
+        primary={primary}
+        alert={alert}
+      />
       <ConfirmDialog
         open={showReturnConfirm}
         title="Вернуть план в черновик?"
@@ -121,6 +136,6 @@ export default function PlanActions({
         }}
         onCancel={() => setShowReturnConfirm(false)}
       />
-    </div>
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
 import { TOTAL_QUESTIONS } from '../../lib/brief/questions.js'
+import StepFooter from '../layout/StepFooter.jsx'
 
 export default function QuestionNav({ onFinish }) {
   const { state, dispatch } = useAppState()
@@ -12,37 +13,33 @@ export default function QuestionNav({ onFinish }) {
     dispatch({ type: Actions.GOTO_QUESTION, num })
   }
 
-  return (
-    <div className="flex items-center justify-between gap-3 pt-2">
-      {!isFirst ? (
-        <button
-          type="button"
-          onClick={() => goto(current - 1)}
-          className="mono-label text-fg-dim border border-border rounded-md px-4 py-2 hover:border-accent hover:text-accent transition-colors cursor-pointer"
-        >
-          ← НАЗАД
-        </button>
-      ) : (
-        <span />
-      )}
+  const back = !isFirst ? (
+    <button
+      type="button"
+      onClick={() => goto(current - 1)}
+      className="mono-label text-fg-dim border border-border rounded-md px-4 py-2 hover:border-accent hover:text-accent transition-colors cursor-pointer"
+    >
+      ← НАЗАД
+    </button>
+  ) : null
 
-      {isLast ? (
-        <button
-          type="button"
-          onClick={onFinish}
-          className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          ЗАВЕРШИТЬ
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => goto(current + 1)}
-          className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          ДАЛЬШЕ →
-        </button>
-      )}
-    </div>
+  const primary = isLast ? (
+    <button
+      type="button"
+      onClick={onFinish}
+      className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      ЗАВЕРШИТЬ
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => goto(current + 1)}
+      className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      ДАЛЬШЕ →
+    </button>
   )
+
+  return <StepFooter back={back} primary={primary} />
 }

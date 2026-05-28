@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
 import ParseWarningsBanner from '../components/ParseWarningsBanner.jsx'
 import PlanInfoCard from '../components/notebook/PlanInfoCard.jsx'
 import CellsList from '../components/notebook/CellsList.jsx'
 import DemoCsvCard from '../components/notebook/DemoCsvCard.jsx'
 import ExpectedSchemaCard from '../components/notebook/ExpectedSchemaCard.jsx'
+import StepFooter from '../components/layout/StepFooter.jsx'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { buildNotebook } from '../lib/plan/notebook-builder.js'
 
@@ -24,6 +26,7 @@ function downloadJson(filename, json) {
 
 export default function NotebookBuilderPage() {
   const { state } = useAppState()
+  const navigate = useNavigate()
   // Reactively prepare the notebook plus its warnings so that the UI can
   // show what will be skipped before the user clicks download.
   const built = useMemo(
@@ -73,8 +76,17 @@ export default function NotebookBuilderPage() {
         </div>
       )}
 
-      <div className="sticky bottom-0 -mx-6 px-6 py-4 bg-bg/90 backdrop-blur border-t border-border-soft">
-        <div className="flex justify-center">
+      <StepFooter
+        back={
+          <button
+            type="button"
+            onClick={() => navigate('/step2')}
+            className="text-xs text-fg-faint underline-offset-2 hover:underline cursor-pointer"
+          >
+            ← К ПЛАНУ
+          </button>
+        }
+        primary={
           <button
             type="button"
             onClick={handleDownload}
@@ -82,8 +94,8 @@ export default function NotebookBuilderPage() {
           >
             ↓ СКАЧАТЬ {built.filename.toUpperCase()}
           </button>
-        </div>
-      </div>
+        }
+      />
     </div>
   )
 }
