@@ -59,7 +59,7 @@
 | 009 | Sample size: точные формулы где возможно, приближения с warning где нет | Accepted | 2026-05-14 |
 | 010 | UI на React 19 + Vite + Tailwind, деплой через GitHub Actions | Accepted | 2026-05-14 |
 | 011 | Semantic shift YAML.metric_name = код колонки, новый YAML.metric_label = натуральный текст | Accepted | 2026-05-28 |
-| 012 | Шаг 4 как «Быстрая валидация» (не independent validation), переименование Шагов 04/05 | Draft (обсуждается) | 2026-05-28 |
+| 012 | Шаг 4 как «Быстрая валидация» (не independent validation), переименование Шагов 04/05 | Accepted | 2026-05-28 |
 
 ---
 
@@ -72,7 +72,7 @@
 ## ADR-012 — Шаг 4 как «Быстрая валидация» + переименование Шагов 04/05
 
 **Date:** 2026-05-28
-**Status:** Draft (обсуждается перед Sprint 5 main)
+**Status:** Accepted (финализирован 2026-05-28 перед Sprint 5; UX rename — в Sprint 5, FLOW.md/concept.md/JTBD §7-§8 переписываются в Sprint 5 CLOSE, полный redesign Шага 4 — Sprint 6 main)
 
 **Context:**
 В первоначальном concept.md и FLOW.md Шаг 4 «Анализ» заложен как «independent validation» — пользователь загружает CSV, тул независимо пересчитывает все ключевые метрики (Δ, p-value, CI, SRM, novelty) и сравнивает с тем, что сгенерировал ноутбук. Цель — поймать ошибку в анализе пользователя.
@@ -85,7 +85,7 @@
 - 04 «Анализ» обещает глубокую валидацию, которую мы не делаем
 - 05 «Read-out» — название из аналитического жаргона, не очевидно для PM-аудитории
 
-**Decision (proposed):**
+**Decision:**
 
 1. **Концептуальный shift Шага 4** — из «independent validation» в **«Быстрая валидация»**:
    - SRM check на counts (полезно независимо от методологии — count by variant + chi²)
