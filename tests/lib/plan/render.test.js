@@ -222,6 +222,34 @@ describe('renderTestPlanMd — Sprint 4 iter 2 YAML blocks', () => {
   })
 })
 
+describe('renderTestPlanMd — test_id derivation (Sprint 5 P-3)', () => {
+  it('derives YAML test_id from brief.metric_column when set', () => {
+    const state = fullState()
+    state.brief.metric_column = 'cr_first_deposit'
+    state.brief.metric_name = 'конверсия в первый депозит'
+    const md = renderTestPlanMd(state)
+    expect(md).toContain('test_id: cr_first_deposit-v1')
+  })
+
+  it('falls back to metric_name when metric_column is empty', () => {
+    const state = fullState()
+    // No metric_column set — only the natural label.
+    state.brief.metric_column = ''
+    state.brief.metric_name = 'arpu_lift'
+    const md = renderTestPlanMd(state)
+    expect(md).toContain('test_id: arpu_lift-v1')
+  })
+
+  it('falls back to goal_type when both metric fields are empty', () => {
+    const state = fullState()
+    state.brief.metric_column = ''
+    state.brief.metric_name = ''
+    state.brief.goal_type = 'other'
+    const md = renderTestPlanMd(state)
+    expect(md).toContain('test_id: other-v1')
+  })
+})
+
 describe('renderTestPlanMd — continuous metric', () => {
   it('handles continuous metric with t_test', () => {
     const state = fullState()

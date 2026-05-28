@@ -9,6 +9,7 @@
 // round-trip it. See DATA_MODEL.md for the schema this output must match.
 
 import TEMPLATE from '../../../templates/test_plan.md.tmpl?raw'
+import { slugify } from '../util/slugify.js'
 
 // ---- YAML helpers --------------------------------------------------------
 
@@ -126,18 +127,11 @@ function normalizeBaselineForYaml(baseline) {
   return baseline.value
 }
 
-function slugify(s) {
-  if (!s) return 'test'
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9а-яё_\s-]/giu, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .slice(0, 40) || 'test'
-}
-
 function deriveTestId(brief) {
-  const base = brief.metric_name || brief.goal_type || 'test'
+  // After ADR-011: test_id derives from the column code (metric_column),
+  // not the natural label. Fallbacks to metric_name (legacy) and goal_type.
+  const base =
+    brief.metric_column || brief.metric_name || brief.goal_type || 'test'
   return `${slugify(base)}-v1`
 }
 

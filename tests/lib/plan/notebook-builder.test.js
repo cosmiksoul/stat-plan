@@ -18,8 +18,11 @@ function makeState(overrides = {}) {
       goal_type: 'product_change',
       hypothesis: { text: 'CR вырастет', slots: {} },
       metric_type: 'proportion',
-      metric_name: 'cr_to_click',
-      metric_column: 'converted',
+      // After ADR-011: metric_name = natural human label, metric_column =
+      // CSV column code. test_id and filename derive from metric_column;
+      // notebook header title uses metric_name.
+      metric_name: 'CR в клик',
+      metric_column: 'cr_to_click',
       baseline: { value: 0.031, unit: 'fraction' },
       randomization_unit: 'user',
       mde: { value: 8, unit: 'relative_percent', direction: 'increase' },
@@ -181,11 +184,20 @@ describe('buildNotebook — conditional skips', () => {
 // ---- Header cell --------------------------------------------------------
 
 describe('buildNotebook — header cell', () => {
-  it('contains test_id, method, sample size, duration, alpha/power, MDE', () => {
-    const { json } = buildNotebook(makeState())
+  it('header title uses natural metric_name; filename/test_id use metric_column slug', () => {
+    const { json, filename } = buildNotebook(makeState())
     const header = flatSource(json.cells[0])
-    expect(header).toContain('Analysis: cr_to_click-v1')
-    expect(header).toContain('cr_to_click')
+    // Natural label goes into the visible h1 title.
+    expect(header).toContain('# Analysis: Тест: CR в клик')
+    // Metric line shows the natural label too.
+    expect(header).toContain('Metric: `CR в клик`')
+    // test_id and filename derive from metric_column (slugified).
+    expect(json.metadata.statplan.test_id).toBe('cr_to_click-v1')
+    expect(filename).toBe('cr_to_click-v1_analysis.ipynb')
+    // Subtitle no longer claims test_plan.md lies next to the notebook.
+    expect(header).not.toContain('рядом лежит test_plan.md')
+    expect(header).toContain('генерируется отдельно в stat·plan')
+    // Sanity: method + numbers still present.
     expect(header).toContain('z_test_proportions')
     expect(header).toContain('80000')
     expect(header).toContain('5 days')
@@ -200,7 +212,8 @@ describe('buildNotebook — header cell', () => {
     expect(header).toContain('Expected CSV schema')
     expect(header).toContain('user_id')
     expect(header).toContain('variant')
-    expect(header).toContain('converted')
+    // metric_column is the CSV column name; it shows up in the schema row.
+    expect(header).toContain('cr_to_click')
     expect(header).toContain('bounce_rate')
     expect(header).toContain('day') // novelty enabled
   })
@@ -219,7 +232,7 @@ describe('buildNotebook — placeholders', () => {
   it('substitutes {{metric_column}} with the brief column name', () => {
     const { json } = buildNotebook(makeState())
     const text = flatAllSources(json)
-    expect(text).toContain("metric_col = 'converted'")
+    expect(text).toContain("metric_col = 'cr_to_click'")
   })
 
   it('leaves no {{...}} markers in the final JSON', () => {
@@ -279,14 +292,15 @@ describe('buildNotebook — edge cases', () => {
     expect(json.cells[0].cell_type).toBe('markdown')
   })
 
-  it('derives test_id from metric_name when state.test_id is null', () => {
+  it('derives test_id from metric_column when state.test_id is null', () => {
     const state = makeState({ test_id: null })
     const { filename } = buildNotebook(state)
     expect(filename).toBe('cr_to_click-v1_analysis.ipynb')
   })
 
-  it('falls back to metric_name when metric_column is empty (parsed-md case)', () => {
+  it('falls back test_id to metric_name when metric_column is empty', () => {
     const state = makeState({
+      test_id: null,
       brief: {
         ...makeState().brief,
         metric_type: 'continuous',
@@ -294,7 +308,9 @@ describe('buildNotebook — edge cases', () => {
         metric_name: 'arpu',
       },
     })
-    const { json } = buildNotebook(state)
+    const { json, filename } = buildNotebook(state)
+    expect(filename).toBe('arpu-v1_analysis.ipynb')
+    // deriveMetricColumn falls back too, so the CSV col label = metric_name.
     const text = flatAllSources(json)
     expect(text).toContain("metric_col = 'arpu'")
   })
@@ -340,12 +356,12 @@ describe('buildNotebook — header fallback warning', () => {
 // ---- Slugify ё (Sprint 4 FIX A.3) --------------------------------------
 
 describe('buildNotebook — slugify keeps ё', () => {
-  it('preserves ё in test_id when metric_name contains ё', () => {
+  it('preserves ё in test_id when metric_column contains ё', () => {
     const state = makeState({
       test_id: null,
       brief: {
         ...makeState().brief,
-        metric_name: 'продлёнка подписки',
+        metric_column: 'продлёнка_подписки',
       },
     })
     const { filename, json } = buildNotebook(state)

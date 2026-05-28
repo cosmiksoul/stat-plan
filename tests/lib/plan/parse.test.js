@@ -794,3 +794,58 @@ describe('parseTestPlanMd — Sprint 4 iter 2 readers', () => {
     expect(newFieldWarnings).toEqual([])
   })
 })
+
+// ---- Sprint 5 P-7: legacy metric_name heuristic -------------------------
+
+describe('parseTestPlanMd — legacy metric_name heuristic (P-7)', () => {
+  it('routes Cyrillic metric_name without metric_label into brief.metric_name + warning', () => {
+    const md = validProportionMd().replace(
+      'metric_name: cr_to_partner_click',
+      'metric_name: "конверсия в первый депозит"',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_name).toBe('конверсия в первый депозит')
+    expect(r.brief.metric_column).toBe('')
+    expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(true)
+  })
+
+  it('routes uppercase-Latin metric_name (e.g. "Bounce Rate") without metric_label as legacy', () => {
+    const md = validProportionMd().replace(
+      'metric_name: cr_to_partner_click',
+      'metric_name: "Bounce Rate"',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_name).toBe('Bounce Rate')
+    expect(r.brief.metric_column).toBe('')
+    expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(true)
+  })
+
+  it('treats snake_case + metric_label pair as new format (no legacy warning)', () => {
+    const md = validProportionMd().replace(
+      'metric_name: cr_to_partner_click',
+      'metric_name: cr_first_deposit\nmetric_label: "конверсия в первый депозит"',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_column).toBe('cr_first_deposit')
+    expect(r.brief.metric_name).toBe('конверсия в первый депозит')
+    expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(false)
+  })
+
+  it('skips heuristic when metric_label is present even if metric_name looks legacy', () => {
+    // Conflict case: metric_name has Cyrillic but metric_label is also set.
+    // Heuristic does NOT fire — assume the author meant the literal value as
+    // a (broken) column code. metric_label overwrites brief.metric_name below.
+    const md = validProportionMd().replace(
+      'metric_name: cr_to_partner_click',
+      'metric_name: "конверсия"\nmetric_label: "что-то ещё"',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_column).toBe('конверсия')
+    expect(r.brief.metric_name).toBe('что-то ещё')
+    expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(false)
+  })
+})

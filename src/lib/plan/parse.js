@@ -188,9 +188,32 @@ function mapFrontmatter(fm, warnings) {
   // YAML.metric_name carries the code identifier (snake_case CSV column);
   // it maps onto brief.metric_column. The human-language label is stored
   // separately as YAML.metric_label and maps onto brief.metric_name.
+  //
+  // Legacy heuristic (P-7): pre-ADR-011 files put the human label into
+  // metric_name (no metric_label field existed). Detect those by looking
+  // for whitespace, Cyrillic, or uppercase Latin in metric_name AND the
+  // absence of metric_label — and route them to metric_label instead, so
+  // brief.metric_column stays empty for the user to fill in by hand.
+  const LEGACY_METRIC_NAME_RE = /[\sА-ЯЁа-яёA-Z]/
+  const hasLabel =
+    fm.metric_label != null &&
+    fm.metric_label !== false &&
+    isStr(fm.metric_label) &&
+    fm.metric_label !== ''
+
   if (fm.metric_name != null) {
     if (isStr(fm.metric_name)) {
-      brief.metric_column = fm.metric_name
+      const looksLegacy =
+        !hasLabel && LEGACY_METRIC_NAME_RE.test(fm.metric_name)
+      if (looksLegacy) {
+        brief.metric_name = fm.metric_name
+        brief.metric_column = ''
+        warnings.push(
+          'Обнаружен legacy формат test_plan.md (metric_name содержит натуральный текст). Перенесено в metric_label. Заполни код колонки вручную.',
+        )
+      } else {
+        brief.metric_column = fm.metric_name
+      }
     } else {
       warnings.push('Поле metric_name не строка — оставлено пустым.')
     }

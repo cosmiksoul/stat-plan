@@ -11,7 +11,7 @@
       "source": [
         "## Загрузка данных\n",
         "\n",
-        "CSV должен лежать рядом с этим ноутбуком. Имена колонок зафиксированы — см. Expected CSV schema выше."
+        "CSV должен лежать рядом с ноутбуком, либо укажи в `CSV_PATH` полный путь / URL. Для Colab — путь в `/content/` после upload или после `drive.mount(...)`. Имена колонок зафиксированы — см. Expected CSV schema выше."
       ]
     },
     {
@@ -23,7 +23,8 @@
         "import pandas as pd\n",
         "import numpy as np\n",
         "\n",
-        "df = pd.read_csv('experiment_results.csv')\n",
+        "CSV_PATH = 'experiment_results.csv'  # рядом с ноутбуком, или укажи полный путь / URL\n",
+        "df = pd.read_csv(CSV_PATH)\n",
         "print(f'rows: {len(df):,}')\n",
         "df.info()\n",
         "df.head()"

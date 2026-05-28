@@ -4,8 +4,8 @@ const STEPS = [
   { num: '01', label: 'Бриф', route: '/step1' },
   { num: '02', label: 'Тест-план', route: '/step2' },
   { num: '03', label: 'Конструктор', route: '/step3' },
-  { num: '04', label: 'Анализ', route: null },
-  { num: '05', label: 'Read-out', route: null },
+  { num: '04', label: 'Быстрая валидация', route: null },
+  { num: '05', label: 'Скачать артефакты', route: null },
 ]
 
 function isStepUnlocked(stepNum, planStatus, briefSubmitted) {

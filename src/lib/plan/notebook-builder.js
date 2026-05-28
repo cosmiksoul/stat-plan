@@ -19,6 +19,7 @@ import mainTestZ from '../../../templates/notebook/main_test/z_test.cells.json'
 import mainTestT from '../../../templates/notebook/main_test/t_test.cells.json'
 import mainTestWelch from '../../../templates/notebook/main_test/welch.cells.json'
 import mainTestBootstrap from '../../../templates/notebook/main_test/bootstrap.cells.json'
+import { slugify } from '../util/slugify.js'
 
 const TEMPLATES = {
   load: loadCells,
@@ -58,27 +59,23 @@ export const CELL_CATALOG = {
 
 // ---- Helpers ------------------------------------------------------------
 
-function slugify(s) {
-  if (!s) return 'test'
-  return (
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9а-яё_\s-]/giu, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .slice(0, 40) || 'test'
-  )
-}
-
 function deriveTestId(state) {
   if (state.test_id) return state.test_id
-  const base = state.brief?.metric_name || state.brief?.goal_type || 'test'
+  // After ADR-011: test_id / filename derive from the column code, not the
+  // natural label. Fallback chain: metric_column → metric_name → goal_type.
+  const base =
+    state.brief?.metric_column ||
+    state.brief?.metric_name ||
+    state.brief?.goal_type ||
+    'test'
   return `${slugify(base)}-v1`
 }
 
 function deriveTitle(state) {
   if (state.title) return state.title
-  const name = state.brief?.metric_name
+  // After ADR-011: header title uses the natural human label (metric_name).
+  // Falls back to the column code if no label was provided.
+  const name = state.brief?.metric_name || state.brief?.metric_column
   return name ? `Тест: ${name}` : 'Тест-план без названия'
 }
 
@@ -169,10 +166,10 @@ function buildPlaceholderMap(state) {
     metric_name: brief.metric_name || '',
     metric_type: brief.metric_type || '',
     metric_column: deriveMetricColumn(brief),
-    baseline:
-      brief.baseline?.unit === 'percent'
-        ? brief.baseline.value / 100
-        : (brief.baseline?.value ?? 0),
+    // baseline.unit is set to 'fraction' (proportions, already 0..1) or null
+    // (continuous/ratio/count) by parse.js; values are already in the right
+    // shape, so no normalization is needed here.
+    baseline: brief.baseline?.value ?? 0,
     mde_value: brief.mde?.value ?? '',
     mde_unit: brief.mde?.unit || '',
     direction: brief.mde?.direction || 'any',
@@ -225,10 +222,12 @@ function buildHeaderCell(state, cellsEnabled, schema) {
   const derived = plan.derived || {}
   const today = new Date().toISOString().slice(0, 10)
   const lines = []
-  lines.push(`# Analysis: ${deriveTestId(state)}\n`)
+  lines.push(`# Analysis: ${deriveTitle(state)}\n`)
   lines.push('\n')
   lines.push(`> Сгенерировано stat·plan ${today}.\n`)
-  lines.push('> Test plan: рядом лежит test_plan.md.\n')
+  lines.push(
+    '> Test plan: см. test_plan.md, генерируется отдельно в stat·plan (шаг 2).\n',
+  )
   lines.push('\n')
   lines.push('## Test parameters\n')
   lines.push(`- Metric: \`${brief.metric_name || '—'}\` (${brief.metric_type || '—'})\n`)
@@ -284,7 +283,7 @@ function buildHeaderCell(state, cellsEnabled, schema) {
     lines.push('> реализацией.\n')
     lines.push('\n')
   }
-  lines.push('**To run:** положи `experiment_results.csv` рядом, запусти все ячейки сверху вниз.\n')
+  lines.push('**To run:** укажи путь к CSV в первой code-ячейке (`CSV_PATH`), запусти все ячейки сверху вниз.\n')
 
   return {
     cell_type: 'markdown',

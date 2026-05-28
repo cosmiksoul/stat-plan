@@ -9,6 +9,23 @@ import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
 import { baselineUnitOptionsFor } from '../../lib/brief/questions.js'
 
+// Shown on Q03 (metric_type) when user picks ratio/continuous, and on Q07
+// (mde) when those types were chosen — early signal that the sample-size
+// calc will be an approximation until Data Peek (Sprint 3+) provides the
+// historical params (covariance / σ).
+const APPROX_INFO_TEXT =
+  'ⓘ Для точного sample size нужны параметры исторических данных (для ratio — ковариация числителя/знаменателя; для continuous — σ метрики). Без них — расчёт будет приближением через bootstrap (±20-30%). Точная цифра — после Data Peek (Sprint 3+).'
+
+function ApproxInfoBlock() {
+  return (
+    <div className="mt-3 text-xs text-fg-faint bg-bg-elev-2 border border-border-soft rounded-md px-3 py-2 leading-relaxed">
+      {APPROX_INFO_TEXT}
+    </div>
+  )
+}
+
+const APPROX_METRIC_TYPES = ['ratio', 'continuous']
+
 function toSnakeCase(s) {
   return (s ?? '')
     .toString()
@@ -209,6 +226,10 @@ export default function QuestionRenderer({ question }) {
             onChange={(v) => answer(question.id, v)}
           />
           {renderSubQuestions()}
+          {question.id === 'metric_type' &&
+            APPROX_METRIC_TYPES.includes(brief.metric_type) && (
+              <ApproxInfoBlock />
+            )}
         </div>
       )
 
@@ -231,18 +252,24 @@ export default function QuestionRenderer({ question }) {
       if (question.id === 'baseline') return <BaselineInput />
       // mde / daily_traffic
       const stateValue = brief[question.id]
+      const showApprox =
+        question.id === 'mde' &&
+        APPROX_METRIC_TYPES.includes(brief.metric_type)
       return (
-        <NumberWithUnit
-          value={stateValue.value}
-          unit={stateValue.unit}
-          unitOptions={question.unitOptions}
-          onChange={(next) =>
-            answer(question.id, { ...stateValue, ...next })
-          }
-          placeholder={
-            question.id === 'mde' ? 'например: 8' : 'например: 42000'
-          }
-        />
+        <div>
+          <NumberWithUnit
+            value={stateValue.value}
+            unit={stateValue.unit}
+            unitOptions={question.unitOptions}
+            onChange={(next) =>
+              answer(question.id, { ...stateValue, ...next })
+            }
+            placeholder={
+              question.id === 'mde' ? 'например: 8' : 'например: 42000'
+            }
+          />
+          {showApprox && <ApproxInfoBlock />}
+        </div>
       )
     }
 
