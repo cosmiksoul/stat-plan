@@ -190,15 +190,15 @@ export default function BriefPage() {
             {question.id === 'daily_traffic' && <SampleSizeDisplay brief={brief} />}
 
             <div className="mt-6">
-              <QuestionNav onFinish={handleFinish} />
+              <AdvancedParams disabled={isApproved} />
             </div>
           </section>
-
-          <AdvancedParams disabled={isApproved} />
         </div>
 
         <QuestionMap />
       </div>
+
+      <QuestionNav onFinish={handleFinish} />
     </div>
   )
 }

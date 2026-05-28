@@ -245,6 +245,62 @@
 
 ---
 
+### Sprint 4 — Парсер test_plan.md + Шаг 3 «Конструктор» + FIX iter 1 (Q01 other / Q04 semantic / preselect) + FIX iter 2 (round-trip repair) (2026-05-28)
+
+**Type:** Code (large) + FIX iter 1 (3 phase) + FIX iter 2 + Architecture decisions (ADR-011, ADR-012 draft).
+**Status:** Complete.
+**Goal:** Закрыть два недостающих value loop — drag-drop загрузка test_plan.md (альтернативный вход) и реальный артефакт `analysis.ipynb` (конструктор ноутбука).
+
+**Что построено в main:**
+
+§1 «Старт и навигация»:
+- ★ Drag-drop загрузка `test_plan.md` (закрыто `[~]` из Sprint 1, теперь `[x]`)
+- ◆ Click→file picker fallback на dashed-зоне (закрытие Concern #4 из Sprint 1)
+
+§5 «Шаг 2 — Тест-план»:
+- ★ Кнопка «Загрузить отредактированный test_plan.md» (закрытие `[~]` из Sprint 3, file picker + parser)
+- Warning при невалидном md (ParseWarningsBanner + inline error)
+
+§6 «Шаг 3 — Конструктор ноутбука» — целиком:
+- PlanInfoCard, CellsList (6 mandatory + 2 optional + 2 disabled-заглушки cuped/delta_method), DemoCsvCard (2 файла из 4), ExpectedSchemaCard реактивный, скачивание `.ipynb` с header + Expected CSV schema + warning blockquote для delta_method/mannwhitney fallback.
+
+**FIX iter 1** (3 phases, 11 пунктов):
+- Phase A: 11 cell templates de-numbered (NB-BUG-1), slugify сохраняет `ё` (NB-BUG-3), grammar `1 day/N days` (NB-BUG-4), decision rules без двойной точки (NB-BUG-5), warning blockquote для fallback test_method (NB-BUG-2 = Concern #3).
+- Phase B: «Утвердить» → «Перейти к конструктору» CTA transformation на step 2 (BUG-1), sticky bottom download на step 3 (BUG-2), warn banner для delta_method/mannwhitney в PlanInfoCard (Concern #3 UI).
+- Phase C: applyEnterDefaults расширен для goal_type/randomization_unit (BUG-5 preselect карта), **semantic shift YAML.metric_name = код, новый YAML.metric_label = текст** (BUG-3, см. ADR-011), Q01 «Другое» → conditional sub-question + state.brief.goal_description (BUG-4).
+
+**FIX iter 2** (BUG-9 + audit):
+- Полный round-trip repair: 7 ранее missing полей теперь сериализуются в YAML (`goal_type`, `goal_description`, `ratio_components` numerator/denominator, `cluster_field`, `two_sided`, `stop_conditions` object, `decision_rules` object).
+- Новая структура шаблона: `# Context` блок + расширенный `# Test design` + отдельные `# Stop conditions` и `# Decision rules` объекты.
+- `defaultsApplied.goal_type/randomization_unit = true` при load — защита от GOTO_QUESTION clobbering после LOAD_TEST_PLAN_MD.
+- Новый файл `tests/lib/plan/round-trip.test.js` с 4 canonical case — гарантия от регрессий round-trip.
+- BUG-9b (goal_description truncation) — расследован static audit, не воспроизводится в коде iter 1+2, скорее всего pre-iter-1 артефакт. Защищён canonical test'ом.
+- **User-sanctioned side-scope:** unification sticky footer на step 1-3 (QuestionNav → StepFooter на page-level, sticky bottom backdrop-blur). AdvancedParams переехал внутрь карточки вопроса под sample-size блоком. Закрывает polish-pack P-1 (BUG-6).
+
+**Архитектурные решения:**
+
+- **ADR-011 Accepted** — semantic shift `YAML.metric_name = код колонки`, новое опциональное `YAML.metric_label = натуральный текст`. Round-trip между ними. Legacy compatibility — heuristic в polish-pack P-7.
+- **ADR-012 Draft** — Шаг 4 redesign из «independent validation» в «Быстрая валидация» (circular validation у текущей концепции). UI rename Шагов 04/05. Требует accept в Architecture sprint перед Sprint 5 main.
+
+**Tests:**
+
+- Sprint 4 main: 147 → 213 (+66).
+- FIX iter 1: 213 → 235 (+22).
+- FIX iter 2: 235 → **249** (+14, включая 4 canonical round-trip).
+
+**Bundle:** 309 KB → 399 KB raw (gzip 96 → 124 KB) — в основном js-yaml (~17 KB gzip) + templates + builder. js-yaml единственная новая npm-зависимость со Sprint 1.
+
+**Polish-pack (отложено в отдельный mini-sprint):** 6 пунктов после iter 2 (BUG-6 закрыт side-scope). См. `docs/project/polish-pack.md`. Среди них — BUG-8 (filename/header источники), BUG-7 (Colab CSV_PATH), inline-warning Q03/Q07, dead code, slugify utility, legacy metric_name heuristic.
+
+**Notes:**
+
+- ✅ **Code эскалировал BUG-3 правильно.** В prompt'е Cowork описал симптом «UI заменяет _ на пробел» — Code грепнул кодовую базу, не нашёл такой конверсии, эскалировал. После обсуждения с пользователем стала ясна реальная root cause (semantic mismatch код vs натуральный текст) → semantic shift ADR-011.
+- ✅ **Round-trip контракт усилен.** До iter 2 был частично декларативный (`extractBriefShape` намеренно исключал не-сериализуемые поля). Теперь canonical round-trip test покрывает все поля; новые поля должны добавляться туда.
+- ✅ **FIX iter 2 в один cycle закрыл 7 полей + 1 расследование + 1 user-sanctioned UX-refactor.** Без iter 3.
+- 🟢 **Concept Шага 4 поставлен под пересмотр.** Пользователь сам заметил circular validation. ADR-012 в драфте, ожидает Architecture sprint.
+
+---
+
 ## Tech Debt
 
 > Накопленный технический долг. Каждая запись — что и из какого спринта приехало.
@@ -254,8 +310,11 @@
 - [ ] **`defaultsApplied` в `state.brief` — UI-state в доменной структуре.** Приехало из Sprint 2 FIX. При реализации yaml-сериализатора (Sprint 5-6) учить игнорировать это поле или вынести уровнем выше.
 - [ ] **`extractMetricName` дёргается на каждый переход на Q04 пока флаг false.** Приехало из Sprint 2 FIX. Дешёво (regex по короткой строке), оптимизировать не нужно. Просто наблюдение.
 - [ ] **Mobile responsive для `GuardrailsList`.** 6-колоночный grid на <640px может ломаться. Не тестировался. Кандидат на отдельный спринт mobile UX.
-- [ ] **`editedExternally` в `state.plan` — зарезервированное поле.** Приехало из Sprint 3. Без активного использования до Sprint 7 (парсер test_plan.md). Семантика будет определена там.
+- [x] ~~**`editedExternally` в `state.plan` — зарезервированное поле.**~~ Закрыто в Sprint 4: семантика определена (true после LOAD_TEST_PLAN_MD, сбрасывается в RETURN_PLAN_TO_DRAFT / RESET_STATE), UI badge `LoadedBadge` реализован.
 - [ ] **Case 2 в SAMPLE_SIZE_CALC.md (исправлено, но нужен унифицированный подход).** Приехало из Sprint 3. Если в Sprint 5-6 встретятся spec'и из разных источников — нужно явно фиксировать source формул и сверять.
+- [ ] **Polish-pack 6 пунктов** (BUG-7 Colab CSV_PATH, BUG-8 filename/header источники, P-4 inline-warning Q03/Q07, P-5 dead code `baseline.unit === 'percent'`, P-6 slugify utility, P-7 legacy metric_name heuristic). Приехало из Sprint 4 RETEST + code review. Кандидат на отдельный mini-sprint перед Sprint 5 main. См. `docs/project/polish-pack.md`.
+- [ ] **DemoCsvCard: 2 из 4 файлов реализованы** (proportion + continuous). `demo_ratio.csv` и `demo_count.csv` — disabled-заглушки. Кандидат на mini-content sprint.
+- [ ] **2 cell templates как disabled-заглушки** (cuped, delta_method). Mannwhitney и delta_method в main_test fallback'ятся на bootstrap-вариант с двух-уровневым warning (header ноутбука + PlanInfoCard UI). Полные ячейки — следующий mini-sprint.
 
 ---
 
@@ -263,23 +322,16 @@
 
 > Вопросы, которые периодически всплывают и заслуживают зафиксированного ответа (или ADR'а если они архитектурные).
 
-- **Q:** Файлы в working tree обрезаются на середине UTF-8 символа после операций Cowork-инстанса. Что это?
-  **A:** Зафиксировано **3 инцидента**:
-  - Sprint 1: после `git add .` — `.gitignore`, `CLAUDE.md`, `README.md` обрезались.
-  - Sprint 2 FIX: после Code-коммитов — 5 файлов из `src/` показались `modified` с trailing whitespace + `\ No newline at end of file`.
-  - Sprint 2 CLOSE: серия Edit-инструмента Cowork на длинных Cyrillic replacements — файлы обрезались на UTF-8 boundary.
+- **Q:** Файлы в working tree обрезались в Sprint 1 / Sprint 2. Что это было?
+  **A:** Реальная причина — **git CRLF на Windows**. Зафиксировано 2 инцидента:
+  - Sprint 1: после первого `git add .` на Windows — `.gitignore`, `CLAUDE.md`, `README.md` отображались обрезанными. Причина: Git autocrlf конверсия + неустановленные `.gitattributes`.
+  - Sprint 2 FIX: после Code-коммитов — 5 файлов из `src/` показались `modified` с trailing whitespace + `\ No newline at end of file`. Та же CRLF-проблема.
 
-  **Истинная причина (выяснено в Sprint 2 CLOSE):** баг в pipeline инструмента **Edit** Cowork-инстанса — на длинных Cyrillic replacements обрезает запись на UTF-8 multibyte boundary. **Write** инструмент работает корректно (canary-тесты с 4KB кириллицы проходят).
+  **Решение (Sprint 1):** `.gitattributes` с `* text=auto eol=lf` + `core.autocrlf=false`. Проблема больше не появлялась — все Sprint 3 / Sprint 4 / Sprint 4 FIX iter 1+2 прошли без рецидивов.
 
-  **Решение:** в Cowork использовать **только маленькие точечные Edit'ы** (одна строка, одно поле) или **Write для полной перезаписи**. **`.gitattributes`** с `eol=lf` и `core.autocrlf=false` нормализуют line endings — это правильное состояние, но **не решает** Edit-bug.
+  **Историческое примечание:** в Sprint 2 CLOSE предыдущий инстанс Cowork атрибутировал отдельные case'ы к мифическому «Edit-bug на длинных Cyrillic replacements / UTF-8 boundary truncation». Это **гипотеза была неверной** — после `.gitattributes` фикса (Sprint 1) дальнейшие «обрезания» были артефактами sandbox bash stale view или интерпретации, не Edit инструментом. В Sprint 4 RETEST 2026-05-28 пользователь и Cowork явно проверили: Edit на длинных Cyrillic строках (включая 16KB переписываний DATA_MODEL.md / CONTEXT.md / Recurring questions) работает корректно. Миф развенчан, гипотеза удалена.
 
-  **Восстановление:** `git checkout HEAD -- <files>` если working tree обрезан.
-
-  **Что НЕ помогает (проверено):**
-  - Закрытие Obsidian
-  - Renormalize line endings к LF
-  - `git config core.autocrlf false`
-  - Sandbox bash для верификации .md — даёт stale view на 44 байта меньше Windows-stake, нельзя использовать.
+  **Восстановление при реальной CRLF-проблеме:** `git checkout HEAD -- <files>`.
 
 - **Q:** PROJECT_STATUS.md устаревает между фазами при длинных паузах. Что делать?
   **A:** Sprint 3 пример — между TEST PREP (2026-05-16) и QA (2026-05-28) прошло 12 дней, PROJECT_STATUS всё это время показывал «Sprint 3 в работе у Code». Решение пока — просто обновлять его как часть CLOSE-фазы и не вкладывать в него точное «текущее место в цикле». Если станет реальной проблемой — рассмотреть генерацию из git log + последних reports автоматически, но это over-engineering для pet-проекта.

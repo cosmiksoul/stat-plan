@@ -7,11 +7,13 @@
 
 ## Где мы сейчас
 
-**Sprint 4 main + FIX iter 1 закрыты.** Идёт **FIX iter 2** — критический round-trip repair (7 дыр в YAML serialization + truncation bug). Prompt передан Code (`docs/project/sprint-4-fix-iter2-prompt.md`).
+**Sprint 4 ЗАКРЫТ полностью** (main + FIX iter 1 + FIX iter 2 + Cowork CLOSE). Round-trip контракт ADR-002 восстановлен в полном объёме. RETEST iter 2 — pass (legacy compat + edit-resave + approve flow проверены пользователем на трёх файлах).
 
-После iter 2 RETEST + CLOSE Sprint 4 (включая ADR-011 уже Accepted + ADR-012 draft + обновление DATA_MODEL.md). Параллельно сформирован **polish-pack** (7 non-critical fixes) для mini-sprint перед Sprint 5 main.
+**Что лежит в working tree (ждёт коммита + push):**
+- Code-зона уже закоммичена (Sprint 4 main 4 коммита + FIX iter 1 3 коммита + LoadedBadge + iter 2 2 коммита = ~10 локальных коммитов).
+- Cowork-зона за две сессии: prev batch уже закоммичен, текущий CLOSE-batch (DATA_MODEL обновлён под новые YAML поля + CONTEXT Sprint 4 timeline + tech debt + dispel Edit-bug миф + Dev-Cycle таблица + это PROJECT_STATUS) — modified, ждёт нового коммита.
 
-Перед Sprint 5 main — **Architecture sprint** для accept ADR-012 (Шаг 4 redesign + UX rename) и переписывания FLOW.md/concept.md/JTBD §7/§8.
+Перед Sprint 5 main — **Architecture sprint** для accept/reject ADR-012 (Шаг 4 redesign + UX rename) и переписывания FLOW.md/concept.md/JTBD §7/§8. После — **Polish-sprint** (6 пунктов, mini Code DEV).
 
 | Sprint | Type | Status | Active time |
 |---|---|---|---|

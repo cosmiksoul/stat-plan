@@ -14,24 +14,35 @@
 
 Главный артефакт, генерируется на шаге 2 и потенциально редактируется пользователем.
 
-### Шаблон
+### Шаблон (после Sprint 4 FIX iter 2)
+
+> **Контракт metric_name / metric_label:** см. ADR-011. `metric_name` = код CSV-колонки (snake_case, обычно латиница). `metric_label` = натуральный текст (для людей, может быть кириллицей). `test_id` и filename derived from `metric_column` (=`metric_name` после shift).
 
 ```markdown
 ---
-test_id: bm-main-cta-v2
-title: New BK recommendations block on main page
+test_id: cr-to-partner-click-v1
+title: "Тест: CR в клик по партнёру"
 created: 2026-05-12
 status: draft  # draft | approved
-approved_at: null  # timestamp когда переведён в approved
+approved_at: null  # ISO timestamp когда переведён в approved
+
+# Context (новое в FIX iter 2)
+goal_type: product_change  # product_change | content | algo | marketing | other | null
+goal_description: null  # свободный текст, обязательно для goal_type=other; иначе обычно null
 
 # Test design
 metric_type: proportion  # proportion | continuous | ratio | count
-metric_name: cr_to_partner_click
+metric_name: cr_to_partner_click  # КОД колонки CSV (snake_case)
+metric_label: "CR в клик по партнёру"  # натуральный текст для людей (опционально)
+ratio_numerator: null    # имя колонки числителя (для metric_type=ratio)
+ratio_denominator: null  # имя колонки знаменателя
 baseline: 0.031
-test_method: z_test_proportions  # z_test_proportions | t_test | mannwhitney | bootstrap | delta_method
+test_method: z_test_proportions  # z_test_proportions | t_test | welch_t_test | mannwhitney | bootstrap | delta_method
 randomization_unit: user  # user | session | cluster
+cluster_field: null  # имя поля кластера (для randomization_unit=cluster)
 alpha: 0.05
 power: 0.80
+two_sided: true  # boolean, default true
 
 # Effect
 mde:
@@ -49,16 +60,29 @@ variance_reduction: null  # null | cuped | stratification
 stratification_by: null  # null | geo | device | other
 holdback_percent: null   # null | число от 0 до 100
 
-# Guardrails (отдельная секция в md ниже дублирует это структурированно)
+# Guardrails
 guardrails:
   - name: bounce_rate
-    direction: max
+    direction: max  # max | min
     threshold: 5
     unit: relative_percent
   - name: time_on_site
     direction: min
     threshold: -10
     unit: relative_percent
+
+# Stop conditions (новое в FIX iter 2: object в YAML, не только markdown)
+stop_conditions:
+  srm_detected: true  # boolean
+  guardrail_breach_24h: true
+  length_cap_days: null  # null | integer
+  manual_stop: false
+
+# Decision rules (новое в FIX iter 2: object в YAML)
+decision_rules:
+  ship: "CI не пересекает 0 и нижняя граница ≥ +4% rel."
+  iterate: "Статистически незначимо, но направление positive в 2+ сегментах — итерируем."
+  kill: "Guardrail breach или CI ≤ −4% rel."
 
 # Data peek info
 data_peek:
@@ -72,7 +96,7 @@ data_peek:
 score: 78
 ---
 
-# Test Plan: {{title}}
+# Test Plan: {{title_heading}}
 
 ## Hypothesis
 {{hypothesis_text}}
@@ -84,25 +108,40 @@ score: 78
 ## Stop conditions
 - SRM detected (chi² p < 0.001)
 - Guardrail breach > 24h
-- Length cap: 10 days
 
 ## Decision rules
-- SHIP если CI not crossing 0 и нижняя граница ≥ +3% rel.
-- ITERATE если ns но direction positive в 2+ сегментах
-- KILL если guardrail breach или CI ≤ −3% rel.
+- **SHIP**: CI не пересекает 0 и нижняя граница ≥ +4% rel.
+- **ITERATE**: Статистически незначимо, но направление positive в 2+ сегментах — итерируем.
+- **KILL**: Guardrail breach или CI ≤ −4% rel.
 
 ## Notes
-{{free_text_notes}}
+_(пусто)_
 ```
+
+### Новые поля после Sprint 4 FIX iter 2 (2026-05-28)
+
+| Поле | Тип | Семантика |
+|---|---|---|
+| `goal_type` | string enum, optional | Категория канала изменения (product_change / content / algo / marketing / other) |
+| `goal_description` | string, optional | Свободный текст, обязательно для `goal_type=other` (по аналогии с conditional sub-questions) |
+| `metric_label` | string, optional | Натуральный текст имени метрики (см. ADR-011). Если отсутствует — UI покажет пустой label. |
+| `ratio_numerator` | string, optional | Имя колонки числителя; имеет смысл только при `metric_type=ratio` |
+| `ratio_denominator` | string, optional | Имя колонки знаменателя |
+| `cluster_field` | string, optional | Имя поля кластера; имеет смысл только при `randomization_unit=cluster` |
+| `two_sided` | boolean, optional, default `true` | Двусторонний тест |
+| `stop_conditions` | object, optional | 4 поля: `srm_detected`, `guardrail_breach_24h`, `length_cap_days`, `manual_stop` |
+| `decision_rules` | object, optional | 3 строки: `ship`, `iterate`, `kill` |
 
 ### Парсинг обратно в state
 
-1. **Frontmatter** — стандартный YAML, парсится через js-yaml. Все поля валидируются по enum/типу. Невалидные поля помечаются в `state.plan.parse_warnings`.
+1. **Frontmatter** — стандартный YAML через js-yaml. Все поля валидируются по enum/типу. Невалидные поля помечаются в `state.plan.parse_warnings`. **Отсутствующие optional поля = silent default**, без warning'а (как уже работало для `variance_reduction` / `stratification_by` / `holdback_percent`).
 2. **Секция `## Hypothesis`** — текст до следующего `##`. Применяется эвристика по 4 слотам.
-3. **Секции `## Guardrails`, `## Stop conditions`, `## Decision rules`** — приоритет у frontmatter, текст секций используется только для отображения.
-4. **Секция `## Notes`** — свободный текст, сохраняется как есть в `state.plan.notes`.
+3. **Секции `## Guardrails`, `## Stop conditions`, `## Decision rules`** — **приоритет у frontmatter** (ADR-002). Текст секций используется только для human-readable отображения и не парсится.
+4. **Секция `## Notes`** — свободный текст, сохраняется в `state.plan.notes`.
 
-Если frontmatter и текст секции противоречат (например, в `guardrails:` 2 элемента, а в тексте 3) — берём frontmatter и показываем warning.
+**Legacy compatibility:** старые `test_plan.md` (до Sprint 4 FIX iter 2) парсятся без падений — отсутствующие новые поля заполняются дефолтами silently. Для `metric_name` legacy (натуральный текст вместо кода) — см. polish-pack P-7 (heuristic запланирована).
+
+**Round-trip контракт:** `parseTestPlanMd(renderTestPlanMd(state)).brief === state.brief` для всех сериализуемых полей. Закреплено в `tests/lib/plan/round-trip.test.js` (4 canonical case). Любое новое поле в state.brief должно добавляться в этот тест.
 
 ---
 

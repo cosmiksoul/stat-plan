@@ -666,4 +666,8 @@ Architecture sprint **завершается** передачей в следу�
 | 1 | Code | CLOSED | 2026-05-14 23:54 | 2026-05-15 00:45 | 51 мин | Foundation React+Vite+Tailwind. 0 багов в QA. FIX-фазы не было. См. `CONTEXT.md` Timeline. |
 | 2 | Code + FIX | CLOSED | 2026-05-15 01:10 | 2026-05-16 ~17:30 | Active ~2.5 ч | 3 бага в QA (1 High BUG-3, 2 Medium BUG-1/2) — закрыты в FIX. 47 unit-тестов. См. `CONTEXT.md` Timeline. |
 | 3 | Code + FIX | CLOSED | 2026-05-16 ~16:00 | 2026-05-28 ~12:00 | Active ~3.5 ч · Wall 12 дней (пауза TEST PREP↔QA) | Sample size + Step 2 (preview/scoring/approve) + localStorage + Restart. 1 known bug (BUG-1 Medium AdvancedParams) — закрыт в FIX. 100 новых unit-тестов (всего 147). См. `CONTEXT.md` Timeline. |
-| 4 | Code | Planning (ждёт PLAN с пользователем) | — | — | — | По roadmap — Шаг 3 «Конструктор ноутбука» (ipynb cells, toggling, demo-csv). См. `PROJECT_STATUS.md` Roadmap. |
+| 4 main | Code (Phase A + B) | CLOSED | 2026-05-28 | 2026-05-28 | Active ~3.8 ч | Парсер test_plan.md + Шаг 3 «Конструктор». ~66 новых тестов (147 → 213). |
+| 4 FIX iter 1 | Code (Phase A + B + C) | CLOSED | 2026-05-28 | 2026-05-28 | Active ~2.5 ч | 11 fixes (NB-BUG-1..5 + BUG-1/2/3/4/5 + Concern #3 UI). ADR-011 (semantic shift). +22 теста (213 → 235). |
+| 4 FIX iter 2 | Code | CLOSED | 2026-05-28 | 2026-05-28 | Active ~1.5 ч | Round-trip repair (7 fields + BUG-9b investigation), user-sanctioned footer unification (BUG-6). Новый canonical round-trip test. +14 тестов (235 → 249). ADR-012 в драфте. |
+| 4 CLOSE | Cowork | In flight | 2026-05-28 | — | — | DATA_MODEL.md, CONTEXT.md (dispel Edit-bug миф), JTBD финал, Dev-Cycle. После — коммит Cowork-зоны + push. |
+| 5 | Architecture sprint → Code | Planning | — | — | — | Перед Sprint 5 main — accept ADR-012, переписать FLOW.md/concept.md/JTBD §7-§8, UX rename Stepper.jsx. Затем Sprint 5 main под новый scope «Быстрая валидация» (Шаг 4 redesigned). |

@@ -12,7 +12,9 @@
 
 ### UX / readability
 
-**P-1. BUG-6 — Sticky bottom bar для controls на step 2 (mirror step 3)**
+**P-1. ✅ FIXED в Sprint 4 FIX iter 2** — user-sanctioned side-scope. Code сделал унификацию footer'а на step 1-3 (QuestionNav → StepFooter на page-level, sticky bottom со backdrop-blur). AdvancedParams переместился внутрь карточки вопроса. Polish-pack уменьшается с 7 до 6 пунктов.
+
+~~**P-1. BUG-6 — Sticky bottom bar для controls на step 2 (mirror step 3)**~~
 
 После Sprint 4 FIX iter 1 на step 3 кнопка скачивания .ipynb стала sticky bottom. На step 2 controls (Скачать, Загрузить, Вернуть в черновик, Перейти к конструктору) остались внизу страницы in-flow — требуют скролла. Пользователь явно попросил symmetric pattern: «либо стики как скачать».
 
