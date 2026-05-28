@@ -10,6 +10,8 @@ const initialState = {
   started: false,
   currentStep: 1,
   tourEnabled: false,
+  test_id: null,
+  title: null,
   brief: {
     currentQuestion: 1,
     goal_type: null,
@@ -26,6 +28,7 @@ const initialState = {
     score: {},
     editedExternally: false,
     briefSubmitted: false,
+    parse_warnings: [],
   },
 }
 
@@ -166,6 +169,37 @@ describe('saveState', () => {
     expect(restored.brief.currentQuestion).toBe(1)
     // derived not persisted → empty from initialState
     expect(restored.plan.derived).toEqual({})
+  })
+
+  it('persists test_id and title (set after LOAD_TEST_PLAN_MD)', () => {
+    const state = {
+      ...initialState,
+      test_id: 'foo-v1',
+      title: 'Foo title',
+    }
+    saveState(state)
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored.test_id).toBe('foo-v1')
+    expect(stored.title).toBe('Foo title')
+    const restored = loadState(initialState)
+    expect(restored.test_id).toBe('foo-v1')
+    expect(restored.title).toBe('Foo title')
+  })
+
+  it('does NOT persist plan.parse_warnings (transient runtime field)', () => {
+    const state = {
+      ...initialState,
+      plan: {
+        ...initialState.plan,
+        parse_warnings: ['warn 1', 'warn 2'],
+      },
+    }
+    saveState(state)
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored.plan.parse_warnings).toBeUndefined()
+    const restored = loadState(initialState)
+    // parse_warnings is reset to [] on load, regardless of saved state
+    expect(restored.plan.parse_warnings).toEqual([])
   })
 
   it('does not throw when localStorage is unavailable (quota/disabled)', () => {

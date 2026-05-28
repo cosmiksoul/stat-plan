@@ -201,7 +201,7 @@ describe('renderTestPlanMd — snapshot of full output', () => {
     expect(md).toMatchInlineSnapshot(`
       "---
       test_id: cr_to_partner_click-v1
-      title: Тест: cr_to_partner_click
+      title: "Тест: cr_to_partner_click"
       created: 2026-05-16
       status: draft
       approved_at: null

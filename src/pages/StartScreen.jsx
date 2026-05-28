@@ -1,33 +1,70 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
+import { parseTestPlanMd } from '../lib/plan/parse.js'
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 export default function StartScreen() {
   const { dispatch } = useAppState()
   const navigate = useNavigate()
-  const [dropMessage, setDropMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
   const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef(null)
 
   function handleStartBrief() {
     dispatch({ type: Actions.START_BRIEF })
     navigate('/step1')
   }
 
+  function readAndDispatch(file) {
+    if (!file) return
+    setErrorMessage(null)
+
+    if (file.size > MAX_FILE_BYTES) {
+      setErrorMessage(
+        `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} MB). Ожидается до 5 MB.`,
+      )
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onerror = () => setErrorMessage('Не удалось прочитать файл.')
+    reader.onload = () => {
+      const text = reader.result
+      if (typeof text !== 'string') {
+        setErrorMessage('Не удалось прочитать файл как текст.')
+        return
+      }
+      const result = parseTestPlanMd(text)
+      if (!result.ok) {
+        setErrorMessage(result.error?.message ?? 'Не удалось распарсить файл.')
+        return
+      }
+      dispatch({ type: Actions.LOAD_TEST_PLAN_MD, payload: result })
+      // ProtectedStep will route to /step2 if status=draft, render /step3
+      // if status=approved (see App.jsx).
+      navigate('/step3')
+    }
+    reader.readAsText(file)
+  }
+
   function handleDrop(e) {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) {
-      setDropMessage(
-        `Получен «${file.name}». Парсинг загруженного плана будет реализован в Sprint 2/3. Пока используй «Начать с брифа».`,
-      )
-    }
+    readAndDispatch(e.dataTransfer.files?.[0])
   }
 
   function handleDragOver(e) {
     e.preventDefault()
     setDragOver(true)
+  }
+
+  function handleFileInputChange(e) {
+    readAndDispatch(e.target.files?.[0])
+    // Reset so picking the same file twice still fires onChange.
+    e.target.value = ''
   }
 
   return (
@@ -85,22 +122,41 @@ export default function StartScreen() {
             из YAML frontmatter.
           </p>
           <div
-            className={`border border-dashed rounded-md px-4 py-5 text-center bg-bg-elev-2 text-fg-dim text-xs transition-colors mb-3.5 ${
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            className={`border border-dashed rounded-md px-4 py-5 text-center bg-bg-elev-2 text-fg-dim text-xs transition-colors mb-3.5 cursor-pointer hover:bg-bg-elev hover:text-fg ${
               dragOver ? 'border-accent text-accent' : 'border-border'
             }`}
           >
-            Перетащи файл сюда
+            Перетащи файл сюда{' '}
+            <span className="text-accent underline-offset-2 hover:underline">
+              или выбери
+            </span>
           </div>
-          {dropMessage && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.markdown,text/markdown"
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+          {errorMessage && (
             <div
-              role="status"
+              role="alert"
               className="text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2 mb-3.5"
             >
-              {dropMessage}
+              {errorMessage}
             </div>
           )}
           <div className="mono-label text-fg-faint pt-3.5 border-t border-border-soft">
-            ПАРСИНГ — SPRINT 2/3
+            YAML FRONTMATTER → STATE.BRIEF
           </div>
         </div>
       </div>

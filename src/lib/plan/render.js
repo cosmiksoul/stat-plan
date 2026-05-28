@@ -138,9 +138,11 @@ export function renderTestPlanMd(state) {
   const advanced = brief.advanced ?? {}
   const today = new Date().toISOString().slice(0, 10)
 
+  const titleStr = deriveTitle(brief)
   const substitutions = {
     test_id: deriveTestId(brief),
-    title: deriveTitle(brief),
+    title: yamlScalar(titleStr),
+    title_heading: titleStr,
     created: today,
     status: plan.status ?? 'draft',
     approved_at: yamlScalar(plan.approvedAt ?? null),

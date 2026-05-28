@@ -54,16 +54,23 @@ const initialPlan = {
   approvedAt: null,
   derived: {},
   score: {},
-  // editedExternally is reserved for the Sprint 4+ test_plan.md parser
-  // (when uploaded MD diverges from current brief). Always false in Sprint 3.
+  // True after LOAD_TEST_PLAN_MD; reset by RETURN_PLAN_TO_DRAFT or RESET_STATE.
+  // Informational marker — "this plan came from a file, not generated in-place".
   editedExternally: false,
   briefSubmitted: false,
+  // Set by LOAD_TEST_PLAN_MD with any warnings from the parser; cleared by
+  // DISMISS_PARSE_WARNINGS. Runtime-only, not persisted.
+  parse_warnings: [],
 }
 
 export const initialState = {
   started: false,
   currentStep: 1,
   tourEnabled: false,
+  // Set on successful LOAD_TEST_PLAN_MD; otherwise derived on the fly from
+  // brief.metric_name (see render.js / notebook-builder).
+  test_id: null,
+  title: null,
   brief: initialBrief,
   plan: initialPlan,
 }
@@ -84,6 +91,8 @@ export const Actions = {
   RETURN_PLAN_TO_DRAFT: 'RETURN_PLAN_TO_DRAFT',
   RECOMPUTE_PLAN: 'RECOMPUTE_PLAN',
   RESET_STATE: 'RESET_STATE',
+  LOAD_TEST_PLAN_MD: 'LOAD_TEST_PLAN_MD',
+  DISMISS_PARSE_WARNINGS: 'DISMISS_PARSE_WARNINGS',
 }
 
 function setBrief(state, patch) {
@@ -182,13 +191,52 @@ export function reducer(state, action) {
       })
 
     case Actions.RETURN_PLAN_TO_DRAFT:
-      return setPlan(state, { status: 'draft', approvedAt: null })
+      return setPlan(state, {
+        status: 'draft',
+        approvedAt: null,
+        editedExternally: false,
+      })
 
     case Actions.RECOMPUTE_PLAN:
       return recomputePlan(state)
 
     case Actions.RESET_STATE:
       return initialState
+
+    case Actions.LOAD_TEST_PLAN_MD: {
+      const payload = action.payload || {}
+      const incomingBrief = payload.brief
+      const incomingPlan = payload.plan
+      if (!incomingBrief || !incomingPlan) return state
+      const mergedBrief = {
+        ...initialBrief,
+        ...incomingBrief,
+        // UI-only fields always come from initial: the user is landing on
+        // step 3, not Q01 of the brief.
+        currentQuestion: 1,
+        advancedExpanded: false,
+      }
+      const mergedPlan = {
+        ...state.plan,
+        ...incomingPlan,
+        parse_warnings: Array.isArray(payload.warnings)
+          ? payload.warnings
+          : [],
+      }
+      const next = {
+        ...state,
+        started: true,
+        test_id: payload.test_id || null,
+        title: payload.title || null,
+        brief: mergedBrief,
+        plan: mergedPlan,
+      }
+      // Recompute derived/score from the freshly loaded brief.
+      return recomputePlan(next)
+    }
+
+    case Actions.DISMISS_PARSE_WARNINGS:
+      return setPlan(state, { parse_warnings: [] })
 
     default:
       return state

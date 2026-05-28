@@ -5,9 +5,11 @@ import MdPreview from '../components/plan/MdPreview.jsx'
 import ScoringCard from '../components/plan/ScoringCard.jsx'
 import PlanActions from '../components/plan/PlanActions.jsx'
 import StatusBadge from '../components/plan/StatusBadge.jsx'
+import ParseWarningsBanner from '../components/ParseWarningsBanner.jsx'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
 import { renderTestPlanMd } from '../lib/plan/render.js'
+import { parseTestPlanMd } from '../lib/plan/parse.js'
 
 function downloadMd(filename, content) {
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
@@ -41,6 +43,15 @@ export default function PlanPage() {
     downloadMd('test_plan.md', md)
   }
 
+  function handleUpload(text) {
+    const result = parseTestPlanMd(text)
+    if (!result.ok) {
+      return result.error?.message ?? 'Не удалось распарсить файл.'
+    }
+    dispatch({ type: Actions.LOAD_TEST_PLAN_MD, payload: result })
+    return null
+  }
+
   return (
     <div>
       <Stepper
@@ -48,6 +59,8 @@ export default function PlanPage() {
         planStatus={status}
         briefSubmitted={state.plan.briefSubmitted}
       />
+
+      <ParseWarningsBanner />
 
       <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -78,6 +91,7 @@ export default function PlanPage() {
         <PlanActions
           status={status}
           onDownload={handleDownload}
+          onUpload={handleUpload}
           onApprove={handleApprove}
           onReturnToDraft={handleReturnToDraft}
         />

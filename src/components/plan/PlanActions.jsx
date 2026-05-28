@@ -1,16 +1,44 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog.jsx'
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 export default function PlanActions({
   status,
   onDownload,
-  onUploadStub,
+  onUpload,
   onApprove,
   onReturnToDraft,
 }) {
   const [showReturnConfirm, setShowReturnConfirm] = useState(false)
-  const [uploadHint, setUploadHint] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
+  const fileInputRef = useRef(null)
   const isApproved = status === 'approved'
+
+  function handleFileChange(e) {
+    setUploadError(null)
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > MAX_FILE_BYTES) {
+      setUploadError(
+        `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} MB). Ожидается до 5 MB.`,
+      )
+      return
+    }
+    const reader = new FileReader()
+    reader.onerror = () => setUploadError('Не удалось прочитать файл.')
+    reader.onload = () => {
+      const text = reader.result
+      if (typeof text !== 'string') {
+        setUploadError('Не удалось прочитать файл как текст.')
+        return
+      }
+      const errorMessage = onUpload?.(text)
+      if (errorMessage) setUploadError(errorMessage)
+    }
+    reader.readAsText(file)
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -24,16 +52,18 @@ export default function PlanActions({
 
       <button
         type="button"
-        onClick={() => {
-          setUploadHint(true)
-          if (onUploadStub) onUploadStub()
-          setTimeout(() => setUploadHint(false), 4000)
-        }}
-        className="mono-label text-fg-faint border border-border-soft rounded-md px-4 py-2 hover:text-fg transition-colors cursor-pointer"
-        title="Парсинг загруженного test_plan.md появится в Sprint 4+"
+        onClick={() => fileInputRef.current?.click()}
+        className="mono-label text-fg-dim border border-border rounded-md px-4 py-2 hover:border-accent hover:text-accent transition-colors cursor-pointer"
       >
         ↑ ЗАГРУЗИТЬ ОТРЕДАКТИРОВАННЫЙ
       </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".md,.markdown,text/markdown"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       <div className="flex-1" />
 
@@ -57,10 +87,12 @@ export default function PlanActions({
         </button>
       )}
 
-      {uploadHint && (
-        <div className="w-full text-xs text-fg-faint bg-bg-elev-2 border border-border-soft rounded-md px-3 py-2 mt-2">
-          Парсинг загруженного test_plan.md появится в следующем спринте
-          (Sprint 4+). Сейчас редактирование плана идёт через бриф.
+      {uploadError && (
+        <div
+          role="alert"
+          className="w-full text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2 mt-2"
+        >
+          {uploadError}
         </div>
       )}
 

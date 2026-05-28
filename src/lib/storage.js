@@ -3,13 +3,15 @@
 //
 // What we persist:
 //   - state.started
+//   - state.test_id, state.title (set after LOAD_TEST_PLAN_MD)
 //   - state.brief (all fields except currentQuestion + advancedExpanded — UI state)
-//   - state.plan (all fields except derived + score — they're recomputed on load)
+//   - state.plan (status / approvedAt / editedExternally / briefSubmitted)
 //
 // What we don't persist:
 //   - state.tourEnabled (per-session preference)
 //   - state.brief.currentQuestion / advancedExpanded (UI state, restart from Q01)
 //   - state.plan.derived / score (cheap to recompute, avoids stale data)
+//   - state.plan.parse_warnings (transient, dismissed by the user)
 
 export const STORAGE_KEY = 'stat-plan:v1:state'
 
@@ -23,13 +25,15 @@ function pickBrief(brief) {
 
 function pickPlan(plan) {
   if (!plan) return undefined
-  const { derived, score, ...rest } = plan
+  const { derived, score, parse_warnings, ...rest } = plan
   return rest
 }
 
 function pickForStorage(state) {
   return {
     started: state.started,
+    test_id: state.test_id ?? null,
+    title: state.title ?? null,
     brief: pickBrief(state.brief),
     plan: pickPlan(state.plan),
   }
@@ -46,6 +50,8 @@ function mergeRestored(persisted, initial) {
   return {
     ...initial,
     started: persisted.started ?? initial.started,
+    test_id: persisted.test_id ?? initial.test_id,
+    title: persisted.title ?? initial.title,
     brief: isPlainObject(persisted.brief)
       ? {
           ...initial.brief,
@@ -62,6 +68,8 @@ function mergeRestored(persisted, initial) {
           // Derived/score never persisted — always start empty, recomputed via dispatch
           derived: initial.plan.derived,
           score: initial.plan.score,
+          // parse_warnings is transient too — never restore
+          parse_warnings: initial.plan.parse_warnings,
         }
       : initial.plan,
   }

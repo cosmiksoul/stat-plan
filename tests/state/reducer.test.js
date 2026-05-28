@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { reducer, initialState, Actions } from '../../src/state/reducer.js'
 
 describe('initialState — plan shape', () => {
-  it('has plan with all expected fields including editedExternally', () => {
+  it('has plan with all expected fields including parse_warnings', () => {
     expect(initialState.plan).toEqual({
       status: 'draft',
       approvedAt: null,
@@ -10,7 +10,13 @@ describe('initialState — plan shape', () => {
       score: {},
       editedExternally: false,
       briefSubmitted: false,
+      parse_warnings: [],
     })
+  })
+
+  it('has root-level test_id and title (null until LOAD_TEST_PLAN_MD)', () => {
+    expect(initialState.test_id).toBeNull()
+    expect(initialState.title).toBeNull()
   })
 })
 
@@ -127,6 +133,107 @@ describe('RETURN_PLAN_TO_DRAFT', () => {
     const next = reducer(state, { type: Actions.RETURN_PLAN_TO_DRAFT })
     expect(next.plan.status).toBe('draft')
     expect(next.plan.approvedAt).toBeNull()
+  })
+
+  it('clears editedExternally — plan is no longer externally-sourced', () => {
+    const state = {
+      ...initialState,
+      plan: {
+        ...initialState.plan,
+        status: 'approved',
+        editedExternally: true,
+      },
+    }
+    const next = reducer(state, { type: Actions.RETURN_PLAN_TO_DRAFT })
+    expect(next.plan.editedExternally).toBe(false)
+  })
+})
+
+describe('LOAD_TEST_PLAN_MD', () => {
+  const payload = {
+    test_id: 'foo-v1',
+    title: 'Foo title',
+    warnings: ['minor: alpha defaulted'],
+    brief: {
+      metric_type: 'proportion',
+      metric_name: 'cr_to_click',
+      baseline: { value: 0.031, unit: 'fraction' },
+      randomization_unit: 'user',
+      mde: { value: 8, unit: 'relative_percent', direction: 'increase' },
+      daily_traffic: { value: 50000, unit: 'user' },
+      guardrails: [],
+      hypothesis: { text: 'CR вырастет на 8%', slots: {} },
+      advanced: {
+        alpha: 0.05,
+        power: 0.8,
+        two_sided: true,
+        variance_reduction: null,
+        stratification_by: null,
+        holdback_percent: null,
+      },
+    },
+    plan: {
+      status: 'draft',
+      approvedAt: null,
+      editedExternally: true,
+      briefSubmitted: true,
+    },
+  }
+
+  it('replaces brief and merges plan from payload, sets started=true', () => {
+    const next = reducer(initialState, {
+      type: Actions.LOAD_TEST_PLAN_MD,
+      payload,
+    })
+    expect(next.started).toBe(true)
+    expect(next.test_id).toBe('foo-v1')
+    expect(next.title).toBe('Foo title')
+    expect(next.brief.metric_name).toBe('cr_to_click')
+    expect(next.plan.status).toBe('draft')
+    expect(next.plan.editedExternally).toBe(true)
+    expect(next.plan.briefSubmitted).toBe(true)
+    expect(next.plan.parse_warnings).toEqual(['minor: alpha defaulted'])
+  })
+
+  it('triggers RECOMPUTE_PLAN — derived and score are populated', () => {
+    const next = reducer(initialState, {
+      type: Actions.LOAD_TEST_PLAN_MD,
+      payload,
+    })
+    expect(next.plan.derived.test_method).toBe('z_test_proportions')
+    expect(next.plan.derived.sample_size_per_arm).toBeGreaterThan(0)
+    expect(next.plan.score.total).toBeGreaterThan(0)
+  })
+
+  it('lands brief at Q01 — currentQuestion is forced to 1', () => {
+    const state = {
+      ...initialState,
+      brief: { ...initialState.brief, currentQuestion: 7 },
+    }
+    const next = reducer(state, {
+      type: Actions.LOAD_TEST_PLAN_MD,
+      payload,
+    })
+    expect(next.brief.currentQuestion).toBe(1)
+  })
+
+  it('returns state unchanged when payload is missing brief or plan', () => {
+    const next = reducer(initialState, {
+      type: Actions.LOAD_TEST_PLAN_MD,
+      payload: { brief: null, plan: null },
+    })
+    expect(next).toBe(initialState)
+  })
+})
+
+describe('DISMISS_PARSE_WARNINGS', () => {
+  it('clears plan.parse_warnings', () => {
+    const state = {
+      ...initialState,
+      plan: { ...initialState.plan, parse_warnings: ['w1', 'w2'] },
+    }
+    const next = reducer(state, { type: Actions.DISMISS_PARSE_WARNINGS })
+    expect(next.plan.parse_warnings).toEqual([])
   })
 })
 
