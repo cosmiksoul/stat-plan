@@ -67,6 +67,15 @@ describe('applyEnterDefaults — decision_rules (Q10)', () => {
     expect(result.defaultsApplied.decision_rules).toBe(true)
   })
 
+  it('produces ship/kill ending in a single dot (no double dot)', () => {
+    const brief = makeBrief({ mde: { value: 8, unit: 'relative_percent' } })
+    const result = applyEnterDefaults(brief, 'stop_and_decisions')
+    expect(result.decision_rules.ship).toMatch(/\+4% rel\.$/)
+    expect(result.decision_rules.ship).not.toMatch(/\.\.$/)
+    expect(result.decision_rules.kill).toMatch(/−4% rel\.$/)
+    expect(result.decision_rules.kill).not.toMatch(/\.\.$/)
+  })
+
   it('does not overwrite when at least one of ship/iterate/kill is set', () => {
     const brief = makeBrief({
       mde: { value: 8, unit: 'relative_percent' },

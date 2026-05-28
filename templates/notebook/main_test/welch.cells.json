@@ -5,7 +5,7 @@
       "cell_type": "markdown",
       "metadata": {},
       "source": [
-        "## 6. Welch t-test (unequal variance)\n",
+        "## Welch t-test (unequal variance)\n",
         "\n",
         "T-test со свободной дисперсией (equal_var=False). Безопасный выбор для continuous: переживает большое расхождение σ² между группами без потери мощности на больших выборках."
       ]

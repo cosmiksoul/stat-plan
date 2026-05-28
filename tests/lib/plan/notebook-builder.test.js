@@ -161,7 +161,7 @@ describe('buildNotebook — conditional skips', () => {
     })
     const { json, warnings, finalEnabled } = buildNotebook(state)
     expect(finalEnabled).not.toContain('guardrails')
-    expect(flatAllSources(json)).not.toContain('## 5. Guardrails')
+    expect(flatAllSources(json)).not.toContain('## Guardrails')
     expect(warnings.some((w) => w.includes('guardrails'))).toBe(true)
   })
 
@@ -297,6 +297,89 @@ describe('buildNotebook — edge cases', () => {
     const { json } = buildNotebook(state)
     const text = flatAllSources(json)
     expect(text).toContain("metric_col = 'arpu'")
+  })
+})
+
+// ---- Header fallback warning blockquote (Sprint 4 FIX A.2) -------------
+
+describe('buildNotebook — header fallback warning', () => {
+  it('adds ⚠️ blockquote for delta_method with delta-method mention', () => {
+    const state = makeState({
+      plan: {
+        ...makeState().plan,
+        derived: { ...makeState().plan.derived, test_method: 'delta_method' },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const header = flatSource(json.cells[0])
+    expect(header).toContain('⚠️')
+    expect(header).toContain('delta_method')
+    expect(header).toContain('delta-method')
+  })
+
+  it('adds ⚠️ blockquote for mannwhitney with mannwhitney mention', () => {
+    const state = makeState({
+      plan: {
+        ...makeState().plan,
+        derived: { ...makeState().plan.derived, test_method: 'mannwhitney' },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const header = flatSource(json.cells[0])
+    expect(header).toContain('⚠️')
+    expect(header).toContain('mannwhitney')
+  })
+
+  it('does NOT add ⚠️ blockquote for z_test_proportions', () => {
+    const { json } = buildNotebook(makeState())
+    const header = flatSource(json.cells[0])
+    expect(header).not.toContain('⚠️')
+  })
+})
+
+// ---- Slugify ё (Sprint 4 FIX A.3) --------------------------------------
+
+describe('buildNotebook — slugify keeps ё', () => {
+  it('preserves ё in test_id when metric_name contains ё', () => {
+    const state = makeState({
+      test_id: null,
+      brief: {
+        ...makeState().brief,
+        metric_name: 'продлёнка подписки',
+      },
+    })
+    const { filename, json } = buildNotebook(state)
+    expect(filename).toContain('ё')
+    expect(json.metadata.statplan.test_id).toContain('ё')
+  })
+})
+
+// ---- Duration grammar (Sprint 4 FIX A.4) -------------------------------
+
+describe('buildNotebook — header duration grammar', () => {
+  it('renders "1 day" singular for duration_days=1', () => {
+    const state = makeState({
+      plan: {
+        ...makeState().plan,
+        derived: { ...makeState().plan.derived, duration_days: 1 },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const header = flatSource(json.cells[0])
+    expect(header).toContain('1 day\n')
+    expect(header).not.toContain('1 days')
+  })
+
+  it('renders "2 days" plural for duration_days=2', () => {
+    const state = makeState({
+      plan: {
+        ...makeState().plan,
+        derived: { ...makeState().plan.derived, duration_days: 2 },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const header = flatSource(json.cells[0])
+    expect(header).toContain('2 days')
   })
 })
 

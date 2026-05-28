@@ -5,7 +5,7 @@
       "cell_type": "markdown",
       "metadata": {},
       "source": [
-        "## 6. T-test (equal variance)\n",
+        "## T-test (equal variance)\n",
         "\n",
         "Двухвыборочный t-test со стандартной формулой (equal_var=True). Подходит для continuous метрики с примерно равной дисперсией в группах. Если дисперсии заметно отличаются — лучше Welch."
       ]

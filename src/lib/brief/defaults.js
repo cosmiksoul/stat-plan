@@ -22,10 +22,10 @@ function mdeRel(mde) {
 function defaultDecisionRules(mde) {
   const half = mdeRel(mde)
   return {
-    ship: `CI не пересекает 0 и нижняя граница ≥ +${half}.`,
+    ship: `CI не пересекает 0 и нижняя граница ≥ +${half}`,
     iterate:
       'Статистически незначимо, но направление positive в 2+ сегментах — итерируем.',
-    kill: `Guardrail breach или CI ≤ −${half}.`,
+    kill: `Guardrail breach или CI ≤ −${half}`,
   }
 }
 

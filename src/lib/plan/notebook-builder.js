@@ -63,7 +63,7 @@ function slugify(s) {
   return (
     s
       .toLowerCase()
-      .replace(/[^a-z0-9а-я_\s-]/giu, '')
+      .replace(/[^a-z0-9а-яё_\s-]/giu, '')
       .trim()
       .replace(/\s+/g, '-')
       .slice(0, 40) || 'test'
@@ -237,7 +237,8 @@ function buildHeaderCell(state, cellsEnabled, schema) {
     lines.push(`- Sample size per arm: ${derived.sample_size_per_arm}\n`)
   }
   if (derived.duration_days != null) {
-    lines.push(`- Duration: ${derived.duration_days} days\n`)
+    const dayWord = derived.duration_days === 1 ? 'day' : 'days'
+    lines.push(`- Duration: ${derived.duration_days} ${dayWord}\n`)
   }
   lines.push(`- α = ${brief.advanced?.alpha ?? 0.05}, power = ${brief.advanced?.power ?? 0.8}\n`)
   if (brief.mde?.value != null) {
@@ -264,6 +265,25 @@ function buildHeaderCell(state, cellsEnabled, schema) {
     )
   }
   lines.push('\n')
+  if (
+    derived.test_method === 'delta_method' ||
+    derived.test_method === 'mannwhitney'
+  ) {
+    lines.push(
+      `> ⚠️ **Внимание:** в плане выбран метод \`${derived.test_method}\`. Этот ноутбук использует **bootstrap-вариант**\n`,
+    )
+    lines.push(
+      '> ячейки main_test как универсальный fallback в Sprint 4. Bootstrap-CI на разности средних — это\n',
+    )
+    lines.push(
+      `> **не то же самое**, что ${derived.test_method} (delta-method даёт CI через Taylor expansion над ratio,\n`,
+    )
+    lines.push(
+      '> mannwhitney работает на рангах). Для строгого теста замени main_test-ячейку соответствующей\n',
+    )
+    lines.push('> реализацией.\n')
+    lines.push('\n')
+  }
   lines.push('**To run:** положи `experiment_results.csv` рядом, запусти все ячейки сверху вниз.\n')
 
   return {

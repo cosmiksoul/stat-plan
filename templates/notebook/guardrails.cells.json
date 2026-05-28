@@ -9,7 +9,7 @@
       "cell_type": "markdown",
       "metadata": {},
       "source": [
-        "## 5. Guardrails\n",
+        "## Guardrails\n",
         "\n",
         "Для каждого guardrail из плана считаем относительное изменение treatment vs control и сравниваем с порогом. Direction `max` — нарушение если изменение превысило +порог, `min` — если опустилось ниже −порог."
       ]

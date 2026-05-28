@@ -111,7 +111,7 @@ function slugify(s) {
   if (!s) return 'test'
   return s
     .toLowerCase()
-    .replace(/[^a-z0-9а-я_\s-]/giu, '')
+    .replace(/[^a-z0-9а-яё_\s-]/giu, '')
     .trim()
     .replace(/\s+/g, '-')
     .slice(0, 40) || 'test'
