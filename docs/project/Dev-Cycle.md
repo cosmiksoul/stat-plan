@@ -664,5 +664,6 @@ Architecture sprint **завершается** передачей в следу�
 | Sprint | Type | Status | Старт | Финиш | Длительность | Заметки |
 |---|---|---|---|---|---|---|
 | 1 | Code | CLOSED | 2026-05-14 23:54 | 2026-05-15 00:45 | 51 мин | Foundation React+Vite+Tailwind. 0 багов в QA. FIX-фазы не было. См. `CONTEXT.md` Timeline. |
-| 2 | Code | CLOSED | 2026-05-15 01:10 | 2026-05-16 ~17:30 | DEV: 28 мин · QA: ~60 мин · FIX: ~25 мин · Total: ~2.5 ч | 3 бага в QA (1 High BUG-3, 2 Medium BUG-1/2) — закрыты в FIX. 47 unit-тестов. См. `CONTEXT.md` Timeline. |
-| 3 | Code | PROMPT готов, ждёт передачи в Claude Code | — | — | — | Sample size + Step 2 (preview, scoring, approve) + localStorage + Restart. См. `sprint-3-prompt.md`. |
+| 2 | Code + FIX | CLOSED | 2026-05-15 01:10 | 2026-05-16 ~17:30 | Active ~2.5 ч | 3 бага в QA (1 High BUG-3, 2 Medium BUG-1/2) — закрыты в FIX. 47 unit-тестов. См. `CONTEXT.md` Timeline. |
+| 3 | Code + FIX | CLOSED | 2026-05-16 ~16:00 | 2026-05-28 ~12:00 | Active ~3.5 ч · Wall 12 дней (пауза TEST PREP↔QA) | Sample size + Step 2 (preview/scoring/approve) + localStorage + Restart. 1 known bug (BUG-1 Medium AdvancedParams) — закрыт в FIX. 100 новых unit-тестов (всего 147). См. `CONTEXT.md` Timeline. |
+| 4 | Code | Planning (ждёт PLAN с пользователем) | — | — | — | По roadmap — Шаг 3 «Конструктор ноутбука» (ipynb cells, toggling, demo-csv). См. `PROJECT_STATUS.md` Roadmap. |

@@ -154,15 +154,94 @@
 - ✅ **FIX-фаза прошла как штатная часть цикла.** 3 бага из QA + 1 архитектурный concern — единый fix-prompt, ~25 минут Code, 1 итерация. Не превратилось в Sprint 2.5.
 - ✅ **`src/lib/brief/` без React-импортов.** Чистая логика, тестируется отдельно, 47 unit-тестов. Это база, на которой Sprint 5-6 будут строить парсер test_plan.md.
 - ✅ **P-1 правило родилось из боли.** Stale `.git/index.lock` и пересечение Code/Cowork модификаций. Зафиксировано как convention — сэкономит время в будущих спринтах.
-- 🟡 **Edit-tool corruption на длинных Cyrillic replacements.** В CLOSE-фазе серия неудачных Edit'ов на CONTEXT.md, JTBD.md, CLAUDE.md, Dev-Cycle.md — файлы обрезались на UTF-8 boundary. Воспроизводилось упорно. Восстановление через `git checkout HEAD --`. Решение — делать только маленькие точечные Edit'ы или использовать Write для полной перезаписи. Подробно зафиксировано в Recurring questions.
+- 🟡 **Edit-tool corruption на длинных Cyrillic replacements.** В CLOSE-фазе серия неудачных Edit'ов на CONTEXT.md, JTBD.md, CLAUDE.md, Dev-Cycle.md — файлы обрезались на UTF-8 boundary. Воспроизводилось упорно. Решение — делать только маленькие точечные Edit'ы или использовать Write для полной перезаписи. Подробно зафиксировано в Recurring questions.
 - 🟡 **Pre-MVP документация перестала покрывать.** Sprint 2 prompt пришлось продумывать заметно дольше — `BRIEF_TREE.md` описывает вопросы, но не описывает UX advanced params (модалка vs collapsible), не описывает финальный экран Q10. В будущих спринтах PROMPT-фаза станет дольше относительно DEV.
 - 🟢 **«Начать сначала», sensitivity helper, methodology раздел** — три product idea появились во время QA. Это паттерн: пользователь тестирует и думает про продукт. Записываем в JTBD сразу, обсуждаем в PLAN Sprint 3.
 
 ---
 
-### Sprint N — ...
+### Sprint 3 — Sample Size + Step 2 «Тест-план» + Persistence + Reset (2026-05-16 / 2026-05-28)
 
-[аналогично]
+**Type:** Code (с FIX-итерацией). Wall-clock 12 дней из-за паузы между TEST PREP и QA, чистого активного времени ~3.5 часа.
+**Status:** Complete
+**Goal:** Закрыть полный value loop «бриф → расчёт sample size → тест-план → утверждение». Параллельно — localStorage persistence и явный reset, чтобы прогресс не терялся при reload, а пользователь мог начать заново явным действием.
+
+**Closed (полностью) — `[x]`:**
+
+§1 «Старт и навигация»:
+- Сохранение прогресса в localStorage (ключ `stat-plan:v1:state`, версионированный)
+- «↺ Начать сначала» в шапке с ConfirmDialog + RESET_STATE
+
+§2 «Бриф»:
+- Реактивный sample size + duration + test_method display под Q08 (useMemo на `calculateSampleSize`, warnings inline)
+
+§5 «Шаг 2 — Тест-план» (полностью кроме парсера загружаемого MD):
+- Preview сгенерированного test_plan.md с YAML frontmatter + markdown-секциями
+- ScoringCard: общий скор + breakdown по 4 группам + конкретные remarks с severity (info/warn/critical)
+- Скачивание test_plan.md через Blob URL
+- «Утвердить план» → `APPROVE_PLAN`, `status=approved`, `approvedAt` ISO timestamp, шаг 3 unlocked
+- «Вернуть в черновик» с ConfirmDialog → `RETURN_PLAN_TO_DRAFT`
+- StatusBadge (draft / approved)
+- Бриф в approved-режиме — readonly (включая AdvancedParams после FIX BUG-1), accent-баннер «План утверждён» с ссылкой на step 2
+
+§9 «Кросс-функциональные» (продвинулись):
+- Все Sprint 3 вычисления (sample size, scoring, render) — на клиенте без fetch (`[~]` целиком, CSV — Sprint 5)
+- Inline warnings для приближённых расчётов (MW ×1.157, bootstrap, CV=1 fallback, edge cases `n>10M`/`n<30`/`duration>90`)
+
+**Closed (частично) — `[~]`:**
+
+- Загрузка отредактированного test_plan.md обратно (UI placeholder «Парсинг — Sprint 4+»; сам парсер запланирован на Sprint 7 по roadmap)
+- «Все вычисления на клиенте» — sample size/scoring/render готово, CSV-валидация ждёт Sprint 5
+- «Честные warning для приближений» — для sample size готово, для analyze-фазы — Sprint 5
+
+**Still pending — `[ ]`:**
+
+- Warning при невалидном загруженном md (зависит от Sprint 7 парсера)
+- Q07 sensitivity helper (slider «MDE × duration») — в Sprint 3 scope не входил
+- Methodology раздел — Sprint 8 по roadmap
+
+**Key decisions:**
+
+- **Самописные `normalInv` / `normalCdf`** (Beasley-Springer-Moro + Abramowitz-Stegun, ~15 строк каждая) — вместо подключения `simple-statistics` или Pyodide. Соответствует ADR-009/010, держит bundle малым.
+- **`?raw` import шаблона `test_plan.md.tmpl`** через Vite — без отдельного fetch и без подключения tмплейт-движка. ~1KB к bundle.
+- **YAML вручную** в `render.js` через `yamlScalar()` с JSON-style эскейпом (валидный YAML принимает JSON-style строки) — устойчивее, чем regex-escape. Inline snapshot тест защищает формат от регрессии. Когда в Sprint 7 появится парсер — будет cross-check.
+- **`editedExternally: false` зарезервировано** в `state.plan` для Sprint 7 парсера (вариант A решения от пользователя). Поле включено в persisted shape для forward-compatibility, семантика будет определена в Sprint 7.
+- **`SAMPLE_SIZE_CALC.md` Case 2 spec поправлен** с 7555 → 8149 (Fleiss non-pooled SE for H1). Обоснование: 7555 не воспроизводится никаким стандартным вариантом формулы (pooled, unpooled, Wald, one-sided, continuity correction); 6 из 7 cases матчатся exact / ±0.03% / 1.7%. Спор задокументирован в `code-review-sprint-3.md` (Concern #1) с ручной проверкой.
+- **Stepper kliкабельность** — scope creep, но принято: после approve пользователь должен иметь возможность вернуться на бриф через шапку (не только ссылкой со step 2). ~10 строк, UX-обоснование принято на code review.
+
+**Tech debt / deferred (added in Sprint 3):**
+
+- `editedExternally` в `state.plan` — зарезервированное поле без активного использования. Семантика определится в Sprint 7 (парсер test_plan.md).
+- Tolerance 5-10% для proportion sample-size тестов — задокументировано прямо в комментариях тестов. Чтобы будущий читатель не подумал «тесты слабые».
+- Случай Case 2 в SAMPLE_SIZE_CALC.md — добавлено объяснение, но если в Sprint 5-6 (анализ) встретятся такие же неоднозначности — нужен унифицированный подход к источникам формул.
+
+**Metrics — длительность фаз:**
+
+| Фаза | Дата | Δ |
+|---|---|---|
+| PLAN + PROMPT (Cowork) | 2026-05-16 | ~70 мин |
+| DEV (Claude Code, по самозамеру) | 2026-05-16 | 24 мин (wall ~3 ч) |
+| CODE REVIEW (Cowork) | 2026-05-16 | ~30 мин |
+| TEST PREP (Cowork) | 2026-05-16 | ~15 мин |
+| ⏸ **Пауза** | 2026-05-16 → 2026-05-28 | **12 дней wall-clock** |
+| QA (пользователь, smoke 15 кейсов) | 2026-05-28 | ~15 мин |
+| FIX PROMPT (Cowork, BUG-1) | 2026-05-28 | ~10 мин |
+| FIX DEV (Claude Code) | 2026-05-28 | 10 мин |
+| FIX RETEST (пользователь) | 2026-05-28 | ~5 мин |
+| CLOSE (Cowork) | 2026-05-28 | ~30 мин |
+| **Active total (без паузы)** | | **~3.5 часа** |
+| **Wall-clock total** | | **12 дней** |
+
+Активное время сопоставимо со Sprint 2 (~2.5 ч), несмотря на ×2 объём кода (5 lib-модулей + 5 plan-компонентов + 2 страницы + расширение reducer/router/stepper, 100 новых unit-тестов). Pause из-за внешних причин — не паттерн процесса. Smoke-стратегия (15 кейсов вместо full 60+) оправдалась: BUG-1 был известен заранее, новых багов smoke не выявил.
+
+**Notes:**
+
+- ✅ **100 unit-тестов вместо запрошенных 25+.** Code over-delivered осознанно — все 7 канонических кейсов из SAMPLE_SIZE_CALC.md, snapshot test на формат test_plan.md (критично для Sprint 7 парсера), reducer-тесты на новые actions. Тестовое покрытие = база, на которой Sprint 7 будет верифицировать roundtrip.
+- ✅ **Code сам поднял 3 пункта на ревью в Known Issues.** Все три обработаны: Case 2 (правка spec), AdvancedParams (FIX BUG-1), Stepper scope creep (accept с обоснованием). Прозрачность Code'а сокращает review-фазу.
+- ✅ **FIX через 12 дней пройден без проблем.** Pause не сломала контекст благодаря тому, что `code-review-sprint-3.md` зафиксировал все open вопросы — пользователь и Cowork вернулись к ним без перечитывания всего sprint-report.
+- ✅ **P-1 правило с FIX отрабатывает чисто.** Code запушил `fb51658` + `b8facb8` (свою зону), Cowork-зона (code-review/test-cases/fix-prompt/SAMPLE_SIZE_CALC + JTBD/CONTEXT/PROJECT_STATUS) уходит одним batch'ем в CLOSE.
+- 🟡 **PROJECT_STATUS.md устаревает быстро.** Когда между фазами проходит 12 дней — статус показывает «в работе у Code», хотя по факту QA уже сделано. Стоит подумать, не делать ли PROJECT_STATUS более «statе-machine-like» (генерировать из git + reports), но это over-engineering для pet-проекта. Пока — просто помнить про refresh в CLOSE.
+- 🟢 **Sprint 4 PLAN откладывается на свежее обсуждение** (по roadmap — конструктор ноутбука, ipynb-сборка, demo-csv). После CLOSE Sprint 3 пользователь выбирает scope.
 
 ---
 
@@ -175,6 +254,8 @@
 - [ ] **`defaultsApplied` в `state.brief` — UI-state в доменной структуре.** Приехало из Sprint 2 FIX. При реализации yaml-сериализатора (Sprint 5-6) учить игнорировать это поле или вынести уровнем выше.
 - [ ] **`extractMetricName` дёргается на каждый переход на Q04 пока флаг false.** Приехало из Sprint 2 FIX. Дешёво (regex по короткой строке), оптимизировать не нужно. Просто наблюдение.
 - [ ] **Mobile responsive для `GuardrailsList`.** 6-колоночный grid на <640px может ломаться. Не тестировался. Кандидат на отдельный спринт mobile UX.
+- [ ] **`editedExternally` в `state.plan` — зарезервированное поле.** Приехало из Sprint 3. Без активного использования до Sprint 7 (парсер test_plan.md). Семантика будет определена там.
+- [ ] **Case 2 в SAMPLE_SIZE_CALC.md (исправлено, но нужен унифицированный подход).** Приехало из Sprint 3. Если в Sprint 5-6 встретятся spec'и из разных источников — нужно явно фиксировать source формул и сверять.
 
 ---
 
@@ -199,3 +280,6 @@
   - Renormalize line endings к LF
   - `git config core.autocrlf false`
   - Sandbox bash для верификации .md — даёт stale view на 44 байта меньше Windows-stake, нельзя использовать.
+
+- **Q:** PROJECT_STATUS.md устаревает между фазами при длинных паузах. Что делать?
+  **A:** Sprint 3 пример — между TEST PREP (2026-05-16) и QA (2026-05-28) прошло 12 дней, PROJECT_STATUS всё это время показывал «Sprint 3 в работе у Code». Решение пока — просто обновлять его как часть CLOSE-фазы и не вкладывать в него точное «текущее место в цикле». Если станет реальной проблемой — рассмотреть генерацию из git log + последних reports автоматически, но это over-engineering для pet-проекта.

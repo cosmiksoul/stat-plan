@@ -349,7 +349,7 @@ export function calculateDuration(sampleSizePerArm, dailyTraffic) {
 | # | metric_type | method | baseline | MDE | α | power | Ожидаемое n/arm |
 |---|-------------|--------|----------|-----|---|-------|-----------------|
 | 1 | proportion | z_test | 0.031 | +8% rel | 0.05 | 0.80 | ~81 014 |
-| 2 | proportion | z_test | 0.05 | +20% rel | 0.05 | 0.80 | ~7 555 |
+| 2 | proportion | z_test | 0.05 | +20% rel | 0.05 | 0.80 | ~8 149 |
 | 3 | proportion | z_test | 0.10 | +10% rel | 0.05 | 0.80 | ~14 750 |
 | 4 | proportion | z_test | 0.50 | +5% rel | 0.05 | 0.80 | ~6 270 |
 | 5 | continuous | t_test | 100, σ=80 | +5% rel | 0.05 | 0.80 | ~4 019 |
