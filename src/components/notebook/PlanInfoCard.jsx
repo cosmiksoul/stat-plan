@@ -1,3 +1,6 @@
+import StatusBadge from '../plan/StatusBadge.jsx'
+import LoadedBadge from '../plan/LoadedBadge.jsx'
+
 export default function PlanInfoCard({ state }) {
   const brief = state.brief || {}
   const derived = state.plan?.derived || {}
@@ -33,13 +36,14 @@ export default function PlanInfoCard({ state }) {
 
   return (
     <section className="bg-bg-elev border border-border rounded-lg p-6 mb-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="font-serif text-2xl font-medium tracking-tight m-0 text-fg">
           Конструктор ноутбука
         </h2>
-        <span className="mono-label text-accent">
-          ↳ ПЛАН УТВЕРЖДЁН
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <LoadedBadge visible={state.plan?.editedExternally} />
+          <StatusBadge status={state.plan?.status} />
+        </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {items.map((it) => (

@@ -5,6 +5,7 @@ import MdPreview from '../components/plan/MdPreview.jsx'
 import ScoringCard from '../components/plan/ScoringCard.jsx'
 import PlanActions from '../components/plan/PlanActions.jsx'
 import StatusBadge from '../components/plan/StatusBadge.jsx'
+import LoadedBadge from '../components/plan/LoadedBadge.jsx'
 import ParseWarningsBanner from '../components/ParseWarningsBanner.jsx'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
@@ -72,7 +73,10 @@ export default function PlanPage() {
             следующий шаг.
           </p>
         </div>
-        <StatusBadge status={status} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <LoadedBadge visible={state.plan.editedExternally} />
+          <StatusBadge status={status} />
+        </div>
       </div>
 
       {status === 'approved' && (
