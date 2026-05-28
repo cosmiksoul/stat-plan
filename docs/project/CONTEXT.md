@@ -10,6 +10,70 @@
 
 > Записи в обратном хронологическом порядке (новые сверху).
 
+### Sprint 5 — Polish-pack + UX rename Шагов 04/05 + ADR-012 Accepted + FIX iter 1 (2026-05-28)
+
+**Type:** Code mini-sprint + FIX iter 1. Wall-clock в один день.
+**Status:** Complete (CLOSE 2026-05-28).
+**Goal:** Закрыть 6 пунктов polish-pack (P-2..P-7), сделать UX rename Шагов 04/05 (label-only) как следствие принятого ADR-012, разгрузить будущий Sprint 6 main от накопленных хвостов.
+
+**Что построено в main (один commit `feat(sprint-5): polish-pack P2-P7 + Stepper labels per ADR-012`):**
+
+- **P-2 (BUG-7)** — `templates/notebook/load.cells.json` обновлён: `CSV_PATH` константа + markdown-инструкция про Colab/Drive. Покрывает 3 deploy-target'а (local Jupyter / Colab после upload / GitHub-raw URL).
+- **P-3 (BUG-8)** — semantic split после ADR-011: `deriveTestId` (filename + `YAML.test_id`) теперь приоритезирует `metric_column` с fallback на `metric_name` → `goal_type`; `deriveTitle` (notebook header `# Analysis: …`) использует натуральный `metric_name`; subtitle переписан нейтрально («см. test_plan.md»).
+- **P-4** — `ApproxInfoBlock` в `QuestionRenderer.jsx` (локальный компонент + `APPROX_INFO_TEXT` константа): inline approx-info на Q03 при выборе `ratio`/`continuous`, на Q07 — если ранее выбран один из этих типов. Нейтральный паттерн `bg-bg-elev-2 + border-soft + text-fg-faint` (без введения новых `info-*` токенов).
+- **P-5** — удалена недостижимая ветка `baseline.unit === 'percent'` в `buildPlaceholderMap` (`notebook-builder.js`).
+- **P-6** — `slugify` вынесен в `src/lib/util/slugify.js` (сохраняет «ё» по NB-BUG-3), импортируется в `render.js` и `notebook-builder.js`. Новый файл `tests/lib/util/slugify.test.js` (+10 case'ов).
+- **P-7** — legacy YAML heuristic в `parse.js::mapFrontmatter`: regex `/[\sА-ЯЁа-яёA-Z]/` на `fm.metric_name` И отсутствие `fm.metric_label` → routing в `brief.metric_name` (label) + warning о legacy формате. +4 case в `parse.test.js`.
+- **UX-RENAME** — `STEPS` в `Stepper.jsx`: «04 Анализ» → «04 Быстрая валидация», «05 Read-out» → «05 Скачать артефакты». `route: null` и `isStepUnlocked` не тронуты.
+
+**FIX iter 1** (один commit `fix(sprint-5): close C-1..C-4 from code review`):
+
+- **C-1** — Cowork нашёл, что dead-ветка `baseline.unit === 'percent'` есть в **трёх** местах, не двух (Code в Sprint 5 main missed `scoring.js`). FIX убрал все три (sample-size.js, scoring.js, render.js) + удалил zombie-тест из `sample-size.test.js`, который специально проверял dead path.
+- **C-2** — асимметрия round-trip для fallback case: в `render.js` substitutions теперь `metric_label: yamlScalar(brief.metric_column ? brief.metric_name || null : null)`. Когда `metric_column` пуст — `metric_label` не пишется, parse при загрузке применит P-7 heuristic и восстановит то же состояние. Новый 5-й canonical case в `round-trip.test.js`.
+- **C-3** — edge case `metric_label: ""`: в `parse.js` строка 224 добавлено `&& fm.metric_label !== ''` симметрично проверке `hasLabel`. +1 case в `parse.test.js`.
+- **C-4** — продуктовое UX-решение пользователя: убрать английский prefix `Analysis: ` из header'а скачанного `.ipynb`, оставить только результат `deriveTitle` (`Тест: <name>`). Изменение только в `buildHeaderCell` строка 225; `deriveTitle` не тронут (иначе сломался бы round-trip YAML.title).
+
+**Архитектурные решения:**
+
+- **ADR-012 финализирован Accepted 2026-05-28** перед началом Sprint 5 в диалоге Cowork ↔ пользователь. До этого был Draft. Принятие переводит «Шаг 4 Анализ → independent validation CSV» на «Шаг 4 Быстрая валидация → ручной ввод + decision rules». Roadmap до v1 сократился с ~16-21 ч до ~10-13 ч active. UX-RENAME labels — частичная имплементация в Sprint 5; FLOW.md / concept.md / JTBD §7-§8 переписываются в Sprint 5 CLOSE (Cowork); полный redesign Шага 4 — Sprint 6 main.
+
+**Tests:**
+
+- Sprint 5 main: 249 → 266 (+17, +10 slugify, +4 parse P-7, +3 render P-3; 5 notebook-builder cases переписаны под новый контракт без изменения числа).
+- Sprint 5 FIX iter 1: 266 → **267** (+2 новых C-2/C-3, −1 zombie из C-1).
+
+**Bundle:** 399.80 → 401.24 → **401.17 KB raw** (gzip 124.32 → 124.94 → **124.93 KB**). Net +1.37 KB raw за весь Sprint 5 (под лимитом ≤ +2 KB из prompt'а). Никаких новых npm-зависимостей.
+
+**Polish-pack деферрит:** UX-RENAME labels был не частью polish-pack — он стал возможным после accept ADR-012 и логично взят в один спринт.
+
+**Метрики — длительность фаз:**
+
+| Фаза | Старт | Конец | Δ |
+|---|---|---|---|
+| PLAN + ADR-012 finalization (Cowork ↔ пользователь) | 2026-05-28 | 2026-05-28 | ~15 мин |
+| PROMPT (Cowork, `sprint-5-prompt.md` 6 P-пункта + UX rename) | 2026-05-28 | 2026-05-28 | ~15 мин |
+| DEV main (Claude Code, по самозамеру) | 2026-05-28 | 2026-05-28 | ~1ч 35мин |
+| CODE REVIEW (Cowork, `code-review-sprint-5.md` 4 concerns) | 2026-05-28 | 2026-05-28 | ~20 мин |
+| TEST PREP (Cowork, `test-cases-sprint-5.md` 10 кейсов) | 2026-05-28 | 2026-05-28 | ~15 мин |
+| QA Sprint 5 (пользователь, smoke 10/10 ok) | 2026-05-28 | 2026-05-28 | ~10-15 мин |
+| FIX PROMPT (Cowork, `sprint-5-fix-prompt.md` C-1..C-4) | 2026-05-28 | 2026-05-28 | ~10 мин |
+| FIX DEV (Claude Code, по самозамеру) | 2026-05-28 | 2026-05-28 | ~40 мин |
+| FIX RETEST (пропущен по решению пользователя — 267/267 unit + round-trip 5/5 достаточно) | — | — | 0 |
+| CLOSE (Cowork: FLOW.md / concept.md / JTBD §7-§8 rewrite, tech debt, CONTEXT timeline, PROJECT_STATUS) | 2026-05-28 | 2026-05-28 | ~40 мин |
+| **Total active** | | | **~4-4.5 часа end-to-end** |
+
+Сопоставимо со Sprint 2/3, при том что скоуп существенно меньше — но включена ADR-012 финализация и Cowork CLOSE с rewrite концептуальных доков под новый Шаг 4, что значимо тяжелее обычного CLOSE.
+
+**Notes:**
+
+- ✅ **ADR-012 финализирован за один диалог.** До Sprint 5 он был Draft и требовал отдельного Architecture sprint. Cowork презентовал краткий summary (consequences / alternatives / risk-flag по позиционированию), пользователь сделал явный accept. Architecture sprint оказался не нужен — accept в PLAN-фазе Sprint 5 + concept rewrite в CLOSE-фазе закрывает то же.
+- ✅ **Code-flagged side-finding отработал чисто.** В Sprint 5 main Code обнаружил 2 dead-ветки за пределами P-5 scope и **не правил молча**, а явно эскалировал в отчёт (CLAUDE.md §3). Cowork в code review нашёл, что мест на самом деле **три** (Code missed `scoring.js`), включил все три в FIX iter 1 C-1. Двухэтапная сверка работает.
+- ✅ **Round-trip контракт расширен.** Sprint 4 FIX iter 2 заложил 4 canonical case; Sprint 5 FIX iter 1 добавил 5-й (empty `metric_column` через P-7 heuristic). Симметрия render ↔ parse теперь покрывает и fallback-сценарий.
+- ✅ **Zombie-тест найден и удалён прозрачно.** При закрытии C-1 в `sample-size.test.js` обнаружился тест `'supports baseline.unit=percent (value scaled by 100)'`, который специально подсовывал недостижимый `unit='percent'` через test-helper, чтобы пройти по удалённой ветке. Code обосновал удаление (Option A) vs guard (Option B) в отчёте, Cowork в code review одобрил. Тест-zombie не должен жить дольше кода, который он покрывает.
+- 🟢 **UX-rename labels работает sync с concept rewrite.** Stepper показывает новые labels (Code-зона коммит main), а FLOW.md / concept.md / JTBD §7-§8 описывают новый Шаг 4 (Cowork-зона коммит CLOSE). Если бы rewrite доков сделали позже Sprint 6 — Stepper и доки рассинхронизировались бы на время. CLOSE-в-том-же-спринте этого избежал.
+
+---
+
 ### Pre-MVP (2026-05-14)
 
 Концептуальная и документационная работа. Прорабатывались:
@@ -312,7 +376,7 @@
 - [ ] **Mobile responsive для `GuardrailsList`.** 6-колоночный grid на <640px может ломаться. Не тестировался. Кандидат на отдельный спринт mobile UX.
 - [x] ~~**`editedExternally` в `state.plan` — зарезервированное поле.**~~ Закрыто в Sprint 4: семантика определена (true после LOAD_TEST_PLAN_MD, сбрасывается в RETURN_PLAN_TO_DRAFT / RESET_STATE), UI badge `LoadedBadge` реализован.
 - [ ] **Case 2 в SAMPLE_SIZE_CALC.md (исправлено, но нужен унифицированный подход).** Приехало из Sprint 3. Если в Sprint 5-6 встретятся spec'и из разных источников — нужно явно фиксировать source формул и сверять.
-- [ ] **Polish-pack 6 пунктов** (BUG-7 Colab CSV_PATH, BUG-8 filename/header источники, P-4 inline-warning Q03/Q07, P-5 dead code `baseline.unit === 'percent'`, P-6 slugify utility, P-7 legacy metric_name heuristic). Приехало из Sprint 4 RETEST + code review. Кандидат на отдельный mini-sprint перед Sprint 5 main. См. `docs/project/polish-pack.md`.
+- [x] ~~**Polish-pack 6 пунктов** (BUG-7 Colab CSV_PATH, BUG-8 filename/header источники, P-4 inline-warning Q03/Q07, P-5 dead code `baseline.unit === 'percent'`, P-6 slugify utility, P-7 legacy metric_name heuristic).~~ Закрыто в Sprint 5 main + FIX iter 1 (P-2..P-7). FIX iter 1 также убрал ещё 2 dead-ветки `baseline.unit === 'percent'` в `sample-size.js` и `scoring.js` (P-5 расширен через C-1 из code review).
 - [ ] **DemoCsvCard: 2 из 4 файлов реализованы** (proportion + continuous). `demo_ratio.csv` и `demo_count.csv` — disabled-заглушки. Кандидат на mini-content sprint.
 - [ ] **2 cell templates как disabled-заглушки** (cuped, delta_method). Mannwhitney и delta_method в main_test fallback'ятся на bootstrap-вариант с двух-уровневым warning (header ноутбука + PlanInfoCard UI). Полные ячейки — следующий mini-sprint.
 
