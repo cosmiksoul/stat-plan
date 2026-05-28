@@ -58,12 +58,111 @@
 | 008 | Тур-плашки без подсветки и без guided overlay | Accepted | 2026-05-14 |
 | 009 | Sample size: точные формулы где возможно, приближения с warning где нет | Accepted | 2026-05-14 |
 | 010 | UI на React 19 + Vite + Tailwind, деплой через GitHub Actions | Accepted | 2026-05-14 |
+| 011 | Semantic shift YAML.metric_name = код колонки, новый YAML.metric_label = натуральный текст | Accepted | 2026-05-28 |
+| 012 | Шаг 4 как «Быстрая валидация» (не independent validation), переименование Шагов 04/05 | Draft (обсуждается) | 2026-05-28 |
 
 ---
 
 ## Records
 
 > ADR в обратном хронологическом порядке (новые сверху).
+
+---
+
+## ADR-012 — Шаг 4 как «Быстрая валидация» + переименование Шагов 04/05
+
+**Date:** 2026-05-28
+**Status:** Draft (обсуждается перед Sprint 5 main)
+
+**Context:**
+В первоначальном concept.md и FLOW.md Шаг 4 «Анализ» заложен как «independent validation» — пользователь загружает CSV, тул независимо пересчитывает все ключевые метрики (Δ, p-value, CI, SRM, novelty) и сравнивает с тем, что сгенерировал ноутбук. Цель — поймать ошибку в анализе пользователя.
+
+При обсуждении в Sprint 4 RETEST (2026-05-28) пользователь сформулировал ключевое возражение: это **circular validation**. Тул сам генерирует ноутбук с конкретными формулами, потом сам пересчитывает по тем же формулам на тех же данных. Если ноутбук содержит баг (наш баг) — наш пересчёт его не поймает. Никакой защиты не даёт.
+
+Реальная независимая валидация требовала бы другой методологии (Bayesian параллельно, sequential testing, permutation tests) — отложено в v2 (см. ADR-009).
+
+Параллельно — концептуальное несоответствие в UI step labels. «Анализ» и «Read-out» сейчас:
+- 04 «Анализ» обещает глубокую валидацию, которую мы не делаем
+- 05 «Read-out» — название из аналитического жаргона, не очевидно для PM-аудитории
+
+**Decision (proposed):**
+
+1. **Концептуальный shift Шага 4** — из «independent validation» в **«Быстрая валидация»**:
+   - SRM check на counts (полезно независимо от методологии — count by variant + chi²)
+   - Sanity check vs plan (`csv_rows ≈ 2 × sample_size_per_arm`?)
+   - **Ручной ввод результатов** (Δ rel, p, CI, control_n, treatment_n, novelty, guardrails) — пользователь вбивает 7-10 чисел из своего ноутбука
+   - Decision rules применение → рекомендация SHIP/ITERATE/KILL (по правилам, которые пользователь сам написал в плане — ADR-004)
+   - Простые визуализации (даже из ручного ввода)
+   - Генерация `validation.md` для read-out пакета
+
+2. **Опциональный CSV upload как helper, не validator** — если есть, тул автозаполнит часть полей. Но никакого «независимого пересчёта» нет.
+
+3. **UI rename:**
+   - 04 «Анализ» → **«Быстрая валидация»** (точнее отражает scope, убирает амбицию)
+   - 05 «Read-out» → **«Скачать артефакты»** (функциональнее, для PM-аудитории)
+
+4. **Принцип №5 «Открытость»** усиливается явным объяснением в methodology-странице: «почему мы НЕ делаем independent validation, что это значит на практике, как использовать тул честно».
+
+**Consequences:**
+- **Sprint 5 scope сокращается** с ~4-5 ч до ~2-3 ч (нет полного CSV-парсинга, нет papaparse, нет recharts на больших данных, нет PDF-export в полном объёме).
+- **Меньше npm-зависимостей** в финальной версии.
+- **Roadmap до v1 сокращается** с ~16-21 ч до ~10-13 ч active.
+- **Не теряем критически важных фич** — SRM check, sanity check, decision rules → рекомендация остаются полезными.
+- **Усиливаем позиционирование** open-source vibe + честный disclaimer about ограничениях.
+- **Методология-страница (JTBD §10, Sprint 8) становится критичнее** — там нужен явный disclaimer-блок «что мы НЕ делаем» (уже запланирован).
+
+**Alternatives considered:**
+- **Сохранить independent validation** — отклонено, см. context. Circular validation = self-deception.
+- **CSV upload + visualization only** (без ручного ввода) — отклонено, теряется применение decision rules и validation.md generation.
+- **Полный redesign в independent validation через Bayesian** — отклонено, v2 (ADR-009).
+
+**Related:**
+- ADR-004 (тул не принимает решений) — этот ADR усиливает: рекомендация SHIP/ITERATE/KILL = применение пользовательских decision rules, не наше решение.
+- ADR-005 (5-шаговый флоу) — структура сохраняется, переосмыслен scope шагов.
+- ADR-009 (точные формулы, приближения с warning) — Sprint 4 RETEST дал конкретный пример Шага 4 (ratio + delta_method fallback) который не покрывает базовую обязанность тула.
+- JTBD §7, §8 — переписать заголовки и user stories после accept.
+- Architecture sprint (планируется перед Sprint 5 main) — где это решение должно быть **окончательно принято** и реализовано в синхронном изменении кода + доков.
+- polish-pack.md — содержит UX-RENAME с указанием на этот ADR.
+
+---
+
+## ADR-011 — Semantic shift YAML.metric_name + новый YAML.metric_label
+
+**Date:** 2026-05-28
+**Status:** Accepted
+
+**Context:**
+В Sprint 4 main `render.js` записывал `YAML.metric_name` значение из `brief.metric_name` (натуральный текст из поля «Название» брифа — например, «конверсия в первый депозит»). Это противоречило `DATA_MODEL.md`, где `metric_name` описан как идентификатор колонки CSV (snake_case латиница, например `cr_first_deposit`), и user expectation (под `metric_name` есть отдельное поле «КОЛОНКА В CSV», которое в Sprint 4 main просто никуда не уходило в YAML).
+
+Симптом — пользователь в QA Sprint 4 ввёл `bounce_rate` в поле «Название», получил в test_plan.md `metric_name: bounce rate` (с пробелом). Это направило Cowork по ложному следу — было записано как «UI молча заменяет _ на пробел», но реальной conversion в коде не существовало. Code эскалировал, и при обсуждении с пользователем стала ясна реальная root cause:
+
+> «В CSV пользователя метрика скорее всего будет названа на английском (snake_case). Поэтому в YAML.metric_name (если это идентификатор колонки) должно быть `cr_first_deposit` — а раньше туда писалось `конверсия в первый депозит`, что бессмысленно: такой колонки в CSV нет.»
+
+**Decision:**
+
+1. **Semantic shift:** `YAML.metric_name` ⇐ `brief.metric_column` (код колонки, snake_case, обычно латиница).
+2. **Новое опциональное поле** `YAML.metric_label` ⇐ `brief.metric_name` (натуральный текст, может быть кириллицей).
+3. **При load** (парсер): `fm.metric_name → brief.metric_column`, `fm.metric_label → brief.metric_name`.
+4. **Legacy YAML** (только `metric_name`, без `metric_label`): после парса `brief.metric_column` = старое значение (может быть натуральным текстом — это «полу-сломанный» случай), `brief.metric_name = ''`. Пользователь увидит пустое название и должен перепрописать. Без miсhanism — heuristic для legacy detection отложен в polish-pack.
+5. **`deriveTestId` и filename** также используют `metric_column` (код) — natural extension: где filename/URL/код — латиница из `metric_column`; где для человека — натуральный текст из `metric_name`. Полная таблица в `polish-pack.md` BUG-8.
+
+**Consequences:**
+- **Round-trip восстановления** для metric_column работает для новых файлов. Для legacy — частично (см. п. 4).
+- **DATA_MODEL.md обновляется** с новым контрактом (Cowork в CLOSE Sprint 4).
+- **Notebook builder** получает корректный код колонки в Expected schema (`df['cr_first_deposit']`, не `df['конверсия в первый депозит']`).
+- **Backward-incompatible для legacy** — если пользователь сохранил test_plan.md в Sprint 3/Sprint 4 main, после load metric_name пустое. Можно компенсировать heuristic в polish-pack (см. polish-pack.md P-7).
+
+**Alternatives considered:**
+- **(B) Hard rename:** переименовать `YAML.metric_name → YAML.metric_column`, плюс отдельный `YAML.metric_name` под натуральный текст. Отклонено — больше breaking changes для legacy. Semantic shift меньше задевает существующие файлы.
+- **Эвристика «авто-detect natural text vs code»** в Sprint 4 FIX iter 1 — отклонено как scope creep. Кандидат на polish-pack.
+- **Сохранить status quo (только metric_name = натуральный текст)** — отклонено, реальная проблема — снятая в context.
+
+**Related:**
+- ADR-002 (артефакты как переносимое состояние) — этот ADR усиливает: контракт metric_name/metric_label теперь строго определён.
+- `DATA_MODEL.md` — обновлён.
+- `docs/project/sprint-4-fix-report.md` — где Code зафиксировал semantic shift в iter 1.
+- BUG-3 в `docs/project/test-cases-sprint-4.md` — историческое описание (с уточнением что первоначальная формулировка от Cowork была неточной).
+- polish-pack.md P-7 — legacy heuristic для парсера.
 
 ---
 

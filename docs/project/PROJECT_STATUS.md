@@ -1,139 +1,174 @@
 # Project Status — stat·plan
 
-**Обновлено:** 2026-05-28 (CLOSE Sprint 3)
-**Назначение:** оперативный снимок проекта. Для пользователя или следующего инстанса Cowork — быстро войти в контекст. Обновляется в фазе CLOSE каждого спринта.
+**Обновлено:** 2026-05-28 (после Sprint 4 RETEST FIX iter 1, перед FIX iter 2)
+**Назначение:** оперативный снимок проекта. Для пользователя или следующего инстанса Cowork — быстро войти в контекст.
 
 ---
 
 ## Где мы сейчас
 
-**Sprint 3 закрыт.** Полный value loop «бриф → sample size → тест-план → утверждение» работает локально. После push'а Cowork-batch'а едет на продакшен (`https://cosmiksoul.github.io/stat-plan/`). Следующий шаг — PLAN-фаза Sprint 4 (Шаг 3 «Конструктор ноутбука» по roadmap).
+**Sprint 4 main + FIX iter 1 закрыты.** Идёт **FIX iter 2** — критический round-trip repair (7 дыр в YAML serialization + truncation bug). Prompt передан Code (`docs/project/sprint-4-fix-iter2-prompt.md`).
 
-| Sprint | Type | Status | Active time | Wall-clock |
-|---|---|---|---|---|
-| 1 | Code | Closed | 51 мин | 51 мин |
-| 2 | Code + FIX | Closed | ~2.5 ч | ~1 день |
-| 3 | Code + FIX | Closed | ~3.5 ч | 12 дней (пауза между TEST PREP и QA) |
-| 4 | Code | Planning | — | — |
-| 5-8 | — | Roadmap до v1 | ~13-18 ч (план) | — |
+После iter 2 RETEST + CLOSE Sprint 4 (включая ADR-011 уже Accepted + ADR-012 draft + обновление DATA_MODEL.md). Параллельно сформирован **polish-pack** (7 non-critical fixes) для mini-sprint перед Sprint 5 main.
+
+Перед Sprint 5 main — **Architecture sprint** для accept ADR-012 (Шаг 4 redesign + UX rename) и переписывания FLOW.md/concept.md/JTBD §7/§8.
+
+| Sprint | Type | Status | Active time |
+|---|---|---|---|
+| 1 | Code | Closed | 51 мин |
+| 2 | Code + FIX | Closed | ~2.5 ч |
+| 3 | Code + FIX | Closed | ~3.5 ч |
+| 4 main | Code (Phase A + B) | Closed | ~3.8 ч |
+| 4 FIX iter 1 | Code (Phase A + B + C) | Closed | ~2.5 ч |
+| 4 FIX iter 2 | Code | **In flight** | ~1-1.5 ч (план) |
+| 4 CLOSE | Cowork | Pending после iter 2 RETEST | ~30-40 мин (план) |
+| Polish-sprint | Code mini | Planned после CLOSE Sprint 4 | ~1.5-2 ч (план) |
+| Architecture sprint | Cowork + light Code | Planned перед Sprint 5 main | ~1-2 ч (план) |
+| 5 main | Code | Re-scoped под ADR-012 | ~2-3 ч (план, было 4-5 ч) |
+| 6-8 | — | Roadmap до v1 | ~6-9 ч (план) |
 
 ---
 
-## Что реально работает в продукте (после push Sprint 3)
+## Что реально работает в продукте (после Sprint 4 main + FIX iter 1, перед push iter 2)
 
-**Стартовый экран** с развилкой («Начать с брифа» / «У меня уже есть план»). Drag-and-drop карточка показывает заглушку (парсер test_plan.md — Sprint 7).
+**Стартовый экран:** drag-drop + file picker fallback для `test_plan.md`. Парсер с js-yaml. Inline error при битом YAML.
 
-**Степпер на 5 шагов:** реактивный. Шаг 1 всегда доступен. Шаг 2 unlocked после `briefSubmitted`. Шаг 3 unlocked после `approved`. Шаги 4-5 hard locked до своих спринтов. Все unlocked шаги кликабельны через мышь и клавиатуру.
+**Степпер на 5 шагов:** реактивный. Шаги 4-5 hard locked.
 
-**Шаг 1 «Бриф» — полностью функционален:**
+**Шаг 1 «Бриф»:**
 - 10 вопросов с soft-валидацией
-- Парсер 4 слотов гипотезы с Unicode boundaries (16 unit-тестов)
-- Динамические guardrails с карточками-предложениями
-- Advanced параметры (collapsible, 6 полей: α, power, two-sided, variance reduction, stratification, holdback). **В approved-режиме disabled, но раскрытие работает** (можно посмотреть значения).
-- Реактивная карта вопросов с кликами, статусами (✓/→/·), inline preview через ▸/▾
-- Реактивный progress-bar N/10
-- Defaults для Q10 decision rules подставляются через reducer-action `applyEnterDefaults`
-- **Реактивный sample size display под Q08:** sample/arm + длительность + test_method + inline warnings (MW, bootstrap, CV=1 fallback, edge cases)
-- **MDE direction** автоматически derived из глагола гипотезы (вырастет/упадёт/изменится)
-- В approved-режиме весь бриф (включая AdvancedParams) — readonly; сверху accent-баннер «План утверждён» с ссылкой на step 2
+- Парсер 4 слотов гипотезы
+- Q01 «Другое» → conditional sub-question text input для `goal_description`
+- Q04 разделение: «Название» (натуральный текст) и «Колонка в CSV» (snake_case)
+- Q06 preselect (Пользователь) принимается как ответ без клика
+- Реактивный sample size display под Q08 с inline warnings
+- Карта вопросов с правильными ✓ для preselect'ов
+- Advanced (alpha, power, two_sided, variance_reduction, stratification_by, holdback_percent) — readonly в approved
 
 **Шаг 2 «Тест-план»:**
-- Preview сгенерированного `test_plan.md` слева (YAML frontmatter + markdown-секции)
-- ScoringCard справа: общий скор N/100 + breakdown по 4 группам (полнота гипотезы / полнота дизайна / методологическая консистентность / data peek) + конкретные remarks с severity
-- StatusBadge сверху (Draft / Approved)
-- Кнопки: «Скачать test_plan.md» (Blob URL), «Утвердить план» (только draft), «Вернуть в черновик» с ConfirmDialog (только approved), «Загрузить отредактированный» — placeholder до Sprint 7
+- Preview test_plan.md + ScoringCard
+- Download / Upload (file picker для отредактированного MD)
+- Approve / Return-to-draft + ConfirmDialog
+- **CTA transformation: «Утвердить» → «Перейти к конструктору →» после approve**
+- LoadedBadge `↳ ЗАГРУЖЕН` если editedExternally=true
 
-**Шаг 3** — placeholder «Конструктор ноутбука будет в Sprint 4».
-**Шаги 4-5** — locked.
+**Шаг 3 «Конструктор»:**
+- PlanInfoCard с warning banner для delta_method/mannwhitney
+- 6 mandatory + 2 optional ячейки (segments, bootstrap_ci); 2 disabled-заглушки (cuped, delta_method)
+- DemoCsvCard — 2 файла активны (proportion, continuous), 2 заглушки
+- ExpectedSchemaCard — реактивный
+- **Sticky bottom bar** для кнопки скачивания .ipynb
+- Скачивание .ipynb: header без `## N.` номеров, duration grammar `1 day/N days`, decision rules с одной точкой, warning blockquote для delta_method, slugify с «ё» в test_id
 
-**Persistence:** localStorage ключ `stat-plan:v1:state`, версионированный. Persist whitelist: `started`, `brief` (без UI-полей), `plan` (без `derived`/`score` — пересчитываются на mount). На reload — `RECOMPUTE_PLAN` восполняет производные.
+**Persistence:** localStorage с `stat-plan:v1:state`. Restart кнопка.
 
-**Restart:** «↺ Начать сначала» в шапке (виден когда `started`) → ConfirmDialog → `clearState()` + `RESET_STATE` + navigate to `/`.
+**Тестов:** 235/235 зелёных (после FIX iter 1). После iter 2 будет ~245-255.
 
-**Тестов в проекте:** 147/147 зелёных. Build чистый. JS ~310KB (gzip ~96KB), CSS ~26KB (gzip ~6KB).
+---
+
+## Текущее состояние Sprint 4 FIX iter 2
+
+**Цель iter 2:** закрыть критический round-trip bug, чтобы test_plan.md действительно был переносимым состоянием (ADR-002).
+
+**Audit — 7 дыр в YAML serialization (в `docs/project/sprint-4-fix-iter2-prompt.md`):**
+
+| Поле | Severity | Что не работает |
+|---|---|---|
+| `stop_conditions` | HIGH (BUG-9) | Только в markdown, не в YAML |
+| `decision_rules` | HIGH (BUG-9) | Только в markdown, не в YAML |
+| `ratio_components` | HIGH | Совсем нет в YAML — critical для ratio |
+| `cluster_field` | HIGH | Совсем нет — critical для cluster randomization |
+| `advanced.two_sided` | Medium | Нет в YAML |
+| `goal_type` | HIGH | Нет в YAML; ломает Q01=other восстановление |
+| `goal_description` | BUG-9b Medium | Обрезается на ~27 символах |
+
+**Симптом для пользователя:** скачал план со score 80 → загрузил обратно → score 77 (штраф за «Decision rules неполные»). Контракт «test_plan.md = переносимое состояние» нарушен.
+
+**После iter 2 RETEST:** короткий round-trip test (повтор Run 1+2) → если score одинаковый — закрываем Sprint 4.
+
+---
+
+## Архитектурные решения (для следующего инстанса критично понять)
+
+### ADR-011 — Accepted 2026-05-28: Semantic shift metric_name / metric_label
+
+**До:** `YAML.metric_name` = натуральный текст из brief.metric_name (например, «конверсия в первый депозит»). В CSV колонка обычно snake_case латиница → mismatch.
+
+**После:** `YAML.metric_name` = код колонки (snake_case из brief.metric_column). Новое опциональное `YAML.metric_label` = натуральный текст из brief.metric_name.
+
+**Legacy:** старые test_plan.md из Sprint 3/Sprint 4 main → после load полу-сломаны (натуральный текст уходит в `brief.metric_column`, label пуст). Heuristic для legacy — в polish-pack P-7.
+
+**Связано с filename и header (см. polish-pack BUG-8):** в polish-pack будет переключение filename/test_id на metric_column (slug), а header в .ipynb — на metric_name (натуральный).
+
+### ADR-012 — Draft 2026-05-28: Шаг 4 как «Быстрая валидация» + UX rename
+
+**Контекст:** обсуждение в Sprint 4 RETEST показало, что concept «Шаг 4 = independent validation» — это **circular validation**. Мы пересчитываем теми же формулами, что заложили в ноутбук. Защита от наших ошибок отсутствует.
+
+**Решение (proposed):**
+- Шаг 4 redesign из «independent validation» в «Быстрая валидация»: SRM check, sanity check, **ручной ввод результатов** (Δ, p, CI, n) + применение decision rules + простые визуализации + validation.md. Без полного CSV-парсинга.
+- UI rename: 04 «Анализ» → «Быстрая валидация»; 05 «Read-out» → «Скачать артефакты»
+- Methodology раздел (Sprint 8) усиливается явным «что мы НЕ делаем»
+- Sprint 5 scope сокращается с ~4-5 ч до ~2-3 ч
+- Roadmap до v1 — с ~16-21 ч до ~10-13 ч active
+
+**Status:** не Accepted. Требует обсуждения в Architecture sprint перед Sprint 5 main.
+
+---
+
+## Polish-pack (для отдельного mini-sprint, см. `docs/project/polish-pack.md`)
+
+7 non-critical fixes (~1.5-2 ч Code DEV):
+
+| # | Что | Severity |
+|---|---|---|
+| P-1 | BUG-6: sticky bottom step 2 controls (mirror step 3) | Medium UX |
+| P-2 | BUG-7: Colab-friendly `CSV_PATH` в load template + инструкция | Low/Medium |
+| P-3 | BUG-8: filename ← metric_column, header ← metric_name + переписать подзаголовок | Low/Medium UX |
+| P-4 | inline-warning на Q03/Q07 о приближённости без data peek | Low UX |
+| P-5 | dead code `baseline.unit === 'percent'` в notebook-builder | Low |
+| P-6 | slugify utility (вынести из duplication в render.js + notebook-builder.js) | Low |
+| P-7 | legacy YAML heuristic для metric_name (для backward compat ADR-011) | Low |
+
+UX-RENAME (Шагов 04/05) — **не часть polish-pack**, требует accept ADR-012 в Architecture sprint.
 
 ---
 
 ## Стек
 
-React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4. Деплой: GitHub Pages через GitHub Actions из `main`. См. ADR-010. Никаких новых npm-зависимостей со Sprint 1.
+React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js-yaml (Sprint 4). Деплой: GitHub Pages через GitHub Actions из `main`. ADR-010 + ADR-011.
 
 ---
 
-## Принятые решения (важные для будущего)
+## Roadmap до v1 (актуализирован 2026-05-28)
 
-1. **CLAUDE.md правило P-1 — Зоны коммитов:**
-   - Code → `src/`, `tests/`, `public/`, `package*.json`, build configs, `.github/workflows/`, `index.html`, **плюс** `sprint-report-N.md` и `sprint-N-fix-report.md` (его отчёты).
-   - Cowork → `docs/`, `CLAUDE.md`, `README.md`, `.gitignore`, `.gitattributes`, `mockups/`.
-   - Build configs — Code-зона с одним исключением: Cowork может править для целей вне application-кода (например `server.watch.ignored`).
+1. **Sprint 4 FIX iter 2** (in flight) — round-trip repair. ~1-1.5 ч.
+2. **Sprint 4 RETEST iter 2** — короткий браузерный smoke + round-trip Run 1+2. ~10 мин.
+3. **Sprint 4 CLOSE** — обновить DATA_MODEL.md (metric_label, goal_description, ratio_*, cluster_field, two_sided, stop/decision YAML), JTBD финализировать, CONTEXT.md Sprint 4 timeline + dispel Edit-bug миф, Dev-Cycle.md таблица. Коммит Cowork-зоны + push.
+4. **Polish-sprint** (отдельный mini Code sprint) — 7 пунктов из polish-pack. ~1.5-2 ч.
+5. **Architecture sprint** (Cowork + light Code) — accept/reject ADR-012, переписать FLOW.md/concept.md/JTBD §7-§8, UX rename Stepper.jsx. ~1-2 ч.
+6. **Sprint 5 main** под новый scope ADR-012 — Шаг 4 «Быстрая валидация» (ручной ввод + decision rules применение + простые визуализации + validation.md). ~2-3 ч (было 4-5 ч).
+7. **Sprint 6** — Шаг 5 «Скачать артефакты» (JSZip bundle + readout.md). ~2-3 ч.
+8. **Sprint 8** — Methodology раздел + demo/how-to + a11y/mobile audit. ~4-5 ч.
 
-2. **`.gitattributes` `* text=auto eol=lf`** + **`core.autocrlf=false`** — все line endings нормализованы к LF.
+Sprint 7 (парсер test_plan.md) **уже сделан в Sprint 4** — отдельный спринт не нужен. После FIX iter 2 — round-trip полный.
 
-3. **`vite.config.js` `server.watch.ignored`** включает `docs/**`, `mockups/**`, `tests/**` — Vite dev server не реагирует на правки документации.
-
-4. **Архитектурное правило:** `src/lib/**` не импортирует React. Чистая логика тестируется отдельно. Парсер test_plan.md в Sprint 7 будет читать ту же state shape, которую сейчас заполняют UI компоненты и которую сейчас рендерит `lib/plan/render.js`.
-
-5. **`?raw` import шаблонов** через Vite — используется для `templates/test_plan.md.tmpl`. Простая `String.prototype.replace` вместо template-движка.
-
-6. **YAML вручную** через `yamlScalar()` с JSON-style эскейпом (валидный YAML принимает JSON-style строки). Inline snapshot test защищает формат от регрессии. Парсер Sprint 7 будет использовать `js-yaml` или собственный — но render останется без зависимостей.
-
-7. **`editedExternally: false` в `state.plan`** — зарезервировано под Sprint 7. Persist'ится для forward-compatibility.
-
-8. **`stat-plan:v1:state`** — версионированный ключ localStorage. При структурных изменениях state shape — bump v1 → v2 + миграция.
-
-9. **Defaults вопросов** через **reducer-action `applyEnterDefaults`** (вызывается из `GOTO_QUESTION`), не через `useEffect`. Унифицирует наполнение state — парсер Sprint 7 будет использовать тот же путь.
+**Итого осталось до v1:** ~10-13 ч active. За 2 фокус-дня реалистично.
 
 ---
 
-## Sprint 3 итоги (для метрик)
+## Принятые решения, важные для будущего
 
-| Метрика | Значение |
-|---|---|
-| User stories `[x]` в Sprint 3 | 12 (полностью) + 3 `[~]` (частично, остаток ждёт Sprint 5/7) |
-| Bugs в QA | 1 (BUG-1 Medium AdvancedParams, был known из code review) — закрыт в FIX |
-| Unit-тестов добавлено | 100 (новые: direction 12, sample-size 30, scoring 22, render 12, storage 12, reducer 12). **Всего: 147/147 pass.** |
-| Tech debt накоплен | 2 (`editedExternally` зарезервированное поле, Case 2 в SAMPLE_SIZE_CALC) |
-| Tech debt закрыт | 0 |
-| Новых npm-зависимостей | 0 |
-| Файлов создано | 19 (5 lib-модулей, 5 plan-компонентов, 2 страницы, 6 тест-файлов, 1 шаблон) |
-| Active time | ~3.5 ч |
-| Wall-clock | 12 дней (с паузой 2026-05-16 → 2026-05-28) |
+См. полные ADR в `docs/context/decisions-log.md`. Ключевые:
 
-**Velocity baseline:** Sprint 1 = 51 мин (каркас), Sprint 2 = ~2.5 ч (полный бриф + FIX), Sprint 3 = ~3.5 ч active (×2 объём — формулы, тесты, plan UI, persistence). Sprint 4 ожидается короче (UI сборка ipynb проще, чем статистические формулы).
-
----
-
-## Roadmap до v1
-
-Цель: full-functionality v1 со всеми 5 шагами флоу + парсером загружаемых планов + methodology разделом. Релизим только в полном объёме.
-
-| # | Скоуп | Wall-clock (active) | QA-стратегия | Главный риск |
-|---|---|---|---|---|
-| ~~**Sprint 3**~~ | ~~Sample size + Шаг 2 + localStorage + restart~~ | ~~Done — ~3.5 ч~~ | ~~Smoke 15 кейсов~~ | ~~Закрыт~~ |
-| **Sprint 4** (next) | Шаг 3 «Конструктор ноутбука» — ipynb template cells, toggling UI, demo CSV (4 файла под metric_type), schema rendering | ~3-4 ч | Smoke 8-12 кейсов — логика простая, юнит-тесты сборки покрывают | Сборка `.ipynb` JSON правильно для всех toggle-комбинаций |
-| **Sprint 5** | Шаг 4 «Анализ» — CSV parse (papaparse), independent recalc, SRM, novelty, recharts графики, PNG/PDF export | ~4-5 ч | **Полный QA** (статистика + новые либы) | Самый рисковый: 3+ новые npm-зависимости (papaparse, recharts, html2pdf/jspdf), CSV edge cases |
-| **Sprint 6** | Шаг 5 «Read-out» — readout.md шаблон, JSZip bundle, copy markdown-index | ~2-3 ч | Smoke 6-8 кейсов | Корректность zip-сборки на больших артефактах |
-| **Sprint 7** | Парсер `test_plan.md` (js-yaml) — drag-drop восстановление state, roundtrip validation | ~3-4 ч | Полный QA (roundtrip с разными конфигурациями) | Roundtrip: render → save → load → identical state. Snapshot из Sprint 3 — cross-check. |
-| **Sprint 8** | Methodology раздел `/#/methodology` (§10 JTBD, 6 stories) + click→file picker + @fontsource swap + a11y/mobile audit | ~4-5 ч | Smoke + content review | Корректность объяснений статистических концепций |
-
-**Итого осталось до v1:** ~16-21 ч active (медиана ~18 ч). За 2-3 фокус-дня реалистично.
-
-**Sprint 7 — архитектурно важен.** Snapshot test из Sprint 3 render.js (inline в `tests/lib/plan/render.test.js`) — это контракт, по которому парсер Sprint 7 будет читать MD обратно. Roundtrip-тест в Sprint 7 будет сверяться с этим snapshot'ом.
-
----
-
-## Состояние repo после CLOSE Sprint 3 (на момент этого update)
-
-- **HEAD** — будущий Cowork CLOSE-коммит (после этого update + остальных правок).
-- **Code-зона коммиты Sprint 3** (6 шт., все локально, готовы к push):
-  - `8a6529d` feat(sprint-3): plan computation core
-  - `43f5bd6` feat(sprint-3): state.plan + actions + storage
-  - `3ee186e` feat(sprint-3): step 2 PlanPage UI + approve/readonly + restart
-  - `64e7278` docs(sprint-3): report
-  - `fb51658` fix(sprint-3): disable AdvancedParams in approved-mode brief
-  - `b8facb8` docs(sprint-3): add fix-phase report
-- **Cowork-зона коммит** (формируется одним batch'ем): code-review-sprint-3.md + test-cases-sprint-3.md + sprint-3-fix-prompt.md + SAMPLE_SIZE_CALC.md правка + JTBD.md + CONTEXT.md + PROJECT_STATUS.md + Dev-Cycle.md (таблица текущего состояния).
-- После push (10 коммитов суммарно с CLOSE Sprint 2 push'ем — у нас в локали накопилось) origin/main сравняется с локальным HEAD.
+1. **CLAUDE.md правило P-1** — зоны коммитов Code vs Cowork.
+2. **ADR-002** — артефакты как переносимое состояние. Sprint 4 FIX iter 2 закрывает оставшиеся дыры round-trip.
+3. **ADR-006** — approved заморожен. `RETURN_PLAN_TO_DRAFT` сбрасывает notebook_config.
+4. **ADR-011** — semantic shift metric_name/metric_label. См. выше.
+5. **ADR-012 draft** — Шаг 4 redesign. См. выше.
+6. **`editedExternally`** — `true` после `LOAD_TEST_PLAN_MD`, сбрасывается в `RETURN_PLAN_TO_DRAFT` / `RESET_STATE`. UI badge LoadedBadge.
+7. **localStorage** — `stat-plan:v1:state`, версионированный ключ.
+8. **`applyEnterDefaults`** — единый путь подстановки дефолтов, расширен в Sprint 4 FIX iter 1 для goal_type/randomization_unit (BUG-5).
+9. **`metric_column`** = код CSV-колонки (snake_case, обычно латиница); `metric_name` = натуральный текст. После Sprint 4 FIX iter 1.
 
 ---
 
@@ -143,19 +178,55 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4. Д�
 |---|---|
 | Концепция, для кого делаем | `docs/context/concept.md` |
 | Стек, структура папок | `docs/context/ARCHITECTURE.md` |
-| Все ADR | `docs/context/decisions-log.md` |
+| Все ADR | `docs/context/decisions-log.md` (включая ADR-011 Accepted и ADR-012 Draft 2026-05-28) |
+| Схема YAML test_plan.md | `docs/context/DATA_MODEL.md` (требует обновления в CLOSE Sprint 4 под новые поля) |
 | Backlog с чекбоксами | `docs/project/JTBD.md` |
-| История проекта по спринтам | `docs/project/CONTEXT.md` (Development Timeline) |
+| История проекта по спринтам | `docs/project/CONTEXT.md` (Development Timeline) — обновится в CLOSE Sprint 4 |
 | Процесс (фазы спринта) | `docs/project/Dev-Cycle.md` |
 | Правила поведения обоих инстансов | `CLAUDE.md` |
-| Последний завершённый спринт | `docs/project/sprint-report-3.md` + `sprint-3-fix-report.md` |
-| Snapshot test test_plan.md (контракт для Sprint 7) | `tests/lib/plan/render.test.js` |
+| Последний завершённый sprint phase | `docs/project/sprint-report-4.md` + `sprint-4-fix-report.md` |
+| Sprint 4 FIX iter 2 prompt | `docs/project/sprint-4-fix-iter2-prompt.md` ← **передать в Claude Code** |
+| Polish-pack (mini-sprint после CLOSE) | `docs/project/polish-pack.md` |
+| Тест-кейсы Sprint 4 (BUG-1..BUG-9 + UX-RENAME) | `docs/project/test-cases-sprint-4.md` |
 
 ---
 
-## Что делать дальше
+## Что делать дальше (для следующего инстанса)
 
-После push'а — PLAN Sprint 4. Cowork предложит вариант скоупа под Шаг 3 (конструктор ноутбука) с trade-off'ами. Пользователь выбирает. Cowork пишет `sprint-4-prompt.md`. Дальше — обычный 9-фазный цикл.
+**Прямо сейчас:**
 
-**Ключевой вопрос для PLAN Sprint 4:**
-- Берём ли мы в Sprint 4 только UI конструктора + demo-csv (3-4 ч), или сразу с генерацией реального .ipynb JSON (4-5 ч)? Это решит размер спринта.
+1. Передать `docs/project/sprint-4-fix-iter2-prompt.md` в Claude Code командой:
+   > Прочитай `docs/project/sprint-4-fix-iter2-prompt.md` и выполни все tasks. Особо аккуратно с BUG-9b — расследуй root cause goal_description truncation.
+
+2. Дождаться отчёта `docs/project/sprint-4-fix-iter2-report.md`.
+
+3. **Cowork верификация** — прочитать изменения в `render.js`, `parse.js`, `templates/test_plan.md.tmpl`, новые тесты. Особенно `round-trip.test.js` (новый).
+
+4. **Передать пользователю на RETEST iter 2:**
+   - Run 1: fresh бриф (сценарий «S4+S5 mix» из `docs/project/notebook-scenarios-sprint-4.md` или похожий, главное — кастомные decision_rules, ratio + numerator/denominator, cluster, goal_type=other с длинным описанием).
+   - Run 2: drag-drop того же файла.
+   - **Ожидание:** score одинаковый, decision_rules восстановлены, goal_description полностью.
+
+5. **CLOSE Sprint 4** — обновить DATA_MODEL.md, JTBD финализировать (после восстановления replace_all катастрофы — см. inline пометки в JTBD), CONTEXT.md (Sprint 4 timeline + dispel Edit-bug миф из Recurring questions), Dev-Cycle.md таблица.
+
+6. **Cowork-коммит batch'ем** + push.
+
+7. **После push:** обсудить с пользователем Architecture sprint — ADR-012 accept или reject?
+
+**Затем (по приоритету):**
+
+8. **Architecture sprint** (если ADR-012 accepted) — переписать FLOW.md/concept.md/JTBD §7-§8 под новый Шаг 4 «Быстрая валидация», UX rename Stepper.jsx.
+9. **Polish-sprint** (отдельный mini Code) — 7 пунктов polish-pack.
+10. **Sprint 5 main** — Шаг 4 redesigned.
+
+---
+
+## Открытые продуктовые вопросы
+
+Зафиксированы в обсуждении, требуют решения:
+
+1. **Methodology + demo/how-to структура** — три уровня глубины (тур / demo / methodology reference). JTBD §10 — 6 stories + 1 новая для demo. Sprint 8.
+2. **Data peek calculator** для ручного ввода σ/cov (alternative to CSV upload). JTBD §4. Sprint 3+.
+3. **Inline-warning на Q03/Q07** про приближённость без data peek. JTBD §2. Polish-pack P-4.
+4. **`editedExternally` UI badge** — реализован LoadedBadge. Может быть переосмыслен после polish-pack.
+5. **Legacy `metric_name` heuristic** — polish-pack P-7. Если не делать — legacy файлы из Sprint 3 «полу-сломаны».
