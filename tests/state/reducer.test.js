@@ -237,6 +237,114 @@ describe('DISMISS_PARSE_WARNINGS', () => {
   })
 })
 
+describe('notebook_config — initial shape', () => {
+  it('has the 6 mandatory cells enabled by default', () => {
+    expect(initialState.notebook_config.cells_enabled).toEqual([
+      'load',
+      'srm',
+      'balance',
+      'novelty',
+      'main_test',
+      'guardrails',
+    ])
+    expect(initialState.notebook_config.demo_csv_choice).toBeNull()
+  })
+})
+
+describe('TOGGLE_NOTEBOOK_CELL', () => {
+  it('adds an optional cell to cells_enabled', () => {
+    const next = reducer(initialState, {
+      type: Actions.TOGGLE_NOTEBOOK_CELL,
+      id: 'segments',
+    })
+    expect(next.notebook_config.cells_enabled).toContain('segments')
+  })
+
+  it('removes an optional cell on second toggle', () => {
+    const once = reducer(initialState, {
+      type: Actions.TOGGLE_NOTEBOOK_CELL,
+      id: 'bootstrap_ci',
+    })
+    const twice = reducer(once, {
+      type: Actions.TOGGLE_NOTEBOOK_CELL,
+      id: 'bootstrap_ci',
+    })
+    expect(twice.notebook_config.cells_enabled).not.toContain('bootstrap_ci')
+  })
+
+  it('ignores attempts to toggle off a mandatory cell', () => {
+    const next = reducer(initialState, {
+      type: Actions.TOGGLE_NOTEBOOK_CELL,
+      id: 'load',
+    })
+    expect(next.notebook_config.cells_enabled).toContain('load')
+  })
+})
+
+describe('RESET_NOTEBOOK_CONFIG', () => {
+  it('restores cells_enabled to the mandatory defaults', () => {
+    const state = {
+      ...initialState,
+      notebook_config: {
+        cells_enabled: ['load', 'segments'],
+        demo_csv_choice: 'demo_continuous',
+      },
+    }
+    const next = reducer(state, { type: Actions.RESET_NOTEBOOK_CONFIG })
+    expect(next.notebook_config.cells_enabled).toEqual([
+      'load',
+      'srm',
+      'balance',
+      'novelty',
+      'main_test',
+      'guardrails',
+    ])
+    expect(next.notebook_config.demo_csv_choice).toBeNull()
+  })
+})
+
+describe('RETURN_PLAN_TO_DRAFT — notebook_config side effect', () => {
+  it('resets notebook_config to defaults (ADR-006)', () => {
+    const state = {
+      ...initialState,
+      plan: { ...initialState.plan, status: 'approved' },
+      notebook_config: {
+        cells_enabled: ['load', 'segments', 'bootstrap_ci'],
+        demo_csv_choice: 'demo_proportion',
+      },
+    }
+    const next = reducer(state, { type: Actions.RETURN_PLAN_TO_DRAFT })
+    expect(next.notebook_config.cells_enabled).toEqual(
+      initialState.notebook_config.cells_enabled,
+    )
+    expect(next.notebook_config.demo_csv_choice).toBeNull()
+  })
+})
+
+describe('SET_DEMO_CSV_CHOICE', () => {
+  it('writes the choice into notebook_config', () => {
+    const next = reducer(initialState, {
+      type: Actions.SET_DEMO_CSV_CHOICE,
+      choice: 'demo_continuous',
+    })
+    expect(next.notebook_config.demo_csv_choice).toBe('demo_continuous')
+  })
+})
+
+describe('RESET_STATE — covers notebook_config too', () => {
+  it('returns notebook_config to initial defaults', () => {
+    const state = {
+      ...initialState,
+      notebook_config: {
+        cells_enabled: ['load'],
+        demo_csv_choice: 'demo_proportion',
+      },
+    }
+    const next = reducer(state, { type: Actions.RESET_STATE })
+    expect(next.notebook_config).toEqual(initialState.notebook_config)
+  })
+})
+
 describe('RESET_STATE', () => {
   it('returns to initialState regardless of current state', () => {
     const state = {

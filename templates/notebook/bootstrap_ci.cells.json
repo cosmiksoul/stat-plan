@@ -1,0 +1,44 @@
+{
+  "id": "bootstrap_ci",
+  "name": "Bootstrap CI",
+  "description": "Bootstrap-CI для main metric (10к ресэмплов) — независимая проверка границ интервала.",
+  "default_enabled": false,
+  "requires": ["main_test"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 8. Bootstrap CI (опционально)\n",
+        "\n",
+        "Независимая проверка доверительного интервала для основной метрики через bootstrap (10 000 ресэмплов). Полезно если есть подозрение, что параметрический CI из main_test смещён (выбросы, ненормальное распределение)."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "rng = np.random.default_rng(42)\n",
+        "metric_col = '{{metric_column}}'\n",
+        "alpha = {{alpha}}\n",
+        "\n",
+        "control = df[df['variant'] == 'control'][metric_col].values\n",
+        "treatment = df[df['variant'] == 'treatment'][metric_col].values\n",
+        "\n",
+        "N_BOOT = 10000\n",
+        "diffs = np.empty(N_BOOT)\n",
+        "for i in range(N_BOOT):\n",
+        "    c = rng.choice(control, size=len(control), replace=True).mean()\n",
+        "    t = rng.choice(treatment, size=len(treatment), replace=True).mean()\n",
+        "    diffs[i] = t - c\n",
+        "\n",
+        "lo, hi = np.quantile(diffs, [alpha / 2, 1 - alpha / 2])\n",
+        "print(f'bootstrap mean diff: {diffs.mean():.6f}')\n",
+        "print(f'CI ({1 - alpha:.0%}): [{lo:.6f}, {hi:.6f}]')"
+      ]
+    }
+  ]
+}

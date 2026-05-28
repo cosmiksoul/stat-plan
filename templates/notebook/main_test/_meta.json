@@ -1,0 +1,7 @@
+{
+  "id": "main_test",
+  "name": "Основной тест",
+  "description": "Главная статистическая проверка под выбранный метод. Вариант ячейки выбирается по plan.derived.test_method.",
+  "default_enabled": true,
+  "requires": ["load"]
+}

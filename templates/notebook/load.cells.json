@@ -1,0 +1,33 @@
+{
+  "id": "load",
+  "name": "Загрузка данных + EDA",
+  "description": "Чтение experiment_results.csv, .info() и .head() для проверки структуры.",
+  "default_enabled": true,
+  "requires": [],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 1. Загрузка данных\n",
+        "\n",
+        "CSV должен лежать рядом с этим ноутбуком. Имена колонок зафиксированы — см. Expected CSV schema выше."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "\n",
+        "df = pd.read_csv('experiment_results.csv')\n",
+        "print(f'rows: {len(df):,}')\n",
+        "df.info()\n",
+        "df.head()"
+      ]
+    }
+  ]
+}

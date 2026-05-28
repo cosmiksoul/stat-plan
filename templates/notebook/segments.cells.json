@@ -1,0 +1,37 @@
+{
+  "id": "segments",
+  "name": "Сегменты (geo)",
+  "description": "Сегментный анализ по `geo` — лифт по каждому сегменту отдельно, без формальных мульти-тестов.",
+  "default_enabled": false,
+  "requires": ["main_test"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 7. Сегментный анализ (опционально)\n",
+        "\n",
+        "Лифт по `geo` — sanity-check, что эффект не сидит в одном сегменте. **Не используем для решений** (multi-testing не корректируется): только для постановки гипотез на следующий тест."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "metric_col = '{{metric_column}}'\n",
+        "segment_col = 'geo'\n",
+        "\n",
+        "if segment_col not in df.columns:\n",
+        "    print(f'segment column {segment_col!r} not in csv — skipping')\n",
+        "else:\n",
+        "    by = df.groupby([segment_col, 'variant'])[metric_col].agg(['mean', 'count']).unstack('variant')\n",
+        "    means = by['mean']\n",
+        "    if 'control' in means and 'treatment' in means:\n",
+        "        means['rel_lift_%'] = (means['treatment'] - means['control']) / means['control'] * 100\n",
+        "    means.round(4)"
+      ]
+    }
+  ]
+}

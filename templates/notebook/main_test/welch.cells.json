@@ -1,0 +1,47 @@
+{
+  "test_method": "welch_t_test",
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 6. Welch t-test (unequal variance)\n",
+        "\n",
+        "T-test со свободной дисперсией (equal_var=False). Безопасный выбор для continuous: переживает большое расхождение σ² между группами без потери мощности на больших выборках."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "from scipy.stats import ttest_ind\n",
+        "import numpy as np\n",
+        "\n",
+        "metric_col = '{{metric_column}}'\n",
+        "alpha = {{alpha}}\n",
+        "\n",
+        "control = df[df['variant'] == 'control'][metric_col]\n",
+        "treatment = df[df['variant'] == 'treatment'][metric_col]\n",
+        "\n",
+        "t_stat, p = ttest_ind(treatment, control, equal_var=False)\n",
+        "\n",
+        "m_c, m_t = control.mean(), treatment.mean()\n",
+        "diff = m_t - m_c\n",
+        "se = np.sqrt(control.var(ddof=1) / len(control) + treatment.var(ddof=1) / len(treatment))\n",
+        "z_crit = 1.959963984540054 if alpha == 0.05 else __import__('scipy.stats', fromlist=['norm']).norm.ppf(1 - alpha / 2)\n",
+        "ci_lo, ci_hi = diff - z_crit * se, diff + z_crit * se\n",
+        "rel_lift = diff / m_c if m_c else float('nan')\n",
+        "\n",
+        "print(f'control mean   = {m_c:.4f}')\n",
+        "print(f'treatment mean = {m_t:.4f}')\n",
+        "print(f'absolute diff  = {diff:+.4f}')\n",
+        "print(f'relative lift  = {rel_lift:+.2%}')\n",
+        "print(f't = {t_stat:.4f}, p = {p:.4f}  (Welch, unequal variance)')\n",
+        "print(f'CI {1 - alpha:.0%}: [{ci_lo:+.4f}, {ci_hi:+.4f}]')\n",
+        "print('SIGNIFICANT' if p < alpha else 'not significant')"
+      ]
+    }
+  ]
+}

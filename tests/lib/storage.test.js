@@ -30,6 +30,10 @@ const initialState = {
     briefSubmitted: false,
     parse_warnings: [],
   },
+  notebook_config: {
+    cells_enabled: ['load', 'srm', 'balance', 'novelty', 'main_test', 'guardrails'],
+    demo_csv_choice: null,
+  },
 }
 
 beforeEach(() => {
@@ -200,6 +204,20 @@ describe('saveState', () => {
     const restored = loadState(initialState)
     // parse_warnings is reset to [] on load, regardless of saved state
     expect(restored.plan.parse_warnings).toEqual([])
+  })
+
+  it('persists notebook_config cells_enabled and demo_csv_choice', () => {
+    const state = {
+      ...initialState,
+      notebook_config: {
+        cells_enabled: ['load', 'srm', 'balance', 'novelty', 'main_test', 'guardrails', 'segments'],
+        demo_csv_choice: 'demo_continuous',
+      },
+    }
+    saveState(state)
+    const restored = loadState(initialState)
+    expect(restored.notebook_config.cells_enabled).toContain('segments')
+    expect(restored.notebook_config.demo_csv_choice).toBe('demo_continuous')
   })
 
   it('does not throw when localStorage is unavailable (quota/disabled)', () => {

@@ -1,0 +1,49 @@
+{
+  "test_method": "z_test_proportions",
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 6. Z-test для пропорций\n",
+        "\n",
+        "Основной тест — `statsmodels.proportions_ztest`. Возвращает Z, p-value и нормальный CI для разности долей. Подходит когда метрика — конверсия (0/1) и обе группы достаточно большие, чтобы CLT работал."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "from statsmodels.stats.proportion import proportions_ztest, confint_proportions_2indep\n",
+        "\n",
+        "metric_col = '{{metric_column}}'\n",
+        "alpha = {{alpha}}\n",
+        "\n",
+        "control = df[df['variant'] == 'control'][metric_col]\n",
+        "treatment = df[df['variant'] == 'treatment'][metric_col]\n",
+        "\n",
+        "success = [treatment.sum(), control.sum()]\n",
+        "nobs = [len(treatment), len(control)]\n",
+        "\n",
+        "z, p = proportions_ztest(success, nobs, alternative='two-sided')\n",
+        "ci_lo, ci_hi = confint_proportions_2indep(\n",
+        "    success[0], nobs[0], success[1], nobs[1],\n",
+        "    method='wald', alpha=alpha,\n",
+        ")\n",
+        "p_control = control.mean()\n",
+        "p_treatment = treatment.mean()\n",
+        "rel_lift = (p_treatment - p_control) / p_control if p_control else float('nan')\n",
+        "\n",
+        "print(f'control CR  = {p_control:.4%}')\n",
+        "print(f'treatment CR = {p_treatment:.4%}')\n",
+        "print(f'absolute diff = {p_treatment - p_control:+.4%}')\n",
+        "print(f'relative lift = {rel_lift:+.2%}')\n",
+        "print(f'Z = {z:.4f}, p = {p:.4f}')\n",
+        "print(f'CI {1 - alpha:.0%}: [{ci_lo:+.4%}, {ci_hi:+.4%}]')\n",
+        "print('SIGNIFICANT' if p < alpha else 'not significant')"
+      ]
+    }
+  ]
+}

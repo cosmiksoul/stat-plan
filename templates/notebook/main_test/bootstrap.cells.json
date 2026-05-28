@@ -1,0 +1,54 @@
+{
+  "test_method": "bootstrap",
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 6. Bootstrap (универсальный)\n",
+        "\n",
+        "Bootstrap-CI на разность средних (10 000 ресэмплов) + bootstrap p-value. Используется когда параметрический тест неудобен: ratio-метрики, ненормальные распределения, ситуации с длинными хвостами. Универсальный fallback для `mannwhitney` и `delta_method` в первой версии тула."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "rng = np.random.default_rng(42)\n",
+        "\n",
+        "metric_col = '{{metric_column}}'\n",
+        "alpha = {{alpha}}\n",
+        "\n",
+        "control = df[df['variant'] == 'control'][metric_col].values\n",
+        "treatment = df[df['variant'] == 'treatment'][metric_col].values\n",
+        "\n",
+        "observed = treatment.mean() - control.mean()\n",
+        "\n",
+        "N_BOOT = 10000\n",
+        "boot_diffs = np.empty(N_BOOT)\n",
+        "for i in range(N_BOOT):\n",
+        "    c = rng.choice(control, size=len(control), replace=True).mean()\n",
+        "    t = rng.choice(treatment, size=len(treatment), replace=True).mean()\n",
+        "    boot_diffs[i] = t - c\n",
+        "\n",
+        "ci_lo, ci_hi = np.quantile(boot_diffs, [alpha / 2, 1 - alpha / 2])\n",
+        "# Two-sided bootstrap p-value: proportion of |boot - 0| as extreme as |observed|.\n",
+        "# Center around 0 (H0: no diff) via shift.\n",
+        "centered = boot_diffs - boot_diffs.mean()\n",
+        "p = (np.abs(centered) >= abs(observed)).mean()\n",
+        "rel_lift = observed / control.mean() if control.mean() else float('nan')\n",
+        "\n",
+        "print(f'control mean   = {control.mean():.4f}')\n",
+        "print(f'treatment mean = {treatment.mean():.4f}')\n",
+        "print(f'observed diff  = {observed:+.4f}')\n",
+        "print(f'relative lift  = {rel_lift:+.2%}')\n",
+        "print(f'bootstrap p = {p:.4f}')\n",
+        "print(f'CI {1 - alpha:.0%}: [{ci_lo:+.4f}, {ci_hi:+.4f}]')\n",
+        "print('SIGNIFICANT' if p < alpha else 'not significant')"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "balance",
+  "name": "Баланс группы",
+  "description": "Средние / доли метрики и guardrails по группам — сходимость до запуска и за весь тест.",
+  "default_enabled": true,
+  "requires": ["load"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 3. Балансовая проверка\n",
+        "\n",
+        "Средние / доли по control/treatment для основной метрики и guardrails. Помогает заметить артефакты до запуска статистики."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "metric_col = '{{metric_column}}'\n",
+        "guardrail_cols = {{guardrails_py_list}}\n",
+        "\n",
+        "summary_cols = [metric_col] + guardrail_cols\n",
+        "balance = df.groupby('variant')[summary_cols].mean().round(4)\n",
+        "balance['n'] = df.groupby('variant').size()\n",
+        "balance"
+      ]
+    }
+  ]
+}

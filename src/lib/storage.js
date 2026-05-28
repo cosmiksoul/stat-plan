@@ -6,6 +6,7 @@
 //   - state.test_id, state.title (set after LOAD_TEST_PLAN_MD)
 //   - state.brief (all fields except currentQuestion + advancedExpanded — UI state)
 //   - state.plan (status / approvedAt / editedExternally / briefSubmitted)
+//   - state.notebook_config (cells_enabled + demo_csv_choice)
 //
 // What we don't persist:
 //   - state.tourEnabled (per-session preference)
@@ -36,6 +37,7 @@ function pickForStorage(state) {
     title: state.title ?? null,
     brief: pickBrief(state.brief),
     plan: pickPlan(state.plan),
+    notebook_config: state.notebook_config,
   }
 }
 
@@ -72,6 +74,15 @@ function mergeRestored(persisted, initial) {
           parse_warnings: initial.plan.parse_warnings,
         }
       : initial.plan,
+    notebook_config: isPlainObject(persisted.notebook_config)
+      ? {
+          ...initial.notebook_config,
+          ...persisted.notebook_config,
+          cells_enabled: Array.isArray(persisted.notebook_config.cells_enabled)
+            ? persisted.notebook_config.cells_enabled
+            : initial.notebook_config.cells_enabled,
+        }
+      : initial.notebook_config,
   }
 }
 

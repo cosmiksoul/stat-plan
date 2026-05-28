@@ -1,0 +1,44 @@
+{
+  "id": "novelty",
+  "name": "Novelty effect",
+  "description": "Эффект на днях 1-2 vs 3+. Сильное расхождение — фича работает только из-за новизны.",
+  "default_enabled": true,
+  "requires": ["load"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 4. Novelty effect\n",
+        "\n",
+        "Если эффект на первых двух днях заметно отличается от дней 3+, фича может работать только за счёт новизны. На коротких тестах novelty часто прячет «настоящий» эффект."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "metric_col = '{{metric_column}}'\n",
+        "early = df[df['day'] <= 2]\n",
+        "later = df[df['day'] >= 3]\n",
+        "\n",
+        "def lift(part):\n",
+        "    means = part.groupby('variant')[metric_col].mean()\n",
+        "    if 'control' not in means or 'treatment' not in means or means['control'] == 0:\n",
+        "        return None\n",
+        "    return (means['treatment'] - means['control']) / means['control']\n",
+        "\n",
+        "lift_early = lift(early)\n",
+        "lift_later = lift(later)\n",
+        "\n",
+        "print(f'lift days 1-2: {lift_early:.3%}' if lift_early is not None else 'lift days 1-2: n/a')\n",
+        "print(f'lift days 3+:  {lift_later:.3%}' if lift_later is not None else 'lift days 3+: n/a')\n",
+        "\n",
+        "if lift_early is not None and lift_later is not None and abs(lift_early - lift_later) > 0.5 * abs(lift_later or 1):\n",
+        "    print('NOVELTY suspected — early lift differs by >50% relative from later days')"
+      ]
+    }
+  ]
+}

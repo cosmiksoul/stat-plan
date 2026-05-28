@@ -1,0 +1,39 @@
+{
+  "id": "srm",
+  "name": "Sample Ratio Mismatch",
+  "description": "Chi² на размеры control/treatment. p < 0.001 — стоп, проблема в рандомизации.",
+  "default_enabled": true,
+  "requires": ["load"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 2. SRM check\n",
+        "\n",
+        "Sample Ratio Mismatch — проверка, что соотношение размеров групп соответствует ожидаемому (50/50). Значимое отклонение указывает на сломанную рандомизацию: результаты теста доверять нельзя."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "from scipy.stats import chisquare\n",
+        "\n",
+        "group_sizes = df['variant'].value_counts().sort_index()\n",
+        "expected = [len(df) / 2, len(df) / 2]\n",
+        "chi2, p = chisquare(group_sizes, f_exp=expected)\n",
+        "\n",
+        "print(f'group sizes: {dict(group_sizes)}')\n",
+        "print(f'chi2 = {chi2:.4f}, p = {p:.4f}')\n",
+        "\n",
+        "if p < 0.001:\n",
+        "    print('SRM detected — stop and investigate randomization')\n",
+        "else:\n",
+        "    print('no SRM detected')"
+      ]
+    }
+  ]
+}

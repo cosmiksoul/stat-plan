@@ -49,6 +49,27 @@ const initialBrief = {
   },
 }
 
+// Default cells that should be enabled when the user lands on step 3.
+// Mandatory cells (load/srm/balance/novelty/main_test/guardrails) live in
+// cells_enabled. Optional ones (segments, bootstrap_ci) start disabled and
+// can be toggled by the user; cuped and delta_method are reserved as
+// disabled placeholders in the UI (next mini-sprint).
+const MANDATORY_NOTEBOOK_CELLS = [
+  'load',
+  'srm',
+  'balance',
+  'novelty',
+  'main_test',
+  'guardrails',
+]
+
+const initialNotebookConfig = {
+  cells_enabled: [...MANDATORY_NOTEBOOK_CELLS],
+  // demo_csv_choice tracks which demo file the user picked; null means
+  // "default per metric_type" — the UI derives the actual file from brief.
+  demo_csv_choice: null,
+}
+
 const initialPlan = {
   status: 'draft',
   approvedAt: null,
@@ -73,7 +94,10 @@ export const initialState = {
   title: null,
   brief: initialBrief,
   plan: initialPlan,
+  notebook_config: initialNotebookConfig,
 }
+
+export { MANDATORY_NOTEBOOK_CELLS }
 
 export const Actions = {
   START_BRIEF: 'START_BRIEF',
@@ -93,6 +117,9 @@ export const Actions = {
   RESET_STATE: 'RESET_STATE',
   LOAD_TEST_PLAN_MD: 'LOAD_TEST_PLAN_MD',
   DISMISS_PARSE_WARNINGS: 'DISMISS_PARSE_WARNINGS',
+  TOGGLE_NOTEBOOK_CELL: 'TOGGLE_NOTEBOOK_CELL',
+  RESET_NOTEBOOK_CONFIG: 'RESET_NOTEBOOK_CONFIG',
+  SET_DEMO_CSV_CHOICE: 'SET_DEMO_CSV_CHOICE',
 }
 
 function setBrief(state, patch) {
@@ -191,11 +218,18 @@ export function reducer(state, action) {
       })
 
     case Actions.RETURN_PLAN_TO_DRAFT:
-      return setPlan(state, {
-        status: 'draft',
-        approvedAt: null,
-        editedExternally: false,
-      })
+      return {
+        ...state,
+        plan: {
+          ...state.plan,
+          status: 'draft',
+          approvedAt: null,
+          editedExternally: false,
+        },
+        // ADR-006: returning to draft resets the current notebook
+        // configuration so it doesn't drift from the new plan shape.
+        notebook_config: initialNotebookConfig,
+      }
 
     case Actions.RECOMPUTE_PLAN:
       return recomputePlan(state)
@@ -237,6 +271,33 @@ export function reducer(state, action) {
 
     case Actions.DISMISS_PARSE_WARNINGS:
       return setPlan(state, { parse_warnings: [] })
+
+    case Actions.TOGGLE_NOTEBOOK_CELL: {
+      const id = action.id
+      if (typeof id !== 'string') return state
+      // Mandatory cells cannot be toggled off.
+      if (MANDATORY_NOTEBOOK_CELLS.includes(id)) return state
+      const current = state.notebook_config.cells_enabled
+      const next = current.includes(id)
+        ? current.filter((x) => x !== id)
+        : [...current, id]
+      return {
+        ...state,
+        notebook_config: { ...state.notebook_config, cells_enabled: next },
+      }
+    }
+
+    case Actions.RESET_NOTEBOOK_CONFIG:
+      return { ...state, notebook_config: initialNotebookConfig }
+
+    case Actions.SET_DEMO_CSV_CHOICE:
+      return {
+        ...state,
+        notebook_config: {
+          ...state.notebook_config,
+          demo_csv_choice: action.choice || null,
+        },
+      }
 
     default:
       return state
