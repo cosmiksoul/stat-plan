@@ -73,14 +73,16 @@ export default function NotebookBuilderPage() {
         </div>
       )}
 
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={handleDownload}
-          className="mono-label font-semibold bg-accent text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base"
-        >
-          ↓ СКАЧАТЬ {built.filename.toUpperCase()}
-        </button>
+      <div className="sticky bottom-0 -mx-6 px-6 py-4 bg-bg/90 backdrop-blur border-t border-border-soft">
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="mono-label font-semibold bg-accent text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base"
+          >
+            ↓ СКАЧАТЬ {built.filename.toUpperCase()}
+          </button>
+        </div>
       </div>
     </div>
   )

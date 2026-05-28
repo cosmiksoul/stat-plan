@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from './ConfirmDialog.jsx'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
@@ -13,6 +14,7 @@ export default function PlanActions({
   const [showReturnConfirm, setShowReturnConfirm] = useState(false)
   const [uploadError, setUploadError] = useState(null)
   const fileInputRef = useRef(null)
+  const navigate = useNavigate()
   const isApproved = status === 'approved'
 
   function handleFileChange(e) {
@@ -67,6 +69,16 @@ export default function PlanActions({
 
       <div className="flex-1" />
 
+      {isApproved && (
+        <button
+          type="button"
+          onClick={() => setShowReturnConfirm(true)}
+          className="mono-label text-warn border border-warn-border bg-warn-soft rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+        >
+          ↻ ВЕРНУТЬ В ЧЕРНОВИК
+        </button>
+      )}
+
       {!isApproved && (
         <button
           type="button"
@@ -80,10 +92,10 @@ export default function PlanActions({
       {isApproved && (
         <button
           type="button"
-          onClick={() => setShowReturnConfirm(true)}
-          className="mono-label text-warn border border-warn-border bg-warn-soft rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
+          onClick={() => navigate('/step3')}
+          className="mono-label font-semibold bg-accent text-bg rounded-md px-5 py-2 hover:opacity-90 transition-opacity cursor-pointer"
         >
-          ↻ ВЕРНУТЬ В ЧЕРНОВИК
+          ПЕРЕЙТИ К КОНСТРУКТОРУ →
         </button>
       )}
 

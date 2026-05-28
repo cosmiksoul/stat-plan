@@ -60,6 +60,16 @@ export default function PlanInfoCard({ state }) {
           </div>
         ))}
       </div>
+      {(derived.test_method === 'delta_method' ||
+        derived.test_method === 'mannwhitney') && (
+        <div className="mt-4 text-xs text-warn bg-warn-soft border border-warn-border rounded-md px-3 py-2 leading-relaxed">
+          ⚠ Метод <code className="font-mono">{derived.test_method}</code>:
+          используется bootstrap-вариант ячейки main_test как универсальный
+          fallback в Sprint 4. CI и p-value будут отличаться от строгого{' '}
+          <code className="font-mono">{derived.test_method}</code>. Для
+          production-теста замени main_test вручную.
+        </div>
+      )}
     </section>
   )
 }
