@@ -327,7 +327,8 @@ function scoreDataPeek(brief, remarks) {
 
 function normalizeBaseline(baseline) {
   if (baseline?.value == null) return null
-  if (baseline.unit === 'percent') return baseline.value / 100
+  // baseline.unit is 'fraction' or null after parse — value is already in
+  // the right shape (no 'percent' path is reachable).
   return baseline.value
 }
 

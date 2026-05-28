@@ -170,4 +170,29 @@ describe('full round-trip — every brief field that the YAML carries', () => {
     const parsed = parseTestPlanMd(md)
     expect(parsed.brief.decision_rules).toEqual(original.brief.decision_rules)
   })
+
+  // Sprint 5 FIX C-2: when the user didn't fill the CSV column code, the
+  // YAML must NOT carry metric_label (so parse can apply the P-7 legacy
+  // heuristic and restore brief.metric_column = '' instead of overwriting
+  // it with the natural-text label).
+  it('preserves empty metric_column round-trip via P-7 legacy heuristic (C-2)', () => {
+    const original = makeState({
+      metric_column: '',
+      metric_name: 'конверсия в первый депозит',
+    })
+    const md = renderTestPlanMd(original)
+
+    // YAML must carry the natural text in metric_name and an explicit null
+    // metric_label — that's the legacy-shaped output that lets parse route
+    // it back symmetrically.
+    expect(md).toContain('metric_name: конверсия в первый депозит')
+    expect(md).toContain('metric_label: null')
+
+    const parsed = parseTestPlanMd(md)
+    expect(parsed.ok).toBe(true)
+    expect(parsed.brief.metric_column).toBe('')
+    expect(parsed.brief.metric_name).toBe('конверсия в первый депозит')
+    // The legacy warning is expected here — see fix-prompt C-2 technical notes.
+    expect(parsed.warnings.some((w) => /legacy формат/.test(w))).toBe(true)
+  })
 })

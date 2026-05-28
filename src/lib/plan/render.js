@@ -123,7 +123,8 @@ function renderDecisionRulesMd(dr) {
 
 function normalizeBaselineForYaml(baseline) {
   if (baseline?.value == null) return null
-  if (baseline.unit === 'percent') return baseline.value / 100
+  // baseline.unit is 'fraction' or null after parse — value is already in
+  // the right shape (no 'percent' path is reachable).
   return baseline.value
 }
 
@@ -165,7 +166,14 @@ export function renderTestPlanMd(state) {
 
     metric_type: yamlScalar(brief.metric_type ?? null),
     metric_name: yamlScalar(brief.metric_column || brief.metric_name || null),
-    metric_label: yamlScalar(brief.metric_name || null),
+    // Only write metric_label when metric_column is set (new format pair).
+    // When the user left the column code empty, YAML carries only the
+    // natural text in metric_name, and parse.js will route it back into
+    // brief.metric_name via the P-7 legacy heuristic — keeping round-trip
+    // symmetric for the empty-column case.
+    metric_label: yamlScalar(
+      brief.metric_column ? brief.metric_name || null : null,
+    ),
     ratio_numerator: yamlScalar(brief.ratio_components?.numerator ?? null),
     ratio_denominator: yamlScalar(brief.ratio_components?.denominator ?? null),
     baseline: yamlScalar(normalizeBaselineForYaml(brief.baseline)),

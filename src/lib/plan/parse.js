@@ -221,7 +221,13 @@ function mapFrontmatter(fm, warnings) {
     warnings.push('Поле metric_name отсутствует — оставлено пустым.')
   }
 
-  if (fm.metric_label != null && fm.metric_label !== false) {
+  // Empty metric_label ("") must not overwrite the legacy-heuristic result
+  // above. The C-3 guard mirrors the `!== ''` check inside hasLabel.
+  if (
+    fm.metric_label != null &&
+    fm.metric_label !== false &&
+    fm.metric_label !== ''
+  ) {
     if (isStr(fm.metric_label)) {
       brief.metric_name = fm.metric_label
     } else {

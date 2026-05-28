@@ -222,7 +222,7 @@ function buildHeaderCell(state, cellsEnabled, schema) {
   const derived = plan.derived || {}
   const today = new Date().toISOString().slice(0, 10)
   const lines = []
-  lines.push(`# Analysis: ${deriveTitle(state)}\n`)
+  lines.push(`# ${deriveTitle(state)}\n`)
   lines.push('\n')
   lines.push(`> Сгенерировано stat·plan ${today}.\n`)
   lines.push(

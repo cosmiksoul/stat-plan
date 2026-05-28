@@ -89,8 +89,9 @@ export function normalCdf(x) {
 
 function normalizeBaseline(baseline, metricType) {
   if (baseline?.value == null) return null
-  if (baseline.unit === 'percent') return baseline.value / 100
-  // For proportion default to fraction interpretation.
+  // baseline.unit is set to 'fraction' (proportions, already 0..1) or null
+  // (continuous/ratio/count) by parse.js; values are already in the right
+  // shape so no conversion is needed here.
   return baseline.value
 }
 

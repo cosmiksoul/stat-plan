@@ -834,6 +834,22 @@ describe('parseTestPlanMd — legacy metric_name heuristic (P-7)', () => {
     expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(false)
   })
 
+  it('treats explicit metric_label="" as absent so legacy heuristic survives (C-3)', () => {
+    // Edge case: file has metric_label: "" (explicit empty string). The
+    // first hasLabel gate already excludes this via `!== ''`, so the legacy
+    // heuristic fires. The second gate (the assignment block) must also
+    // skip empty-string to avoid clobbering brief.metric_name.
+    const md = validProportionMd().replace(
+      'metric_name: cr_to_partner_click',
+      'metric_name: "конверсия в первый депозит"\nmetric_label: ""',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_name).toBe('конверсия в первый депозит')
+    expect(r.brief.metric_column).toBe('')
+    expect(r.warnings.some((w) => /legacy формат/.test(w))).toBe(true)
+  })
+
   it('skips heuristic when metric_label is present even if metric_name looks legacy', () => {
     // Conflict case: metric_name has Cyrillic but metric_label is also set.
     // Heuristic does NOT fire — assume the author meant the literal value as

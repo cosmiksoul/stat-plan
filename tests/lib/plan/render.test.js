@@ -288,7 +288,7 @@ describe('renderTestPlanMd — snapshot of full output', () => {
       # Test design
       metric_type: proportion
       metric_name: cr_to_partner_click
-      metric_label: cr_to_partner_click
+      metric_label: null
       ratio_numerator: null
       ratio_denominator: null
       baseline: 0.031

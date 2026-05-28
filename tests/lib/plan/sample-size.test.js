@@ -144,17 +144,9 @@ describe('calculateSampleSize — z_test_proportions', () => {
     expect(approx(res.sample_size_per_arm, 81014, 10)).toBe(true)
   })
 
-  it('supports baseline.unit=percent (value scaled by 100)', () => {
-    const res = calculateSampleSize(
-      brief({
-        metric_type: 'proportion',
-        baseline_value: 3.1,
-        baseline_unit: 'percent',
-        mde_value: 8,
-      }),
-    )
-    expect(approx(res.sample_size_per_arm, 81014, 10)).toBe(true)
-  })
+  // Removed Sprint 5 FIX C-1: baseline.unit='percent' branch was dead code
+  // — parse.js::coerceBaseline only ever sets unit to 'fraction' or null.
+  // The branch is gone from normalizeBaseline (sample-size, scoring, render).
 })
 
 // ---- T-test for continuous (cases 5-6) ------------------------------------

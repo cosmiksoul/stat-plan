@@ -187,8 +187,10 @@ describe('buildNotebook — header cell', () => {
   it('header title uses natural metric_name; filename/test_id use metric_column slug', () => {
     const { json, filename } = buildNotebook(makeState())
     const header = flatSource(json.cells[0])
-    // Natural label goes into the visible h1 title.
-    expect(header).toContain('# Analysis: Тест: CR в клик')
+    // Natural label goes into the visible h1 title (no "Analysis:" prefix
+    // per Sprint 5 FIX C-4 — deriveTitle already supplies "Тест: ").
+    expect(header).toContain('# Тест: CR в клик')
+    expect(header).not.toContain('# Analysis:')
     // Metric line shows the natural label too.
     expect(header).toContain('Metric: `CR в клик`')
     // test_id and filename derive from metric_column (slugified).
