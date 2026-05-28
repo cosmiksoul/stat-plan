@@ -101,8 +101,59 @@ describe('applyEnterDefaults — decision_rules (Q10)', () => {
 describe('applyEnterDefaults — other ids', () => {
   it('returns brief unchanged for question ids that have no defaults', () => {
     const brief = makeBrief()
-    expect(applyEnterDefaults(brief, 'goal_type')).toBe(brief)
     expect(applyEnterDefaults(brief, 'baseline')).toBe(brief)
     expect(applyEnterDefaults(brief, 'mde')).toBe(brief)
+  })
+})
+
+describe('applyEnterDefaults — goal_type (Q01) preselect persistence', () => {
+  it('prefills goal_type with product_change when empty', () => {
+    const brief = {
+      ...makeBrief(),
+      goal_type: null,
+      defaultsApplied: {
+        metric_name: false,
+        decision_rules: false,
+        goal_type: false,
+        randomization_unit: false,
+      },
+    }
+    const result = applyEnterDefaults(brief, 'goal_type')
+    expect(result.goal_type).toBe('product_change')
+    expect(result.defaultsApplied.goal_type).toBe(true)
+  })
+
+  it('does not overwrite goal_type when user has already chosen', () => {
+    const brief = {
+      ...makeBrief(),
+      goal_type: 'other',
+      defaultsApplied: {
+        metric_name: false,
+        decision_rules: false,
+        goal_type: false,
+        randomization_unit: false,
+      },
+    }
+    const result = applyEnterDefaults(brief, 'goal_type')
+    expect(result.goal_type).toBe('other')
+    expect(result).toBe(brief)
+  })
+})
+
+describe('applyEnterDefaults — randomization_unit (Q06) preselect persistence', () => {
+  it('prefills randomization_unit with user when empty', () => {
+    const brief = {
+      ...makeBrief(),
+      randomization_unit: null,
+      defaultsApplied: {
+        metric_name: false,
+        decision_rules: false,
+        goal_type: false,
+        randomization_unit: false,
+      },
+    }
+    const result = applyEnterDefaults(brief, 'randomization_unit')
+    expect(result.randomization_unit).toBe('user')
+    expect(result.defaultsApplied.randomization_unit).toBe(true)
   })
 })

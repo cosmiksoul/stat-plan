@@ -78,9 +78,12 @@ function emptyBriefShape() {
       holdback_percent: null,
     },
     data_peek: null,
+    goal_description: '',
     defaultsApplied: {
       metric_name: false,
       decision_rules: false,
+      goal_type: false,
+      randomization_unit: false,
     },
   }
 }
@@ -182,15 +185,33 @@ function mapFrontmatter(fm, warnings) {
     brief.metric_type = fm.metric_type
   }
 
-  // Required: metric_name
+  // YAML.metric_name carries the code identifier (snake_case CSV column);
+  // it maps onto brief.metric_column. The human-language label is stored
+  // separately as YAML.metric_label and maps onto brief.metric_name.
   if (fm.metric_name != null) {
     if (isStr(fm.metric_name)) {
-      brief.metric_name = fm.metric_name
+      brief.metric_column = fm.metric_name
     } else {
       warnings.push('Поле metric_name не строка — оставлено пустым.')
     }
   } else {
     warnings.push('Поле metric_name отсутствует — оставлено пустым.')
+  }
+
+  if (fm.metric_label != null && fm.metric_label !== false) {
+    if (isStr(fm.metric_label)) {
+      brief.metric_name = fm.metric_label
+    } else {
+      warnings.push('Поле metric_label не строка — оставлено пустым.')
+    }
+  }
+
+  if (fm.goal_description != null && fm.goal_description !== false) {
+    if (isStr(fm.goal_description)) {
+      brief.goal_description = fm.goal_description
+    } else {
+      warnings.push('Поле goal_description не строка — оставлено пустым.')
+    }
   }
 
   // Required: baseline (number)

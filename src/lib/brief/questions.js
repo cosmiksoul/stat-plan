@@ -113,6 +113,16 @@ export const QUESTIONS = [
     default: 'product_change',
     yamlPath: 'goal_type',
     options: GOAL_OPTIONS,
+    subQuestions: [
+      {
+        id: 'goal_description',
+        revealsWhen: 'other',
+        type: 'goal_description',
+        title: 'Опиши кратко что тестируешь',
+        hint: 'Можно оставить пустым — поле не влияет на статистику.',
+        yamlPath: 'goal_description',
+      },
+    ],
   },
   {
     num: 2,

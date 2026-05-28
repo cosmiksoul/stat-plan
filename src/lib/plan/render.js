@@ -148,7 +148,9 @@ export function renderTestPlanMd(state) {
     approved_at: yamlScalar(plan.approvedAt ?? null),
 
     metric_type: yamlScalar(brief.metric_type ?? null),
-    metric_name: yamlScalar(brief.metric_name ?? null),
+    metric_name: yamlScalar(brief.metric_column || brief.metric_name || null),
+    metric_label: yamlScalar(brief.metric_name || null),
+    goal_description: yamlScalar(brief.goal_description || null),
     baseline: yamlScalar(normalizeBaselineForYaml(brief.baseline)),
     test_method: yamlScalar(derived.test_method ?? null),
     randomization_unit: yamlScalar(brief.randomization_unit ?? null),

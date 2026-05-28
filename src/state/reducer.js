@@ -8,6 +8,7 @@ import { scorePlan } from '../lib/plan/scoring.js'
 const initialBrief = {
   currentQuestion: 1,
   goal_type: null,
+  goal_description: '',
   hypothesis: {
     text: '',
     slots: {
@@ -46,6 +47,8 @@ const initialBrief = {
   defaultsApplied: {
     metric_name: false,
     decision_rules: false,
+    goal_type: false,
+    randomization_unit: false,
   },
 }
 
@@ -139,6 +142,9 @@ function answerQuestion(state, field, value) {
   }
   if (field === 'randomization_unit' && value !== 'cluster') {
     patch.cluster_field = null
+  }
+  if (field === 'goal_type' && value !== 'other') {
+    patch.goal_description = ''
   }
 
   return setBrief(state, patch)

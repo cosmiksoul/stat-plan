@@ -125,6 +125,27 @@ function ClusterField({ subQuestion }) {
   )
 }
 
+function GoalDescription({ subQuestion }) {
+  const { state, dispatch } = useAppState()
+  return (
+    <div className="mt-4 pt-4 border-t border-border-soft">
+      <TextInput
+        value={state.brief.goal_description}
+        onChange={(v) =>
+          dispatch({
+            type: Actions.ANSWER_QUESTION,
+            field: 'goal_description',
+            value: v,
+          })
+        }
+        label={subQuestion.title.toUpperCase()}
+        placeholder="например: тестируем размер баннера на главной"
+        hint={subQuestion.hint}
+      />
+    </div>
+  )
+}
+
 function BaselineInput() {
   const { state, dispatch } = useAppState()
   const { brief } = state
@@ -169,6 +190,9 @@ export default function QuestionRenderer({ question }) {
         }
         if (sq.type === 'cluster_field') {
           return <ClusterField key={sq.id} subQuestion={sq} />
+        }
+        if (sq.type === 'goal_description') {
+          return <GoalDescription key={sq.id} subQuestion={sq} />
         }
         return null
       })

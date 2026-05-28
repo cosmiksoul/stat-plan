@@ -357,3 +357,92 @@ describe('RESET_STATE', () => {
     expect(next).toEqual(initialState)
   })
 })
+
+describe('initialBrief — Phase C shape additions', () => {
+  it('has goal_description as empty string', () => {
+    expect(initialState.brief.goal_description).toBe('')
+  })
+
+  it('has defaultsApplied with goal_type and randomization_unit flags', () => {
+    expect(initialState.brief.defaultsApplied).toMatchObject({
+      metric_name: false,
+      decision_rules: false,
+      goal_type: false,
+      randomization_unit: false,
+    })
+  })
+})
+
+describe('ANSWER_QUESTION — goal_type side effect', () => {
+  it('clears goal_description when goal_type changes away from "other"', () => {
+    const state = {
+      ...initialState,
+      brief: {
+        ...initialState.brief,
+        goal_type: 'other',
+        goal_description: 'тестируем баннер',
+      },
+    }
+    const next = reducer(state, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'goal_type',
+      value: 'product_change',
+    })
+    expect(next.brief.goal_type).toBe('product_change')
+    expect(next.brief.goal_description).toBe('')
+  })
+
+  it('preserves goal_description when goal_type=other is reapplied', () => {
+    const state = {
+      ...initialState,
+      brief: {
+        ...initialState.brief,
+        goal_type: 'other',
+        goal_description: 'тестируем баннер',
+      },
+    }
+    const next = reducer(state, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'goal_type',
+      value: 'other',
+    })
+    expect(next.brief.goal_description).toBe('тестируем баннер')
+  })
+})
+
+describe('GOTO_QUESTION — preselect defaults via applyEnterDefaults', () => {
+  it('writes goal_type=product_change + flag on first visit to Q01', () => {
+    const next = reducer(initialState, {
+      type: Actions.GOTO_QUESTION,
+      num: 1,
+    })
+    expect(next.brief.goal_type).toBe('product_change')
+    expect(next.brief.defaultsApplied.goal_type).toBe(true)
+  })
+
+  it('does not overwrite goal_type on re-entry to Q01', () => {
+    const once = reducer(initialState, {
+      type: Actions.GOTO_QUESTION,
+      num: 1,
+    })
+    const userTouched = reducer(once, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'goal_type',
+      value: 'algorithm',
+    })
+    const twice = reducer(userTouched, {
+      type: Actions.GOTO_QUESTION,
+      num: 1,
+    })
+    expect(twice.brief.goal_type).toBe('algorithm')
+  })
+
+  it('writes randomization_unit=user + flag on first visit to Q06', () => {
+    const next = reducer(initialState, {
+      type: Actions.GOTO_QUESTION,
+      num: 6,
+    })
+    expect(next.brief.randomization_unit).toBe('user')
+    expect(next.brief.defaultsApplied.randomization_unit).toBe(true)
+  })
+})

@@ -53,5 +53,28 @@ export function applyEnterDefaults(brief, questionId) {
     }
   }
 
+  if (questionId === 'goal_type') {
+    if (brief.defaultsApplied?.goal_type) return brief
+    if (brief.goal_type) return brief
+    return {
+      ...brief,
+      goal_type: 'product_change',
+      defaultsApplied: { ...brief.defaultsApplied, goal_type: true },
+    }
+  }
+
+  if (questionId === 'randomization_unit') {
+    if (brief.defaultsApplied?.randomization_unit) return brief
+    if (brief.randomization_unit) return brief
+    return {
+      ...brief,
+      randomization_unit: 'user',
+      defaultsApplied: {
+        ...brief.defaultsApplied,
+        randomization_unit: true,
+      },
+    }
+  }
+
   return brief
 }

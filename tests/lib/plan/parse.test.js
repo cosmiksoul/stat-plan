@@ -310,6 +310,7 @@ function extractBriefShape(brief) {
   return {
     metric_type: brief.metric_type,
     metric_name: brief.metric_name,
+    metric_column: brief.metric_column,
     baseline: brief.baseline,
     randomization_unit: brief.randomization_unit,
     mde: brief.mde,
@@ -328,7 +329,9 @@ describe('parseTestPlanMd — happy path per metric_type', () => {
     expect(r.ok).toBe(true)
     expect(r.error).toBeNull()
     expect(r.brief.metric_type).toBe('proportion')
-    expect(r.brief.metric_name).toBe('cr_to_partner_click')
+    // Legacy YAML (no metric_label): metric_name maps to brief.metric_column.
+    expect(r.brief.metric_column).toBe('cr_to_partner_click')
+    expect(r.brief.metric_name).toBe('')
     expect(r.brief.baseline).toEqual({ value: 0.031, unit: 'fraction' })
     expect(r.brief.randomization_unit).toBe('user')
     expect(r.brief.advanced.alpha).toBe(0.05)
@@ -638,5 +641,65 @@ describe('parseTestPlanMd — edge cases', () => {
     const r = parseTestPlanMd(md)
     expect(r.ok).toBe(true)
     expect(r.brief.data_peek).toMatchObject({ uploaded: true })
+  })
+})
+
+// ---- Phase C: metric_name semantic shift + goal_description -------------
+
+describe('parseTestPlanMd — metric_name / metric_label semantic shift', () => {
+  it('reads metric_label as natural label and metric_name as column code', () => {
+    const md = validProportionMd().replace(
+      /metric_name: cr_to_partner_click\n/,
+      'metric_name: cr_to_partner_click\nmetric_label: "конверсия в клик по партнёру"\n',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_column).toBe('cr_to_partner_click')
+    expect(r.brief.metric_name).toBe('конверсия в клик по партнёру')
+  })
+
+  it('legacy YAML without metric_label leaves brief.metric_name empty', () => {
+    const r = parseTestPlanMd(validProportionMd())
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_column).toBe('cr_to_partner_click')
+    expect(r.brief.metric_name).toBe('')
+  })
+
+  it('round-trips brief.metric_column + brief.metric_name through render+parse', () => {
+    const original = fullStateForRoundTrip({
+      brief: {
+        metric_column: 'cr_first_deposit',
+        metric_name: 'конверсия в первый депозит',
+      },
+    })
+    const md = renderTestPlanMd(original)
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.metric_column).toBe('cr_first_deposit')
+    expect(r.brief.metric_name).toBe('конверсия в первый депозит')
+  })
+})
+
+describe('parseTestPlanMd — goal_description', () => {
+  it('reads goal_description from YAML when present', () => {
+    const md = validProportionMd().replace(
+      /metric_name: cr_to_partner_click\n/,
+      'metric_name: cr_to_partner_click\ngoal_description: "тестируем баннер прайсинга"\n',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.goal_description).toBe('тестируем баннер прайсинга')
+  })
+
+  it('round-trips non-empty goal_description', () => {
+    const original = fullStateForRoundTrip({
+      brief: {
+        goal_description: 'тестируем баннер прайсинга',
+      },
+    })
+    const md = renderTestPlanMd(original)
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.goal_description).toBe('тестируем баннер прайсинга')
   })
 })
