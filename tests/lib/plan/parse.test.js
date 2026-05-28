@@ -241,6 +241,7 @@ function fullStateForRoundTrip(overrides = {}) {
   return {
     brief: {
       goal_type: 'product_change',
+      goal_description: '',
       hypothesis: {
         text: 'Если показать блок, то CR вырастет на 8%, потому что больше офферов',
         slots: {
@@ -308,14 +309,20 @@ function fullStateForRoundTrip(overrides = {}) {
 // Fields the YAML carries — for round-trip equality assertions.
 function extractBriefShape(brief) {
   return {
+    goal_type: brief.goal_type,
+    goal_description: brief.goal_description,
     metric_type: brief.metric_type,
     metric_name: brief.metric_name,
     metric_column: brief.metric_column,
+    ratio_components: brief.ratio_components,
+    cluster_field: brief.cluster_field,
     baseline: brief.baseline,
     randomization_unit: brief.randomization_unit,
     mde: brief.mde,
     daily_traffic: brief.daily_traffic,
     guardrails: brief.guardrails,
+    stop_conditions: brief.stop_conditions,
+    decision_rules: brief.decision_rules,
     advanced: brief.advanced,
     hypothesis_text: brief.hypothesis.text,
   }
@@ -701,5 +708,89 @@ describe('parseTestPlanMd — goal_description', () => {
     const r = parseTestPlanMd(md)
     expect(r.ok).toBe(true)
     expect(r.brief.goal_description).toBe('тестируем баннер прайсинга')
+  })
+})
+
+// ---- Sprint 4 iter 2: round-trip extensions -----------------------------
+
+describe('parseTestPlanMd — Sprint 4 iter 2 readers', () => {
+  it('reads goal_type and sets defaultsApplied.goal_type=true', () => {
+    const md = validProportionMd().replace(
+      /metric_name: cr_to_partner_click\n/,
+      'metric_name: cr_to_partner_click\ngoal_type: other\ngoal_description: "оптимизация воронки"\n',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.goal_type).toBe('other')
+    expect(r.brief.goal_description).toBe('оптимизация воронки')
+    expect(r.brief.defaultsApplied.goal_type).toBe(true)
+    expect(r.brief.defaultsApplied.randomization_unit).toBe(true)
+  })
+
+  it('reads stop_conditions object with length_cap_days', () => {
+    const md = validProportionMd().replace(
+      /---\n\n# Test Plan/,
+      'stop_conditions:\n  srm_detected: true\n  guardrail_breach_24h: false\n  length_cap_days: 14\n  manual_stop: true\n---\n\n# Test Plan',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.stop_conditions).toEqual({
+      srm_detected: true,
+      guardrail_breach_24h: false,
+      length_cap_days: 14,
+      manual_stop: true,
+    })
+  })
+
+  it('reads decision_rules object with custom rules', () => {
+    const md = validProportionMd().replace(
+      /---\n\n# Test Plan/,
+      'decision_rules:\n  ship: "ship me"\n  iterate: ""\n  kill: "kill it"\n---\n\n# Test Plan',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.decision_rules).toEqual({
+      ship: 'ship me',
+      iterate: '',
+      kill: 'kill it',
+    })
+  })
+
+  it('reads ratio_components numerator/denominator + cluster_field + two_sided', () => {
+    const md = validProportionMd()
+      .replace(
+        /metric_name: cr_to_partner_click\n/,
+        'metric_name: cr_to_partner_click\nratio_numerator: clicks\nratio_denominator: views\ncluster_field: campaign_id\ntwo_sided: false\n',
+      )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.ratio_components).toEqual({
+      numerator: 'clicks',
+      denominator: 'views',
+    })
+    expect(r.brief.cluster_field).toBe('campaign_id')
+    expect(r.brief.advanced.two_sided).toBe(false)
+  })
+
+  it('legacy YAML without new fields parses with silent defaults (no warnings for absence)', () => {
+    const r = parseTestPlanMd(validProportionMd())
+    expect(r.ok).toBe(true)
+    // Defaults from emptyBriefShape
+    expect(r.brief.goal_type).toBeNull()
+    expect(r.brief.ratio_components).toEqual({ numerator: null, denominator: null })
+    expect(r.brief.cluster_field).toBeNull()
+    expect(r.brief.advanced.two_sided).toBe(true)
+    expect(r.brief.stop_conditions).toEqual({
+      srm_detected: true,
+      guardrail_breach_24h: true,
+      length_cap_days: null,
+      manual_stop: false,
+    })
+    expect(r.brief.decision_rules).toEqual({ ship: '', iterate: '', kill: '' })
+    // None of the new optional fields should produce a warning when absent.
+    const newFieldWarnings = r.warnings.filter((w) =>
+      /goal_type|ratio_numerator|ratio_denominator|cluster_field|two_sided|stop_conditions|decision_rules/.test(w),
+    )
+    expect(newFieldWarnings).toEqual([])
   })
 })

@@ -214,6 +214,20 @@ function mapFrontmatter(fm, warnings) {
     }
   }
 
+  // Optional: goal_type (context-only, doesn't participate in derived calc)
+  if (fm.goal_type != null && fm.goal_type !== false) {
+    if (isStr(fm.goal_type)) brief.goal_type = fm.goal_type
+    else warnings.push('Поле goal_type не строка — оставлено null.')
+  }
+
+  // Optional: ratio_components (only meaningful when metric_type=ratio)
+  if (isStr(fm.ratio_numerator)) {
+    brief.ratio_components.numerator = fm.ratio_numerator
+  }
+  if (isStr(fm.ratio_denominator)) {
+    brief.ratio_components.denominator = fm.ratio_denominator
+  }
+
   // Required: baseline (number)
   if (fm.baseline == null) {
     warnings.push('Поле baseline отсутствует.')
@@ -236,6 +250,9 @@ function mapFrontmatter(fm, warnings) {
     brief.randomization_unit = fm.randomization_unit
   }
 
+  // Optional: cluster_field (only meaningful when randomization_unit=cluster)
+  if (isStr(fm.cluster_field)) brief.cluster_field = fm.cluster_field
+
   // Required: alpha, power (numbers, end up in advanced)
   if (fm.alpha != null) {
     if (isNum(fm.alpha) && fm.alpha > 0 && fm.alpha < 1) {
@@ -254,6 +271,12 @@ function mapFrontmatter(fm, warnings) {
         `Поле power=${JSON.stringify(fm.power)} вне диапазона (0..1) — оставлено по умолчанию 0.8.`,
       )
     }
+  }
+
+  // Optional: two_sided (advanced)
+  if (fm.two_sided != null) {
+    if (isBool(fm.two_sided)) brief.advanced.two_sided = fm.two_sided
+    else warnings.push('Поле two_sided не boolean — оставлено true.')
   }
 
   // MDE: nested { value, unit }
@@ -350,6 +373,43 @@ function mapFrontmatter(fm, warnings) {
     warnings.push('Поле guardrails не массив — оставлено пустым.')
   }
 
+  // Optional: stop_conditions (object). Missing == defaults silently.
+  if (fm.stop_conditions != null) {
+    if (
+      typeof fm.stop_conditions === 'object' &&
+      !Array.isArray(fm.stop_conditions)
+    ) {
+      const sc = fm.stop_conditions
+      brief.stop_conditions = {
+        srm_detected: isBool(sc.srm_detected) ? sc.srm_detected : true,
+        guardrail_breach_24h: isBool(sc.guardrail_breach_24h)
+          ? sc.guardrail_breach_24h
+          : true,
+        length_cap_days: isNum(sc.length_cap_days) ? sc.length_cap_days : null,
+        manual_stop: isBool(sc.manual_stop) ? sc.manual_stop : false,
+      }
+    } else {
+      warnings.push('Поле stop_conditions не объект — оставлены дефолты.')
+    }
+  }
+
+  // Optional: decision_rules (object). Missing == defaults silently.
+  if (fm.decision_rules != null) {
+    if (
+      typeof fm.decision_rules === 'object' &&
+      !Array.isArray(fm.decision_rules)
+    ) {
+      const dr = fm.decision_rules
+      brief.decision_rules = {
+        ship: isStr(dr.ship) ? dr.ship : '',
+        iterate: isStr(dr.iterate) ? dr.iterate : '',
+        kill: isStr(dr.kill) ? dr.kill : '',
+      }
+    } else {
+      warnings.push('Поле decision_rules не объект — оставлены дефолты.')
+    }
+  }
+
   // data_peek (optional object, store as-is for forward compat)
   if (fm.data_peek != null) {
     if (typeof fm.data_peek === 'object' && !Array.isArray(fm.data_peek)) {
@@ -375,6 +435,13 @@ function mapFrontmatter(fm, warnings) {
       warnings.push('Поле data_peek не объект — проигнорировано.')
     }
   }
+
+  // Mark defaults as already applied for fields that were loaded from YAML,
+  // so the subsequent GOTO_QUESTION → applyEnterDefaults won't overwrite
+  // them with their hard-coded defaults (e.g. goal_type='other' loaded
+  // from file must not be reset to 'product_change' on Q01 entry).
+  if (brief.goal_type) brief.defaultsApplied.goal_type = true
+  if (brief.randomization_unit) brief.defaultsApplied.randomization_unit = true
 
   return brief
 }

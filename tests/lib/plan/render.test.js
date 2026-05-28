@@ -175,6 +175,53 @@ describe('renderTestPlanMd — minimal state', () => {
   })
 })
 
+describe('renderTestPlanMd — Sprint 4 iter 2 YAML blocks', () => {
+  it('serializes decision_rules as a YAML object block (mixed empty + filled)', () => {
+    const state = fullState()
+    state.brief.decision_rules = { ship: 'foo', iterate: '', kill: 'bar' }
+    const md = renderTestPlanMd(state)
+    expect(md).toMatch(
+      /decision_rules:\n {2}ship: foo\n {2}iterate: ""\n {2}kill: bar/,
+    )
+  })
+
+  it('serializes stop_conditions with length_cap_days as a YAML block', () => {
+    const state = fullState()
+    state.brief.stop_conditions = {
+      srm_detected: true,
+      guardrail_breach_24h: false,
+      length_cap_days: 14,
+      manual_stop: true,
+    }
+    const md = renderTestPlanMd(state)
+    expect(md).toMatch(
+      /stop_conditions:\n {2}srm_detected: true\n {2}guardrail_breach_24h: false\n {2}length_cap_days: 14\n {2}manual_stop: true/,
+    )
+  })
+
+  it('serializes ratio_components + cluster_field + two_sided in Test design', () => {
+    const state = fullState()
+    state.brief.metric_type = 'ratio'
+    state.brief.ratio_components = { numerator: 'clicks', denominator: 'views' }
+    state.brief.randomization_unit = 'cluster'
+    state.brief.cluster_field = 'campaign_id'
+    state.brief.advanced.two_sided = false
+    const md = renderTestPlanMd(state)
+    expect(md).toContain('ratio_numerator: clicks')
+    expect(md).toContain('ratio_denominator: views')
+    expect(md).toContain('cluster_field: campaign_id')
+    expect(md).toContain('two_sided: false')
+  })
+
+  it('serializes Context block with goal_type', () => {
+    const state = fullState()
+    state.brief.goal_type = 'other'
+    state.brief.goal_description = 'тест размера баннера'
+    const md = renderTestPlanMd(state)
+    expect(md).toMatch(/# Context\ngoal_type: other\ngoal_description: тест размера баннера/)
+  })
+})
+
 describe('renderTestPlanMd — continuous metric', () => {
   it('handles continuous metric with t_test', () => {
     const state = fullState()
@@ -206,16 +253,23 @@ describe('renderTestPlanMd — snapshot of full output', () => {
       status: draft
       approved_at: null
 
+      # Context
+      goal_type: product_change
+      goal_description: null
+
       # Test design
       metric_type: proportion
       metric_name: cr_to_partner_click
       metric_label: cr_to_partner_click
-      goal_description: null
+      ratio_numerator: null
+      ratio_denominator: null
       baseline: 0.031
       test_method: z_test_proportions
       randomization_unit: user
+      cluster_field: null
       alpha: 0.05
       power: 0.8
+      two_sided: true
 
       # Effect
       mde:
@@ -243,6 +297,19 @@ describe('renderTestPlanMd — snapshot of full output', () => {
           direction: min
           threshold: -10
           unit: relative_percent
+
+      # Stop conditions
+      stop_conditions:
+        srm_detected: true
+        guardrail_breach_24h: true
+        length_cap_days: 10
+        manual_stop: false
+
+      # Decision rules
+      decision_rules:
+        ship: "CI не пересекает 0, нижняя граница ≥ +3% rel."
+        iterate: "Статистически незначимо, но direction positive в 2+ сегментах"
+        kill: "Guardrail breach или CI ≤ −3% rel."
 
       # Data peek info
       data_peek:

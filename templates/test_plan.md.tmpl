@@ -5,16 +5,23 @@ created: {{created}}
 status: {{status}}
 approved_at: {{approved_at}}
 
+# Context
+goal_type: {{goal_type}}
+goal_description: {{goal_description}}
+
 # Test design
 metric_type: {{metric_type}}
 metric_name: {{metric_name}}
 metric_label: {{metric_label}}
-goal_description: {{goal_description}}
+ratio_numerator: {{ratio_numerator}}
+ratio_denominator: {{ratio_denominator}}
 baseline: {{baseline}}
 test_method: {{test_method}}
 randomization_unit: {{randomization_unit}}
+cluster_field: {{cluster_field}}
 alpha: {{alpha}}
 power: {{power}}
+two_sided: {{two_sided}}
 
 # Effect
 mde:
@@ -35,6 +42,14 @@ holdback_percent: {{holdback_percent}}
 # Guardrails
 guardrails:
 {{guardrails_yaml}}
+
+# Stop conditions
+stop_conditions:
+{{stop_conditions_yaml}}
+
+# Decision rules
+decision_rules:
+{{decision_rules_yaml}}
 
 # Data peek info
 data_peek:

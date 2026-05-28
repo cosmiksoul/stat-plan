@@ -420,6 +420,50 @@ describe('GOTO_QUESTION — preselect defaults via applyEnterDefaults', () => {
     expect(next.brief.defaultsApplied.goal_type).toBe(true)
   })
 
+  it('does not clobber LOAD_TEST_PLAN_MD-loaded goal_type on first visit to Q01', () => {
+    const loadPayload = {
+      test_id: 'foo-v1',
+      title: 'Foo',
+      warnings: [],
+      brief: {
+        goal_type: 'other',
+        goal_description: 'тест',
+        metric_type: 'proportion',
+        metric_name: '',
+        metric_column: 'cr',
+        baseline: { value: 0.03, unit: 'fraction' },
+        randomization_unit: 'user',
+        mde: { value: 5, unit: 'relative_percent', direction: 'increase' },
+        daily_traffic: { value: 10000, unit: 'user' },
+        guardrails: [],
+        hypothesis: { text: '', slots: {} },
+        advanced: { alpha: 0.05, power: 0.8, two_sided: true },
+        defaultsApplied: {
+          metric_name: false,
+          decision_rules: false,
+          goal_type: true,
+          randomization_unit: true,
+        },
+      },
+      plan: {
+        status: 'draft',
+        approvedAt: null,
+        editedExternally: true,
+        briefSubmitted: true,
+      },
+    }
+    const loaded = reducer(initialState, {
+      type: Actions.LOAD_TEST_PLAN_MD,
+      payload: loadPayload,
+    })
+    expect(loaded.brief.goal_type).toBe('other')
+    expect(loaded.brief.goal_description).toBe('тест')
+
+    const afterGoto = reducer(loaded, { type: Actions.GOTO_QUESTION, num: 1 })
+    expect(afterGoto.brief.goal_type).toBe('other')
+    expect(afterGoto.brief.goal_description).toBe('тест')
+  })
+
   it('does not overwrite goal_type on re-entry to Q01', () => {
     const once = reducer(initialState, {
       type: Actions.GOTO_QUESTION,

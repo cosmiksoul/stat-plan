@@ -60,6 +60,25 @@ function renderDataPeekYaml(dp) {
   return lines.join('\n')
 }
 
+function renderStopConditionsYaml(stops) {
+  const s = stops ?? {}
+  return [
+    `  srm_detected: ${yamlScalar(s.srm_detected ?? true)}`,
+    `  guardrail_breach_24h: ${yamlScalar(s.guardrail_breach_24h ?? true)}`,
+    `  length_cap_days: ${yamlScalar(s.length_cap_days ?? null)}`,
+    `  manual_stop: ${yamlScalar(s.manual_stop ?? false)}`,
+  ].join('\n')
+}
+
+function renderDecisionRulesYaml(dr) {
+  const r = dr ?? {}
+  return [
+    `  ship: ${yamlScalar(r.ship ?? '')}`,
+    `  iterate: ${yamlScalar(r.iterate ?? '')}`,
+    `  kill: ${yamlScalar(r.kill ?? '')}`,
+  ].join('\n')
+}
+
 // ---- MD section helpers --------------------------------------------------
 
 function renderGuardrailsMd(guardrails) {
@@ -147,15 +166,21 @@ export function renderTestPlanMd(state) {
     status: plan.status ?? 'draft',
     approved_at: yamlScalar(plan.approvedAt ?? null),
 
+    goal_type: yamlScalar(brief.goal_type ?? null),
+    goal_description: yamlScalar(brief.goal_description || null),
+
     metric_type: yamlScalar(brief.metric_type ?? null),
     metric_name: yamlScalar(brief.metric_column || brief.metric_name || null),
     metric_label: yamlScalar(brief.metric_name || null),
-    goal_description: yamlScalar(brief.goal_description || null),
+    ratio_numerator: yamlScalar(brief.ratio_components?.numerator ?? null),
+    ratio_denominator: yamlScalar(brief.ratio_components?.denominator ?? null),
     baseline: yamlScalar(normalizeBaselineForYaml(brief.baseline)),
     test_method: yamlScalar(derived.test_method ?? null),
     randomization_unit: yamlScalar(brief.randomization_unit ?? null),
+    cluster_field: yamlScalar(brief.cluster_field ?? null),
     alpha: yamlScalar(advanced.alpha ?? null),
     power: yamlScalar(advanced.power ?? null),
+    two_sided: yamlScalar(advanced.two_sided ?? true),
 
     mde_value: yamlScalar(brief.mde?.value ?? null),
     mde_unit: yamlScalar(brief.mde?.unit ?? null),
@@ -170,6 +195,8 @@ export function renderTestPlanMd(state) {
     holdback_percent: yamlScalar(advanced.holdback_percent ?? null),
 
     guardrails_yaml: renderGuardrailsYaml(brief.guardrails),
+    stop_conditions_yaml: renderStopConditionsYaml(brief.stop_conditions),
+    decision_rules_yaml: renderDecisionRulesYaml(brief.decision_rules),
     data_peek_yaml: renderDataPeekYaml(brief.data_peek),
     score: yamlScalar(score.total ?? null),
 
