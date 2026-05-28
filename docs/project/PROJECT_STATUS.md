@@ -1,6 +1,6 @@
 # Project Status — stat·plan
 
-**Обновлено:** 2026-05-28 (Sprint 5 ЗАКРЫТ полностью — main + FIX iter 1 + Cowork CLOSE)
+**Обновлено:** 2026-05-28 (Sprint 5 ЗАКРЫТ + ADR-013 Accepted 2026-05-28 — объединение Шагов 4 и 5 в Шаг 4 «Валидация и отчёт», 4-шаговый флоу)
 **Назначение:** оперативный снимок проекта. Для пользователя или следующего инстанса Cowork — быстро войти в контекст.
 
 ---
@@ -9,9 +9,12 @@
 
 **Sprint 5 ЗАКРЫТ полностью** (main + FIX iter 1 + Cowork CLOSE). 6 пунктов polish-pack (P-2..P-7) + UX-RENAME labels Шагов 04/05 + 4 concerns из code review (C-1..C-4) — всё закрыто. **267 тестов зелёных** (249 → 266 в main → 267 после FIX iter 1: +2 новых, −1 zombie). Bundle **401.17 KB raw / 124.93 KB gzip** (net +1.37 KB vs Sprint 4 FIX iter 2). Round-trip контракт ADR-002 — **5/5 canonical case** (4 из Sprint 4 + 1 новый C-2 для empty `metric_column` через P-7 heuristic).
 
-**ADR-012 финализирован Accepted 2026-05-28** перед началом Sprint 5 в диалоге Cowork ↔ пользователь. Architecture sprint не понадобился — accept в PLAN + concept rewrite в CLOSE Sprint 5 закрывает то же. UX-RENAME labels уже в Stepper.jsx (Code-зона); FLOW.md / concept.md / JTBD §7-§8 переписаны под новый Шаг 4 «Быстрая валидация» в Sprint 5 CLOSE (Cowork-зона).
+**ADR-013 Accepted 2026-05-28** (после Sprint 5 CLOSE, до Sprint 6 PLAN): объединение Шагов 4 и 5 в **Шаг 4 «Валидация и отчёт»**, 4-шаговый флоу. ADR-005 (5-шаговый) и ADR-012 (Шаг 4 «Быстрая валидация» как отдельный) — superseded. Ключевой концептуальный вклад ADR-012 («не делаем independent validation») сохранён. Подробности — в `docs/context/decisions-log.md` ADR-013. FLOW.md / concept.md / JTBD §7 переписаны в этом же CLOSE-batch'е. **Stepper.jsx временно остаётся 5-шаговым** (с labels Sprint 5) — структурный переход на 4 шага в Code-зоне в Sprint 7.
 
-**Следующий спринт — Sprint 6 main: Шаг 4 «Быстрая валидация»** (ручной ввод результатов + SRM/sanity checks + применение decision rules → SHIP/ITERATE/KILL + validation.md; CSV upload — опциональный helper). Скоуп описан в JTBD §7 (переписан в CLOSE Sprint 5).
+**Следующие спринты переориентированы:**
+
+- **Sprint 6 main — Data Peek (Шаг 1):** CSV upload (автосчёт σ/cov/μ из реальных данных) + ручной calculator для известных параметров. Решает наблюдаемую боль — на Q08 для ratio/continuous без peek показывается приближённый sample size с warning «bootstrap fallback» (например, `~1 091 / 1 дн / delta_method / bootstrap fallback`). После реализации Data Peek — точный расчёт без warning. Скоуп описан в JTBD §4. ~3-4 ч.
+- **Sprint 7 main — Шаг 4 «Валидация и отчёт» (объединённый):** структурированный ввод результатов из ноутбука + SRM/sanity vs план + generation readout.md с подсказкой по decision_rules + JSZip пакет финальных артефактов. Также — структурный переход Stepper на 4 шага. Скоуп в JTBD §7. ~3-4 ч.
 
 | Sprint | Type | Status | Active time |
 |---|---|---|---|
@@ -25,9 +28,9 @@
 | 5 main | Code mini (polish P-2..P-7 + UX-RENAME) | Closed | ~1ч 35мин |
 | 5 FIX iter 1 | Code (C-1..C-4 + zombie test removal) | Closed | ~40 мин |
 | 5 CLOSE | Cowork (FLOW / concept / JTBD §7-§8 rewrite, tech debt) | Closed | ~40 мин |
-| **6** | **Code main — Шаг 4 «Быстрая валидация»** | **Planned под ADR-012** | ~2-3 ч (план, было 4-5 ч) |
-| 7 | Code — Шаг 5 «Скачать артефакты» (JSZip + readout.md) | Planned | ~2-3 ч (план) |
-| 8 | Code — Methodology + demo/how-to + a11y/mobile audit | Planned | ~4-5 ч (план) |
+| **6** | **Code — Data Peek (Шаг 1): CSV upload + ручной calculator** | **Planned под ADR-009 + JTBD §4** | ~3-4 ч (план) |
+| 7 | Code — Шаг 4 «Валидация и отчёт» (бывшие 4+5 объединённые) + Stepper structural rewrite | Planned под ADR-013 | ~3-4 ч (план) |
+| 8 | Code — Methodology + tutorial (decision_rules в ноутбуке) + a11y/mobile audit | Planned под JTBD §9 | ~4-5 ч (план) |
 
 ---
 
@@ -82,18 +85,23 @@
 
 **Filename / header source разделение реализовано в Sprint 5 (P-3):** filename `.ipynb` и `YAML.test_id` — slug из `metric_column`; header `# Тест: <metric_name>` (натуральный, после C-4 убран английский prefix `Analysis: `); `YAML.metric_label` пишется только если `metric_column` заполнен (C-2 fix — round-trip симметрия для fallback case).
 
-### ADR-012 — Accepted 2026-05-28: Шаг 4 как «Быстрая валидация» + UX rename
+### ADR-012 — Superseded 2026-05-28 by ADR-013
 
-**Контекст:** обсуждение в Sprint 4 RETEST показало, что concept «Шаг 4 = independent validation» — это **circular validation**. Мы пересчитываем теми же формулами, что заложили в ноутбук. Защита от наших ошибок отсутствует.
+**Был:** Шаг 4 «Быстрая валидация» (отдельный от Шага 5 «Скачать артефакты»). UX-rename labels Шагов 04/05 реализован в Sprint 5 main.
+
+**Стало (после ADR-013):** Шаг 4 и Шаг 5 объединены в один **Шаг 4 «Валидация и отчёт»**. Концептуальный вклад ADR-012 («не делаем independent validation» — это circular validation) **сохранён** в ADR-013. Полная история — в `decisions-log.md`.
+
+### ADR-013 — Accepted 2026-05-28: Объединение Шагов 4 и 5 в Шаг 4 «Валидация и отчёт», 4-шаговый флоу
+
+**Контекст:** при обсуждении перед Sprint 6 пользователь сформулировал — test_plan.md это документ **до** теста (для команды/Confluence), ноутбук это пост-анализ (пользователь смотрит Δ/p/CI/SRM/guardrails сам), а Шаг 4 «Быстрая валидация» из ADR-012 как отдельная фаза дублирует работу ноутбука и теряет смысл. Логичное переосмысление — объединить с Шагом 5 в один шаг «Валидация и отчёт» (ввод результатов + SRM/sanity + генерация красивого readout.md с decision_rules-подсказкой + JSZip пакет).
 
 **Решение:**
-- Шаг 4 redesign из «independent validation» в «Быстрая валидация»: SRM check, sanity check, **ручной ввод результатов** (Δ, p, CI, n) + применение decision rules → SHIP/ITERATE/KILL + простые визуализации + validation.md. CSV upload — опциональный helper для автозаполнения полей, **не валидатор**.
-- UI rename: 04 «Анализ» → «Быстрая валидация»; 05 «Read-out» → «Скачать артефакты».
-- Methodology раздел (Sprint 8) усиливается явным «что мы НЕ делаем».
-- Sprint 6 (бывший Sprint 5 main) scope сокращён с ~4-5 ч до ~2-3 ч.
-- Roadmap до v1 — с ~16-21 ч до ~10-13 ч active.
+- 5-шаговый флоу → **4 шага**. ADR-005 (часть про 5 шагов) superseded; развилка на старте сохранена.
+- **Шаг 4 «Валидация и отчёт»** (объединённый): структурированный ввод результатов из ноутбука + SRM/sanity + CSV upload helper (без пересчёта Δ/p/CI) + генерация readout.md с decision_rules-подсказкой + JSZip пакет финальных артефактов.
+- **ADR-004 в силе** — decision_rules в readout это применение **пользовательских** правил для подсказки в тексте, не суждение тула. Поле «Принятое решение» остаётся пустым.
+- **Stepper.jsx** структурный переход на 4 шага — Sprint 7 (Code-зона). Временный рассинхрон до этого момента.
 
-**Status:** Accepted и **частично реализован в Sprint 5** — UX-RENAME labels в `Stepper.jsx` (Code) + rewrite `FLOW.md` / `concept.md` / `JTBD §7-§8` (Cowork CLOSE). Полный redesign Шага 4 — Sprint 6 main по новому скоупу JTBD §7.
+**Status:** Accepted. FLOW.md / concept.md / JTBD §7 переписаны в Sprint 5 CLOSE batch'е. Полная реализация Шага 4 — Sprint 7. Открытый вопрос про DSL для decision_rules в readout (детерминированный парсер vs чек-боксы пользователя) — решается в Sprint 7 PLAN.
 
 ---
 
@@ -121,15 +129,15 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 
 ---
 
-## Roadmap до v1 (актуализирован 2026-05-28 после CLOSE Sprint 5)
+## Roadmap до v1 (актуализирован 2026-05-28 после ADR-013)
 
-1. **Sprint 6 — Шаг 4 «Быстрая валидация»** — ручной ввод результатов (Δ, p, CI, n) + SRM/sanity checks + применение decision rules → SHIP/ITERATE/KILL + простые визуализации + validation.md. CSV upload как опциональный helper для автозаполнения counts по variant. ~2-3 ч. Скоуп описан в `docs/project/JTBD.md §7`.
-2. **Sprint 7 — Шаг 5 «Скачать артефакты»** — JSZip bundle (test_plan.md + analysis.ipynb + validation.md + readout.md + опционально CSV) + readout.md generation. ~2-3 ч. Скоуп описан в `docs/project/JTBD.md §8`.
-3. **Sprint 8 — Methodology + demo/how-to + a11y/mobile audit.** ~4-5 ч. Скоуп описан в `docs/project/JTBD.md §10`.
+1. **Sprint 6 — Data Peek (Шаг 1):** CSV upload (автосчёт σ/cov/μ из реальных данных) + ручной calculator (для известных параметров из отчёта аналитика / прошлого теста). Решает боль с приближённым sample size для ratio/continuous (bootstrap fallback warning). ~3-4 ч. Скоуп в `docs/project/JTBD.md §4`.
+2. **Sprint 7 — Шаг 4 «Валидация и отчёт» (объединённый бывшие 4+5):** структурированный ввод результатов + SRM/sanity + decision_rules в readout + JSZip пакет + Stepper.jsx структурный переход на 4 шага. ~3-4 ч. Скоуп в `docs/project/JTBD.md §7`.
+3. **Sprint 8 — Methodology + tutorial (как применять decision_rules в ноутбуке) + a11y/mobile audit.** ~4-5 ч. Скоуп в `docs/project/JTBD.md §9` (после перенумерации в Sprint 5 CLOSE).
 
 Парсер test_plan.md **сделан в Sprint 4** (Phase A) + round-trip восстановлен в Sprint 4 FIX iter 2 + расширен в Sprint 5 FIX iter 1 (5-й canonical case).
 
-**Итого осталось до v1:** ~8-11 ч active. За 1.5-2 фокус-дня реалистично.
+**Итого осталось до v1:** ~10-13 ч active. За 1.5-2 фокус-дня реалистично.
 
 ---
 
@@ -140,8 +148,9 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 1. **CLAUDE.md правило P-1** — зоны коммитов Code vs Cowork.
 2. **ADR-002** — артефакты как переносимое состояние. Sprint 4 FIX iter 2 закрывает оставшиеся дыры round-trip.
 3. **ADR-006** — approved заморожен. `RETURN_PLAN_TO_DRAFT` сбрасывает notebook_config.
-4. **ADR-011** — semantic shift metric_name/metric_label. См. выше. После Sprint 5 P-3/P-6/P-7 + FIX C-2/C-3 — round-trip полностью симметричен (включая fallback case с пустым metric_column).
-5. **ADR-012** — Accepted 2026-05-28. Шаг 4 «Быстрая валидация» (без independent CSV validation). UX rename labels уже в Stepper.jsx. Полный redesign Шага 4 — Sprint 6.
+4. **ADR-011** — semantic shift metric_name/metric_label. После Sprint 5 P-3/P-6/P-7 + FIX C-2/C-3 — round-trip полностью симметричен (включая fallback case с пустым metric_column).
+5. **ADR-012** — Superseded by ADR-013 (2026-05-28). Концептуальный вклад «не делаем independent validation» сохранён в ADR-013.
+6. **ADR-013** — Accepted 2026-05-28. Объединение Шагов 4 и 5 в Шаг 4 «Валидация и отчёт». 4-шаговый флоу. ADR-005 superseded. Реализация — Sprint 7 (Code: Шаг 4 + Stepper structural rewrite).
 6. **`editedExternally`** — `true` после `LOAD_TEST_PLAN_MD`, сбрасывается в `RETURN_PLAN_TO_DRAFT` / `RESET_STATE`. UI badge LoadedBadge.
 7. **localStorage** — `stat-plan:v1:state`, версионированный ключ.
 8. **`applyEnterDefaults`** — единый путь подстановки дефолтов, расширен в Sprint 4 FIX iter 1 для goal_type/randomization_unit (BUG-5).
@@ -155,9 +164,9 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 |---|---|
 | Концепция, для кого делаем | `docs/context/concept.md` |
 | Стек, структура папок | `docs/context/ARCHITECTURE.md` |
-| Все ADR | `docs/context/decisions-log.md` (включая ADR-011 и ADR-012 Accepted 2026-05-28) |
+| Все ADR | `docs/context/decisions-log.md` (включая ADR-011/012/013 Accepted 2026-05-28; ADR-005/012 superseded by ADR-013) |
 | Схема YAML test_plan.md | `docs/context/DATA_MODEL.md` |
-| Backlog с чекбоксами | `docs/project/JTBD.md` (§7-§8 переписаны в Sprint 5 CLOSE под ADR-012) |
+| Backlog с чекбоксами | `docs/project/JTBD.md` (§7 = объединённый Шаг 4 «Валидация и отчёт» после ADR-013; §8 = кросс-функциональные; §9 = Methodology) |
 | История проекта по спринтам | `docs/project/CONTEXT.md` (Development Timeline — Sprint 5 запись добавлена) |
 | Процесс (фазы спринта) | `docs/project/Dev-Cycle.md` |
 | Правила поведения обоих инстансов | `CLAUDE.md` |
@@ -172,22 +181,29 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 
 **Прямо сейчас:**
 
-1. Commit Cowork-зоны Sprint 5 CLOSE batch'ем (FLOW.md / concept.md / JTBD §7-§8 / CONTEXT.md / PROJECT_STATUS.md / decisions-log.md / sprint-5-prompt.md / sprint-5-fix-prompt.md / code-review-sprint-5.md / test-cases-sprint-5.md / polish-pack.md если правлен). Code-зона коммиты уже в main (Sprint 5 main `8c345fd` + FIX iter 1).
+1. Commit Cowork-зоны batch'ем — два логических батча или один:
+   - Sprint 5 CLOSE: FLOW.md / concept.md / JTBD / CONTEXT.md / PROJECT_STATUS.md / decisions-log.md (ADR-012 Accepted) / sprint-5-prompt.md / sprint-5-fix-prompt.md / code-review-sprint-5.md / test-cases-sprint-5.md.
+   - ADR-013 batch (этот): decisions-log.md (ADR-013 Accepted + ADR-005/012 superseded) / FLOW.md (4 шага) / concept.md / JTBD §7 (объединённый) + §9 перенумерация / PROJECT_STATUS.md (новый roadmap).
+   - Удобнее в один — один commit message с двумя секциями.
 
-2. Push main → GitHub Actions деплоит на GitHub Pages.
+2. Push main → GitHub Actions деплоит на GitHub Pages (Stepper labels Sprint 5 уже на проде — структурный переход на 4 шага в Sprint 7).
 
-**Затем — Sprint 6 PLAN:**
+**Затем — Sprint 6 PLAN (Data Peek):**
 
-3. **PLAN-фаза Sprint 6 совместно с пользователем** — обсудить детали скоупа Шага 4 «Быстрая валидация» (см. `JTBD.md §7`):
-   - UX-форма ручного ввода (какие поля обязательные, какая валидация, дефолты)
-   - DSL для decision_rules (если в брифе пользователь пишет `CI > 0 → SHIP`, как это парсить детерминированно?)
-   - Объём CSV helper'а (только counts по variant, или ещё базовый CR/mean preview?)
-   - Дизайн `validation.md` шаблона (YAML frontmatter поля; markdown разделы)
-   - Простые визуализации — какие именно (точка Δ с CI vs 0; столбики counts; что-то ещё?)
+3. **PLAN-фаза Sprint 6 совместно с пользователем** — обсудить детали скоупа Data Peek (см. `JTBD.md §4`):
+   - **Где** в флоу Data Peek? После Q08 (sample size display) как опциональный шаг, или как сабшаг внутри Q05/Q07?
+   - **CSV upload:** какие колонки ожидаем? `variant`, `<metric_column>` обязательно; для ratio — `numerator`/`denominator` опционально. Парсинг через papaparse.
+   - **Calculator:** для proportion — baseline уже в Q05, calculator не нужен. Для continuous — поле σ. Для ratio — μN, μD, Var(N), Var(D), Cov(N,D). Для count — λ (Poisson). UI — отдельная карточка под Q07/Q08?
+   - **Какие выходы:** запись обратно в state.brief (новые поля σ/cov/μ для каждого metric_type)? Или отдельная структура state.brief.data_peek?
+   - **Sample size display после Data Peek:** убирается warning «bootstrap fallback», показывается точная цифра. Какой UI feedback пользователю, что Data Peek был применён?
 
 4. **Sprint 6 PROMPT** (Cowork → `sprint-6-prompt.md`) после согласования скоупа.
 
 5. **Sprint 6 main DEV** (Code).
+
+**Sprint 7 PLAN — отдельный разговор позже:**
+
+6. **Open question Sprint 7:** DSL для decision_rules в Шаге 4. Варианты: (а) минимальный детерминированный парсер text-правил из брифа → автоматически отмечает «правило сработало» на основе введённых чисел → генерирует параграф в readout.md; (б) копируем правила как текст + пользователь сам отмечает галочкой какие сработали + dropdown SHIP/ITERATE/KILL. Не блокирует Sprint 6.
 
 ---
 
@@ -195,8 +211,7 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 
 Зафиксированы в обсуждении, требуют решения:
 
-1. **DSL для decision_rules в Шаге 4 (Sprint 6).** Пользователь в брифе пишет правила свободным текстом (например, `«если CI нижняя > 0 → SHIP»`). Для применения в Шаге 4 нужен либо детерминированный мини-парсер этих строк, либо переход на структурированный ввод правил в брифе (несовместимо с simplicity ADR-005). Open для обсуждения в Sprint 6 PLAN.
-2. **CSV upload helper на Шаге 4 — глубина.** После ADR-012 CSV не валидатор. Минимум — counts по variant для SRM. Открытый вопрос: добавлять ли preview CR/mean по variant (без независимого пересчёта Δ/p/CI)? Решим в Sprint 6 PLAN.
-3. **Methodology + demo/how-to структура** — три уровня глубины (тур / demo / methodology reference). JTBD §10 — 6 stories. Sprint 8.
-4. **Data peek calculator** для ручного ввода σ/cov (alternative to CSV upload). JTBD §4 ◆ user story. Кандидат на отдельный мини-спринт после Sprint 8.
-5. **`editedExternally` UI badge (LoadedBadge)** — реализован, поведение зафиксировано в ADR-006 consequences. Может быть переосмыслен по обратной связи реальных пользователей.
+1. **DSL для decision_rules в Шаге 4 (Sprint 7, не Sprint 6).** Пользователь в брифе пишет правила свободным текстом (например, `«если CI нижняя > 0 → SHIP»`). Для генерации параграфа «Recommended next step» в readout.md нужен либо детерминированный мини-парсер этих строк (фрагильно), либо чек-боксы пользователя «правило сработало» (проще, надёжнее, требует ручного клика). Решаем в Sprint 7 PLAN.
+2. **Data Peek scope (Sprint 6).** CSV upload + ручной calculator — оба пути (подтверждено в обсуждении 2026-05-28). Детали (где в флоу, формат calculator-поля по metric_type, обратная запись в state) — в Sprint 6 PLAN.
+3. **Methodology + tutorial структура.** Три уровня (тур / demo / methodology reference) + явный tutorial «как использовать decision_rules в ноутбуке для пост-анализа» (новый акцент после ADR-013). JTBD §9. Sprint 8.
+4. **`editedExternally` UI badge (LoadedBadge)** — реализован, поведение зафиксировано в ADR-006 consequences. Может быть переосмыслен по обратной связи реальных пользователей.
