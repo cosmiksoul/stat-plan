@@ -194,7 +194,7 @@ export default function BriefPage() {
             </div>
           </section>
 
-          <AdvancedParams />
+          <AdvancedParams disabled={isApproved} />
         </div>
 
         <QuestionMap />

@@ -6,7 +6,7 @@ const VARIANCE_OPTIONS = [
   { value: 'cuped', label: 'CUPED' },
 ]
 
-export default function AdvancedParams() {
+export default function AdvancedParams({ disabled = false }) {
   const { state, dispatch } = useAppState()
   const adv = state.brief.advanced
   const expanded = state.brief.advancedExpanded
@@ -39,48 +39,50 @@ export default function AdvancedParams() {
       </button>
 
       {expanded && (
-        <div className="border-t border-border-soft px-4 py-4 grid sm:grid-cols-2 gap-4">
-          <NumField
-            label="α (уровень значимости)"
-            value={adv.alpha}
-            onChange={(v) => set('alpha', v)}
-            step="0.01"
-          />
-          <NumField
-            label="POWER (мощность)"
-            value={adv.power}
-            onChange={(v) => set('power', v)}
-            step="0.01"
-          />
-          <label className="flex items-center gap-2.5 text-sm text-fg-dim cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={adv.two_sided}
-              onChange={(e) => set('two_sided', e.target.checked)}
-              className="w-4 h-4 accent-accent cursor-pointer"
+        <fieldset disabled={disabled} className="border-0 p-0 m-0 min-w-0">
+          <div className="border-t border-border-soft px-4 py-4 grid sm:grid-cols-2 gap-4">
+            <NumField
+              label="α (уровень значимости)"
+              value={adv.alpha}
+              onChange={(v) => set('alpha', v)}
+              step="0.01"
             />
-            <span>двусторонний тест (two-sided)</span>
-          </label>
-          <SelectField
-            label="VARIANCE REDUCTION"
-            value={adv.variance_reduction ?? ''}
-            options={VARIANCE_OPTIONS}
-            onChange={(v) => set('variance_reduction', v || null)}
-          />
-          <TextField
-            label="СТРАТИФИКАЦИЯ ПО"
-            value={adv.stratification_by ?? ''}
-            onChange={(v) => set('stratification_by', v || null)}
-            placeholder="напр. geo"
-          />
-          <NumField
-            label="HOLDBACK %"
-            value={adv.holdback_percent ?? ''}
-            onChange={(v) => set('holdback_percent', v)}
-            step="1"
-            placeholder="—"
-          />
-        </div>
+            <NumField
+              label="POWER (мощность)"
+              value={adv.power}
+              onChange={(v) => set('power', v)}
+              step="0.01"
+            />
+            <label className="flex items-center gap-2.5 text-sm text-fg-dim cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={adv.two_sided}
+                onChange={(e) => set('two_sided', e.target.checked)}
+                className="w-4 h-4 accent-accent cursor-pointer"
+              />
+              <span>двусторонний тест (two-sided)</span>
+            </label>
+            <SelectField
+              label="VARIANCE REDUCTION"
+              value={adv.variance_reduction ?? ''}
+              options={VARIANCE_OPTIONS}
+              onChange={(v) => set('variance_reduction', v || null)}
+            />
+            <TextField
+              label="СТРАТИФИКАЦИЯ ПО"
+              value={adv.stratification_by ?? ''}
+              onChange={(v) => set('stratification_by', v || null)}
+              placeholder="напр. geo"
+            />
+            <NumField
+              label="HOLDBACK %"
+              value={adv.holdback_percent ?? ''}
+              onChange={(v) => set('holdback_percent', v)}
+              step="1"
+              placeholder="—"
+            />
+          </div>
+        </fieldset>
       )}
     </section>
   )
