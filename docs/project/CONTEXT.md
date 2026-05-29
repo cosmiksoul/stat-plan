@@ -10,6 +10,94 @@
 
 > Записи в обратном хронологическом порядке (новые сверху).
 
+### Sprint 6 — Data Peek (Шаг 1): CSV upload + ручной calculator + визуализация + ADR-014 (recharts) (2026-05-29)
+
+**Type:** Code main + FIX iter 1 + FIX iter 2 (BUG-Q5 BLOCKER recharts) + RETEST + ADR-013 implementation start
+**Status:** Complete (CLOSE 2026-05-29)
+**Goal:** Закрыть приоритетный pain пользователя (sample-size с bootstrap fallback warning для ratio/continuous без исторических данных) через полный Data Peek — CSV upload + ручной calculator + skewness/kurtosis + stability CV + recharts histogram. Backend hooks (`data_peek.std_computed`, `ratio_variance`) уже были встроены в Sprint 4/5, Sprint 6 заполняет их через UI.
+
+**Что построено в main (Code: `feat(sprint-6)` 313 тестов +46 vs Sprint 5 FIX iter 1):**
+
+- **S1 backend schema extension** — `state.brief.data_peek` расширен с 5 до 15 полей: `source`, `ratio_variance`, `ratio_mean_*`, `ratio_cov_nd`, `stability_cv_under_threshold`, `cv_value`, `skewness`, `kurtosis`, `raw_values`. **Закрыты 2 pre-existing gap** (`ratio_variance` и `stability_cv_under_threshold` не были в parse mapping — Sprint 6 включил в round-trip через 6-й canonical case).
+- **S2 CSV parser** — NEW `src/lib/data-peek/csv.js` (papaparse lazy). Per metric_type (proportion/continuous/count: `<metric_column>` column; ratio: `<numerator>`, `<denominator>` columns; опционально `day` для stability CV). 50MB cap, BOM strip, reservoir sampling raw_values до 1000.
+- **S3 math** — NEW `src/lib/data-peek/stats.js`: skewness, kurtosis (excess), deltaMethodVariance для ratio (`Var(N)/μD² − 2·μN·Cov(N,D)/μD³ + μN²·Var(D)/μD⁴`), dailyCV, distributionLabel (`'ok' / 'skewed' / 'heavy_tailed' / 'skewed_heavy'`).
+- **S4 manual calculator** — NEW `src/lib/data-peek/calculator.js`: per metric_type (proportion → no fields, continuous → σ, ratio → 5 полей μN/μD/var_n/var_d/cov_nd с auto-расчётом ratio_variance, count → σ default √baseline Poisson).
+- **S5 UI (6 NEW components)** — `DataPeek{Block,Tabs,CsvUpload,ManualForm,Histogram,Stats}.jsx`. Collapsible block под SampleSizeDisplay на Q08. Tabs CSV / Manual. recharts histogram (lazy chunk).
+- **S6 reducer** — `SET_DATA_PEEK` / `RESET_DATA_PEEK` actions с auto-recompute плана.
+- **S7 integration** — DataPeekBlock в BriefPage Q08.
+- **S8 QuestionMap** — динамический статус «Data peek» с ✓ и preview.
+
+**Mid-flight architecture change Code'а:** прямой import recharts + papaparse давал +367 KB raw / +110 KB gzip — почти в 2× плана. Code сам сделал `React.lazy + Suspense` для DataPeekHistogram и `await import(...)` для parseDataPeekCsv. **Initial bundle delta +4.55 KB gzip** — в 13× ниже плана. Правильное продуктовое решение.
+
+**FIX iter 1 (Code: `fix(sprint-6) iter 1`):** закрыл C-1 (live baselineMatch в DataPeekStats) + C-2 (3 малых histogram для ratio numerator/denominator/ratio с подписями из ratio_components) + первые QA bugs (BUG-Q1 recharts Attempt 1, BUG-Q4 baseline.unit, BUG-Q3 reactivity). Phase A (optimizeDeps.include) — production build чистый, но в dev не сработал → FIX iter 2.
+
+**FIX iter 2 (Code):** BUG-Q5 (recharts реальный fix через Attempt 2+) + Phase F (Q05 для continuous без dropdown — только number input с placeholder «в единицах метрики (₽, сек, ARPU)») + BUG-Q6 (Q01 preselect ✓ в карте — regression от Sprint 4 FIX iter 1 BUG-5) + BUG-Q3 auto-закрылся после BUG-Q5.
+
+**Архитектурные решения:**
+
+- **ADR-014 Accepted 2026-05-28** — добавляем recharts (+~50KB gzip) и papaparse (+~7KB) как новые npm-зависимости. Уточняет ADR-010 пункт 6 (recharts из «кандидата» → принят). После lazy chunking initial bundle вырос только на +4.55 KB gzip — намного меньше прогноза.
+
+**Tests:**
+
+- Sprint 6 main: 267 → 313 (+46): +17 stats, +13 csv, +7 calculator, +4 reducer, +5 parse, +1 round-trip canonical.
+- Sprint 6 FIX iter 1: 313 → 328 (+15).
+- Sprint 6 FIX iter 2: 328 → ~333+ (Phase F + Q6 tests, точная цифра — в Code report iter 2).
+
+**Bundle (после FIX iter 1):** initial `index.js` 420.31 KB raw / 129.48 KB gzip (+4.55 KB gzip vs Sprint 5). `DataPeekHistogram` lazy 325.18 KB raw / 96.19 KB gzip. `csv` lazy 24.31 KB raw / 9.09 KB gzip.
+
+**Round-trip status:** 6/6 canonical case зелёные (5 из Sprint 5 + новый 6-й — ratio + полностью заполненный data_peek). FIX iter 1 расширил 6-й case на `raw_values_numerator/denominator`.
+
+**Gap fixes pre-existing:**
+
+| Gap | До Sprint 6 | После Sprint 6 |
+|---|---|---|
+| `data_peek.ratio_variance` | sample-size читал, parse не маппил → ratio peek через YAML round-trip терялся | round-trip 6/6 ✓ |
+| `data_peek.stability_cv_under_threshold` | scoring читал, parse не маппил → штраф/бонус scoring через round-trip не симметричен | round-trip 6/6 ✓ |
+| Q01 preselect ✓ в карте | regression от Sprint 4 FIX iter 1 BUG-5 (расширение applyEnterDefaults goal_type), сломалось в Sprint 5/6 | Sprint 6 FIX iter 2 BUG-Q6 закрыл |
+| recharts crash в dev (`require_isUnsafeProperty`) | новый BLOCKER при подключении recharts через lazy import | Sprint 6 FIX iter 2 BUG-Q5 Attempt 2+ закрыл |
+
+**Polish-pack кандидаты (3 ◆ stories, добавлены в JTBD по ходу Sprint 6 RETEST):**
+
+1. **`fmtNum` precision** в DataPeekStats — `100,431813` (6 знаков для continuous) → 2 знака для значений ≥ 1, 4 для < 1.
+2. **ScoringCard детальный checklist** — раскрываемые блоки с remarks под 4 группами (данные уже есть в `scorePlan() remarks`).
+3. **MdPreview стилизованный scrollbar** — `::-webkit-scrollbar` под тёмную тему.
+
+Также **JTBD §6 ◆ story** для будущего: ручная правка expected data schema перед скачиванием ноутбука (добавлена 2026-05-28 в обсуждении Sprint 6 PLAN).
+
+**Metrics — длительность фаз:**
+
+| Фаза | Δ |
+|---|---|
+| PLAN + ADR-014 finalization (Cowork ↔ пользователь) | ~30 мин |
+| PROMPT (Cowork, `sprint-6-prompt.md` 8 секций S1-S8 + lazy decision) | ~20 мин |
+| DEV main (Claude Code, по самозамеру) | ~2ч 45мин |
+| CODE REVIEW (Cowork, `code-review-sprint-6.md` C-1/C-2) | ~25 мин |
+| TEST PREP (Cowork, `test-cases-sprint-6.md` 14 кейсов + 6 CSV генерация) | ~30 мин |
+| QA Sprint 6 main (пользователь, smoke + обнаружение BUG-Q1/Q4/Q3) | ~15 мин |
+| FIX PROMPT iter 1 (Cowork) | ~20 мин |
+| FIX DEV iter 1 (Claude Code, Phase A/B/D/E) | ~1.5 ч |
+| RETEST iter 1 (пользователь — обнаружил BLOCKER recharts Attempt 1 + Phase F + BUG-Q6) | ~30 мин |
+| FIX PROMPT iter 2 split (Cowork — `sprint-6-fix-iter2-prompt.md`) | ~25 мин |
+| FIX DEV iter 2 (Claude Code, BUG-Q5 Attempt 2+ + Phase F + BUG-Q6) | ~1-1.5 ч (по плану) |
+| RETEST iter 2 (пользователь, full smoke) | ~30-40 мин |
+| CLOSE (Cowork: JTBD §4 закрыть + CONTEXT timeline + PROJECT_STATUS + 3 polish ◆) | ~30-40 мин |
+| **Total active** | **~8-9 часов end-to-end** |
+
+Sprint 6 — самый длинный спринт проекта на момент. Причины: (а) полный Data Peek scope (С) с гистограммой + skewness/kurtosis + stability CV + manual; (б) recharts BLOCKER потребовал 2 итераций FIX (Attempt 1 → 2+); (в) обнаружились pre-existing bugs (baseline.unit Phase F, Q01 preselect), которые проявились только через peek + smoke; (г) две итерации RETEST с pause на обсуждение продуктовых решений (Phase F UX, 3 histogram для ratio).
+
+**Notes:**
+
+- ✅ **Lazy chunking — критическая удача Code'а.** Без неё bundle вырос бы в 2× плана (initial +110 KB gzip). После lazy split — initial +4.55 KB gzip. Это важно для GitHub Pages (no CDN, no caching beyond browser).
+- ✅ **Backend hooks работают предсказуемо.** Sample-size.js / scoring.js / parse.js / render.js не требовали изменений (кроме schema extension и mapping расширения). Цепочка `SET_DATA_PEEK → recomputePlan → sample-size` работает реактивно после BUG-Q5 fix.
+- ✅ **Round-trip 6/6** включая raw_values_numerator/denominator для 3 histogram — гарантирует, что reload через test_plan.md полностью восстанавливает peek state.
+- ✅ **Math корректность подтверждена canonical examples** — skewness нормального ~0, log-normal > 0.5; kurtosis Cauchy heavy-tail > 3; deltaMethodVariance (μN=10, μD=100, var_n=4, var_d=100, cov=5) = 0.0004 точно.
+- 🟡 **Recharts BLOCKER — серьёзный урок.** ADR-014 был принят на основе оценки совместимости, не на основе тестирования. В будущем перед принятием новой UI-deps стоит делать spike в dev окружении пользователя. Vite optimizeDeps.include в Code production-build тесте сработал, в dev у пользователя — нет (cache invalidation эффект, либо специфика версии recharts/vite/node).
+- 🟢 **Phase F — продуктовый шум.** В iter 1 Code сделал dropdown «абс.» для continuous (consistency с MDE), но при RETEST пользователь резонно заметил «а может быть какая-то другая величина типа не абсолютное значение?» — что для continuous unit семантически не нужен. Заметка: при дизайне dropdown'ов проверять единственность опции — если 1 опция, лучше нет dropdown.
+- 🟢 **BUG-Q6 Q01 preselect regression** — напоминание что `applyEnterDefaults` тесты должны быть **обязательными** при любых правках reducer'а. Sprint 4 FIX iter 1 закрыл этот класс bug'ов, Sprint 5/6 их случайно вернули.
+- 🟢 **3 polish ◆ stories** обнаружены прямо в процессе RETEST (fmtNum precision, ScoringCard checklist, MdPreview scrollbar) — это **здоровый знак**: пользователь видит детали UX по мере того как продукт становится полезным. Polish-sprint после Sprint 7 main будет ценным.
+
+---
+
 ### Sprint 5 — Polish-pack + UX rename Шагов 04/05 + ADR-012 Accepted + FIX iter 1 (2026-05-28)
 
 **Type:** Code mini-sprint + FIX iter 1. Wall-clock в один день.
