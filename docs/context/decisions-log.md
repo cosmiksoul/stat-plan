@@ -62,12 +62,95 @@
 | 012 | Шаг 4 как «Быстрая валидация» (не independent validation), переименование Шагов 04/05 | Superseded by ADR-013 (объединение Шагов 4 и 5) | 2026-05-28 |
 | 013 | Объединение Шагов 4 и 5 в один Шаг 4 «Валидация и отчёт», 4-шаговый флоу | Accepted | 2026-05-28 |
 | 014 | Добавляем recharts для визуализаций (Data Peek histogram, Шаг 4 charts) | Accepted | 2026-05-28 |
+| 015 | Notebook results export format (tagged cell `stat-plan-results` с JSON) | Accepted | 2026-05-29 |
 
 ---
 
 ## Records
 
 > ADR в обратном хронологическом порядке (новые сверху).
+
+---
+
+## ADR-015 — Notebook results export format: tagged cell `stat-plan-results` с JSON
+
+**Date:** 2026-05-29
+**Status:** Accepted (перед Sprint 7 PROMPT)
+
+**Context:**
+После ADR-013 (4-шаговый флоу с объединённым Шагом 4 «Валидация и отчёт») главный продуктовый flow на Шаге 4 — пользователь приходит после прогона теста с числами из своего ноутбука. Изначально (ADR-013 + Sprint 7 PLAN draft) предполагался **ручной ввод** 7-10 полей в форму (control_n, treatment_n, delta_rel, p_value, ci_lower, ci_upper, ...).
+
+При обсуждении Sprint 7 PLAN 2026-05-29 пользователь предложил **сильное упрощение flow:** «можем ли мы отработанный ноутбук скачать назад? У нас же есть теперь результаты в ячейках. Почему бы не загрузить его в наш сервис и из него не сформировать отчёт?»
+
+Это меняет UX с «вбей 10 чисел руками» на «перетащи .ipynb → готовый отчёт». Минусы ручного ввода: (а) дублирование труда (пользователь только что видел эти числа в Jupyter), (б) риск опечаток, (в) отчёт без графиков (или нужны recharts SSR/перерисовка).
+
+**Decision:**
+
+1. **Шаг 4 принимает выполненный `.ipynb`** через drag-drop как primary flow. Ручной ввод формы — **fallback** для случаев когда (а) ноутбук без export-cell (backward-compat с Sprint 6 ipynb), (б) пользователь предпочитает ввести вручную.
+
+2. **Контракт ноутбука с парсером:** в шаблоне notebook'а (генерируется на Шаге 3 — `notebook-builder.js`) добавляется **финальная export-cell** с метатэгом:
+
+   ```python
+   # metadata.tags: ['stat-plan-results']
+   import json
+   results = {
+       'control_n': int(...),
+       'treatment_n': int(...),
+       'delta_rel': float(...),         # relative effect, e.g. 0.052 for +5.2%
+       'p_value': float(...),
+       'ci_lower': float(...),
+       'ci_upper': float(...),
+       'srm_pvalue': float(...),
+       'novelty_flag': bool(...),       # детектировался ли novelty effect
+       'guardrails': [
+           {'name': 'bounce_rate', 'breached': bool(...), 'value': float(...)},
+           # ...
+       ],
+   }
+   print(json.dumps(results, indent=2))
+   ```
+
+   Parser на стороне stat·plan:
+   - Открывает `.ipynb` как JSON (native, без deps).
+   - Находит cell с `cell.metadata.tags?.includes('stat-plan-results')`.
+   - Берёт последний output (`text/plain` или `application/json`) → `JSON.parse`.
+   - Извлекает все остальные `image/png` outputs из других ячеек (base64) — для встраивания в HTML отчёт.
+
+3. **Backward-compat для Sprint 6 ipynb (без export-cell):** парсер не находит tagged cell → показывает warning «Это ноутбук без stat-plan-results cell. Заполни числа вручную» → форма ручного ввода. Old ноутбуки работают, просто без auto-fill.
+
+4. **PNG графики из ipynb** автоматически embed'ятся в `report.html` как `<img src="data:image/png;base64,...">` (self-contained). Стиль matplotlib настраивается в шаблоне ноутбука через кастомные `plt.rcParams` (тёмная палитра под stat·plan UI) — Sprint 7 notebook-builder update.
+
+5. **Никаких recharts в `report.html`** — переиспользуем PNG из выполненного ноутбука. Это:
+   - Согласованно с Jupyter view (нет mismatch «видел одно, в отчёте другое»).
+   - Не требует ReactDOMServer.renderToString для SSR recharts (избегаем +30-50 KB к initial bundle и потенциальных багов recharts SSR).
+   - Recharts остаётся только в Шаге 1 Data Peek histogram (lazy chunk).
+
+6. **Backward-compat при manual fallback:** если пользователь идёт ручным вводом (без ipynb) → в `report.html` нет PNG графиков, только текст + таблицы + опционально мини-SVG (точка Δ с CI на одной оси, ~30 строк самописного SVG). Edge case, минорный UX trade-off.
+
+**Consequences:**
+
+- **Sprint 6 notebook-builder.js** обновляется в Sprint 7: добавляется новая ячейка-export в шаблон ноутбука, плюс кастомные `plt.rcParams` для стилизации. Backward-compat — old `.ipynb` (Sprint 6 main + FIX iter 1/2) **продолжают работать** через fallback на ручную форму (parser graceful skip).
+- **Schema export-cell** живёт в `docs/context/DATA_MODEL.md` (новый раздел «Notebook results export») — это контракт между двумя слоями системы и должен быть документирован.
+- **Парсер .ipynb** на стороне stat·plan — нативный JSON.parse, никаких новых npm-зависимостей.
+- **Изменение product-flow ожиданий:** PM сначала прогоняет ноутбук в Jupyter, **затем** возвращается в stat·plan с готовым `.ipynb` (это естественно). Альтернативный путь (ручной ввод без выполнения ноутбука) остаётся, но становится secondary.
+- **Reproducibility пакет богаче:** JSZip теперь включает `analysis.ipynb` **с outputs** (полностью воспроизводимая работа).
+
+**Alternatives considered:**
+
+- **Parse stdout без tagged cell** (искать строки вида `delta_rel: 0.05`) — отклонено: фрагильно к форматированию.
+- **Specific cell IDs** (`cell.id === 'export'`) — отклонено: nbformat v4.5+ ID generation непредсказуем; tags стандартнее и сохраняются между сохранениями.
+- **Magic comments** (`# stat-plan: delta_rel=0.05`) — отклонено: фрагильно, нет structured данных.
+- **Папка с CSV-выгрузкой** (notebook сохраняет `results.csv` рядом с ipynb) — отклонено: больше файлов для пользователя, потеря самодостаточности.
+- **GraphQL/REST-эндпоинт** для notebook → stat-plan коммуникации — отклонено: противоречит ADR-001 (no backend).
+
+**Related:**
+
+- ADR-013 (Шаг 4 «Валидация и отчёт») — этот ADR уточняет how-to: ipynb upload как primary, форма как fallback.
+- ADR-004 (тул не принимает решений) — соблюдается: тул принимает **пользовательские** результаты выполнения **пользовательского** ноутбука и применяет **пользовательские** decision_rules. Поле «Принятое решение» в readout остаётся пустым.
+- ADR-002 (артефакты как переносимое состояние) — этот ADR расширяет: `.ipynb` с outputs тоже становится переносимым артефактом (раньше был только output stat·plan'а, теперь и input для Шага 4).
+- Sprint 7 prompt (`docs/project/sprint-7-prompt.md`) — детальная реализация.
+- DATA_MODEL.md — обновится новым разделом «Notebook results export schema».
+- `notebook-builder.js` (Sprint 6) — обновится в Sprint 7: добавление export-cell + matplotlib styling.
 
 ---
 
