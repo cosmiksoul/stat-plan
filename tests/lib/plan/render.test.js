@@ -342,10 +342,20 @@ describe('renderTestPlanMd — snapshot of full output', () => {
       # Data peek info
       data_peek:
         uploaded: false
+        source: null
         baseline_computed: null
         std_computed: null
+        ratio_variance: null
+        ratio_mean_numerator: null
+        ratio_mean_denominator: null
+        ratio_cov_nd: null
         baseline_match_user_input: null
         distribution_check: null
+        skewness: null
+        kurtosis: null
+        cv_value: null
+        stability_cv_under_threshold: null
+        raw_values: null
 
       # Scoring snapshot (информационно, при загрузке игнорируется и пересчитывается)
       score: 80

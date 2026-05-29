@@ -195,4 +195,60 @@ describe('full round-trip — every brief field that the YAML carries', () => {
     // The legacy warning is expected here — see fix-prompt C-2 technical notes.
     expect(parsed.warnings.some((w) => /legacy формат/.test(w))).toBe(true)
   })
+
+  // Sprint 6: data_peek extended schema (ratio_variance, stability_cv_under_threshold,
+  // raw_values, etc.) must survive a render → parse cycle. Pre-Sprint 6 the
+  // first two fields were used by sample-size.js / scoring.js but never parsed,
+  // so a round-trip would silently lose them.
+  it('preserves data_peek extended fields for ratio metric (Sprint 6)', () => {
+    const peek = {
+      uploaded: true,
+      source: 'csv',
+      baseline_computed: 0.0987,
+      std_computed: null,
+      ratio_variance: 0.0004,
+      ratio_mean_numerator: 10.25,
+      ratio_mean_denominator: 101.25,
+      ratio_cov_nd: 0.05,
+      baseline_match_user_input: true,
+      distribution_check: 'ok',
+      skewness: 0.1,
+      kurtosis: 0.2,
+      cv_value: 0.12,
+      stability_cv_under_threshold: true,
+      raw_values: [0.09, 0.10, 0.11, 0.10, 0.09],
+    }
+    const original = makeState({
+      metric_type: 'ratio',
+      ratio_components: { numerator: 'clicks', denominator: 'sessions' },
+      metric_name: 'CTR',
+      metric_column: 'ctr',
+      baseline: { value: 0.1, unit: 'fraction' },
+      data_peek: peek,
+    })
+
+    const md = renderTestPlanMd(original)
+    expect(md).toContain('ratio_variance: 0.0004')
+    expect(md).toContain('stability_cv_under_threshold: true')
+
+    const parsed = parseTestPlanMd(md)
+    expect(parsed.ok).toBe(true)
+    expect(parsed.brief.data_peek).toMatchObject({
+      uploaded: true,
+      source: 'csv',
+      baseline_computed: 0.0987,
+      ratio_variance: 0.0004,
+      ratio_mean_numerator: 10.25,
+      ratio_mean_denominator: 101.25,
+      ratio_cov_nd: 0.05,
+      distribution_check: 'ok',
+      skewness: 0.1,
+      kurtosis: 0.2,
+      cv_value: 0.12,
+      stability_cv_under_threshold: true,
+    })
+    expect(parsed.brief.data_peek.raw_values).toEqual([
+      0.09, 0.1, 0.11, 0.1, 0.09,
+    ])
+  })
 })

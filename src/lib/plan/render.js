@@ -50,13 +50,29 @@ function renderGuardrailsYaml(guardrails) {
     .join('\n')
 }
 
+function renderRawValuesYaml(rv) {
+  if (!Array.isArray(rv) || rv.length === 0) return 'null'
+  const items = rv.map((v) => `    - ${yamlScalar(v)}`).join('\n')
+  return `\n${items}`
+}
+
 function renderDataPeekYaml(dp) {
   const lines = [
     `  uploaded: ${yamlScalar(dp?.uploaded ?? false)}`,
+    `  source: ${yamlScalar(dp?.source ?? null)}`,
     `  baseline_computed: ${yamlScalar(dp?.baseline_computed ?? null)}`,
     `  std_computed: ${yamlScalar(dp?.std_computed ?? null)}`,
+    `  ratio_variance: ${yamlScalar(dp?.ratio_variance ?? null)}`,
+    `  ratio_mean_numerator: ${yamlScalar(dp?.ratio_mean_numerator ?? null)}`,
+    `  ratio_mean_denominator: ${yamlScalar(dp?.ratio_mean_denominator ?? null)}`,
+    `  ratio_cov_nd: ${yamlScalar(dp?.ratio_cov_nd ?? null)}`,
     `  baseline_match_user_input: ${yamlScalar(dp?.baseline_match_user_input ?? null)}`,
     `  distribution_check: ${yamlScalar(dp?.distribution_check ?? null)}`,
+    `  skewness: ${yamlScalar(dp?.skewness ?? null)}`,
+    `  kurtosis: ${yamlScalar(dp?.kurtosis ?? null)}`,
+    `  cv_value: ${yamlScalar(dp?.cv_value ?? null)}`,
+    `  stability_cv_under_threshold: ${yamlScalar(dp?.stability_cv_under_threshold ?? null)}`,
+    `  raw_values: ${renderRawValuesYaml(dp?.raw_values)}`,
   ]
   return lines.join('\n')
 }

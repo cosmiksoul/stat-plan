@@ -490,3 +490,80 @@ describe('GOTO_QUESTION — preselect defaults via applyEnterDefaults', () => {
     expect(next.brief.defaultsApplied.randomization_unit).toBe(true)
   })
 })
+
+describe('SET_DATA_PEEK / RESET_DATA_PEEK — Sprint 6', () => {
+  function continuousBrief() {
+    return {
+      ...initialState.brief,
+      metric_type: 'continuous',
+      baseline: { value: 100, unit: null },
+      mde: { value: 5, unit: 'relative_percent', direction: 'increase' },
+      daily_traffic: { value: 5000, unit: 'user' },
+    }
+  }
+
+  it('SET_DATA_PEEK with std_computed triggers recompute and removes bootstrap fallback', () => {
+    const state = { ...initialState, brief: continuousBrief() }
+    // Baseline without peek — t_test fallback uses CV=1, so n is huge.
+    const before = reducer(state, { type: Actions.RECOMPUTE_PLAN })
+    expect(before.plan.derived.approximate).toBe(true)
+    // Now apply a peek with a realistic σ.
+    const peek = {
+      ok: true,
+      source: 'manual',
+      uploaded: true,
+      std_computed: 80,
+      ratio_variance: null,
+      baseline_match_user_input: true,
+      distribution_check: null,
+      skewness: null,
+      kurtosis: null,
+      cv_value: null,
+      stability_cv_under_threshold: null,
+      raw_values: null,
+    }
+    const after = reducer(state, {
+      type: Actions.SET_DATA_PEEK,
+      payload: { data_peek: peek },
+    })
+    expect(after.brief.data_peek).toEqual(peek)
+    expect(after.plan.derived.approximate).toBe(false)
+    expect(after.plan.derived.sample_size_per_arm).toBeGreaterThan(0)
+    expect(after.plan.score.total).toBeGreaterThan(before.plan.score.total)
+  })
+
+  it('RESET_DATA_PEEK clears the peek and recomputes (bootstrap fallback returns)', () => {
+    const seeded = {
+      ...initialState,
+      brief: {
+        ...continuousBrief(),
+        data_peek: { uploaded: true, std_computed: 80 },
+      },
+    }
+    const next = reducer(seeded, { type: Actions.RESET_DATA_PEEK })
+    expect(next.brief.data_peek).toBeNull()
+    expect(next.plan.derived.approximate).toBe(true)
+  })
+
+  it('SET_DATA_PEEK is a no-op when payload is missing or malformed', () => {
+    const state = { ...initialState, brief: continuousBrief() }
+    expect(
+      reducer(state, { type: Actions.SET_DATA_PEEK, payload: null }),
+    ).toBe(state)
+    expect(
+      reducer(state, {
+        type: Actions.SET_DATA_PEEK,
+        payload: { data_peek: 'string-not-object' },
+      }),
+    ).toBe(state)
+  })
+
+  it('RESET_STATE clears data_peek to null (from initialBrief)', () => {
+    const state = {
+      ...initialState,
+      brief: { ...initialState.brief, data_peek: { uploaded: true } },
+    }
+    const next = reducer(state, { type: Actions.RESET_STATE })
+    expect(next.brief.data_peek).toBeNull()
+  })
+})

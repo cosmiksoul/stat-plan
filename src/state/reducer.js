@@ -44,6 +44,9 @@ const initialBrief = {
     holdback_percent: null,
   },
   advancedExpanded: false,
+  // Sprint 6: null until user fills via CSV or manual calculator.
+  // SET_DATA_PEEK builds a populated object; see DATA_MODEL schema.
+  data_peek: null,
   defaultsApplied: {
     metric_name: false,
     decision_rules: false,
@@ -123,6 +126,11 @@ export const Actions = {
   TOGGLE_NOTEBOOK_CELL: 'TOGGLE_NOTEBOOK_CELL',
   RESET_NOTEBOOK_CONFIG: 'RESET_NOTEBOOK_CONFIG',
   SET_DEMO_CSV_CHOICE: 'SET_DEMO_CSV_CHOICE',
+  // Sprint 6: data peek (CSV upload or manual calculator).
+  // Both auto-recompute plan, mirroring LOAD_TEST_PLAN_MD semantics —
+  // a peek changes the statistical basis of sample-size and scoring.
+  SET_DATA_PEEK: 'SET_DATA_PEEK',
+  RESET_DATA_PEEK: 'RESET_DATA_PEEK',
 }
 
 function setBrief(state, patch) {
@@ -304,6 +312,18 @@ export function reducer(state, action) {
           demo_csv_choice: action.choice || null,
         },
       }
+
+    case Actions.SET_DATA_PEEK: {
+      const dp = action.payload?.data_peek
+      if (!dp || typeof dp !== 'object') return state
+      const next = setBrief(state, { data_peek: dp })
+      return recomputePlan(next)
+    }
+
+    case Actions.RESET_DATA_PEEK: {
+      const next = setBrief(state, { data_peek: null })
+      return recomputePlan(next)
+    }
 
     default:
       return state

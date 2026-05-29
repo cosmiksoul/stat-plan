@@ -6,6 +6,7 @@ import QuestionRenderer from '../components/brief/QuestionRenderer.jsx'
 import QuestionNav from '../components/brief/QuestionNav.jsx'
 import QuestionMap from '../components/brief/QuestionMap.jsx'
 import AdvancedParams from '../components/brief/AdvancedParams.jsx'
+import DataPeekBlock from '../components/brief/DataPeekBlock.jsx'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
 import { getQuestion } from '../lib/brief/questions.js'
@@ -187,7 +188,12 @@ export default function BriefPage() {
               </div>
             )}
 
-            {question.id === 'daily_traffic' && <SampleSizeDisplay brief={brief} />}
+            {question.id === 'daily_traffic' && (
+              <>
+                <SampleSizeDisplay brief={brief} />
+                <DataPeekBlock />
+              </>
+            )}
 
             <div className="mt-6">
               <AdvancedParams disabled={isApproved} />

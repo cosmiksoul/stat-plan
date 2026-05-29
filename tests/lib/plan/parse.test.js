@@ -649,6 +649,74 @@ describe('parseTestPlanMd — edge cases', () => {
     expect(r.ok).toBe(true)
     expect(r.brief.data_peek).toMatchObject({ uploaded: true })
   })
+
+  // Sprint 6: forward-compat — legacy YAML files (only 5 data_peek fields,
+  // pre-Sprint 6 schema) must still parse cleanly. Newly-introduced fields
+  // are not present in the YAML → parser fills them with null.
+  it('legacy 5-field data_peek YAML still parses (Sprint 6 backward compat)', () => {
+    const r = parseTestPlanMd(validProportionMd())
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek).toMatchObject({
+      uploaded: false,
+      baseline_computed: null,
+      std_computed: null,
+      ratio_variance: null,
+      stability_cv_under_threshold: null,
+      raw_values: null,
+    })
+  })
+
+  // Sprint 6 (gap close): pre-Sprint 6 parser ignored ratio_variance even
+  // though sample-size.js read it — round-tripping a ratio peek silently
+  // lost the value.
+  it('reads ratio_variance + ratio_mean_* (Sprint 6 gap close)', () => {
+    const md = validProportionMd().replace(
+      'distribution_check: null',
+      [
+        'distribution_check: ok',
+        '  source: csv',
+        '  ratio_variance: 0.0004',
+        '  ratio_mean_numerator: 10.25',
+        '  ratio_mean_denominator: 101.25',
+        '  ratio_cov_nd: 0.05',
+        '  skewness: 0.1',
+        '  kurtosis: 0.2',
+        '  cv_value: 0.12',
+        '  stability_cv_under_threshold: true',
+        '  raw_values: [0.09, 0.10, 0.11]',
+      ].join('\n'),
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek.ratio_variance).toBe(0.0004)
+    expect(r.brief.data_peek.ratio_mean_numerator).toBe(10.25)
+    expect(r.brief.data_peek.ratio_mean_denominator).toBe(101.25)
+    expect(r.brief.data_peek.ratio_cov_nd).toBe(0.05)
+    expect(r.brief.data_peek.stability_cv_under_threshold).toBe(true)
+    expect(r.brief.data_peek.cv_value).toBe(0.12)
+    expect(r.brief.data_peek.source).toBe('csv')
+    expect(r.brief.data_peek.raw_values).toEqual([0.09, 0.1, 0.11])
+  })
+
+  it('rejects non-array raw_values gracefully (Sprint 6)', () => {
+    const md = validProportionMd().replace(
+      'distribution_check: null',
+      'distribution_check: null\n  raw_values: "not-an-array"',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek.raw_values).toBeNull()
+  })
+
+  it('rejects raw_values containing non-numbers (Sprint 6)', () => {
+    const md = validProportionMd().replace(
+      'distribution_check: null',
+      'distribution_check: null\n  raw_values: [1, 2, "three"]',
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek.raw_values).toBeNull()
+  })
 })
 
 // ---- Phase C: metric_name semantic shift + goal_description -------------

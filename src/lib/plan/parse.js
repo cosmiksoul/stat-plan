@@ -439,26 +439,44 @@ function mapFrontmatter(fm, warnings) {
     }
   }
 
-  // data_peek (optional object, store as-is for forward compat)
+  // data_peek (optional object). Sprint 6 extended schema — when the user
+  // uploads a CSV or fills the manual calculator, sample-size.js + scoring.js
+  // pick up std_computed / ratio_variance / stability_cv_under_threshold
+  // automatically. Round-trip-able per ADR-002 (state portable).
   if (fm.data_peek != null) {
     if (typeof fm.data_peek === 'object' && !Array.isArray(fm.data_peek)) {
+      const dp = fm.data_peek
       brief.data_peek = {
-        uploaded: isBool(fm.data_peek.uploaded)
-          ? fm.data_peek.uploaded
-          : false,
-        baseline_computed: isNum(fm.data_peek.baseline_computed)
-          ? fm.data_peek.baseline_computed
+        uploaded: isBool(dp.uploaded) ? dp.uploaded : false,
+        source: isStr(dp.source) ? dp.source : null,
+        baseline_computed: isNum(dp.baseline_computed)
+          ? dp.baseline_computed
           : null,
-        std_computed: isNum(fm.data_peek.std_computed)
-          ? fm.data_peek.std_computed
+        std_computed: isNum(dp.std_computed) ? dp.std_computed : null,
+        ratio_variance: isNum(dp.ratio_variance) ? dp.ratio_variance : null,
+        ratio_mean_numerator: isNum(dp.ratio_mean_numerator)
+          ? dp.ratio_mean_numerator
           : null,
-        baseline_match_user_input:
-          isBool(fm.data_peek.baseline_match_user_input)
-            ? fm.data_peek.baseline_match_user_input
+        ratio_mean_denominator: isNum(dp.ratio_mean_denominator)
+          ? dp.ratio_mean_denominator
+          : null,
+        ratio_cov_nd: isNum(dp.ratio_cov_nd) ? dp.ratio_cov_nd : null,
+        baseline_match_user_input: isBool(dp.baseline_match_user_input)
+          ? dp.baseline_match_user_input
+          : null,
+        distribution_check: isStr(dp.distribution_check)
+          ? dp.distribution_check
+          : null,
+        skewness: isNum(dp.skewness) ? dp.skewness : null,
+        kurtosis: isNum(dp.kurtosis) ? dp.kurtosis : null,
+        cv_value: isNum(dp.cv_value) ? dp.cv_value : null,
+        stability_cv_under_threshold: isBool(dp.stability_cv_under_threshold)
+          ? dp.stability_cv_under_threshold
+          : null,
+        raw_values:
+          Array.isArray(dp.raw_values) && dp.raw_values.every(isNum)
+            ? dp.raw_values
             : null,
-        distribution_check: isStr(fm.data_peek.distribution_check)
-          ? fm.data_peek.distribution_check
-          : null,
       }
     } else {
       warnings.push('Поле data_peek не объект — проигнорировано.')
