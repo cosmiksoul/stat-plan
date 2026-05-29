@@ -154,6 +154,18 @@ function answerQuestion(state, field, value) {
   if (field === 'goal_type' && value !== 'other') {
     patch.goal_description = ''
   }
+  // Sprint 6 FIX iter 2 Phase F: для continuous unit не имеет смысла. UI
+  // (BaselineInput) уже шлёт null, но если другой caller передаст 'absolute'
+  // (старый iter 1 код в restored сессии, кастомный dispatch и т.п.) —
+  // принудительно обнуляем. value может быть и null'ом (полное обнуление).
+  if (
+    field === 'baseline' &&
+    state.brief.metric_type === 'continuous' &&
+    value &&
+    typeof value === 'object'
+  ) {
+    patch.baseline = { ...value, unit: null }
+  }
 
   return setBrief(state, patch)
 }
@@ -187,13 +199,20 @@ export function reducer(state, action) {
     case Actions.GOTO_QUESTION: {
       const num = action.num
       if (typeof num !== 'number' || num < 1 || num > 10) return state
+      const current = getQuestion(state.brief.currentQuestion)
       const target = getQuestion(num)
-      const briefWithDefaults = target
-        ? applyEnterDefaults(state.brief, target.id)
-        : state.brief
+      let nextBrief = state.brief
+      // Sprint 6 FIX iter 2 BUG-Q6: применяем defaults и для current
+      // (откуда уходим) — иначе preselect на стартовом Q01 не фиксируется в
+      // state (юзер на Q01 попадает через initialBrief.currentQuestion=1
+      // без GOTO_QUESTION), и QuestionMap.isQuestionAnswered показывает «·»
+      // после клика «ДАЛЬШЕ →». applyEnterDefaults идемпотентна (guards по
+      // defaultsApplied), повторное применение для current — no-op.
+      if (current) nextBrief = applyEnterDefaults(nextBrief, current.id)
+      if (target) nextBrief = applyEnterDefaults(nextBrief, target.id)
       return {
         ...state,
-        brief: { ...briefWithDefaults, currentQuestion: num },
+        brief: { ...nextBrief, currentQuestion: num },
       }
     }
 

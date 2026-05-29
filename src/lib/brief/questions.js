@@ -81,7 +81,11 @@ export function baselineUnitOptionsFor(metricType) {
       return [{ value: 'per_user', label: 'на юзера' }]
     case 'continuous':
     default:
-      return null // свободная единица (text input)
+      // Sprint 6 FIX iter 2 Phase F: для continuous unit не имеет смысла
+      // (ARPU/время/что угодно в своих единицах; sample-size игнорирует
+      // unit). Возвращаем null — BaselineInput рендерит чистый number input
+      // без unit-поля. Так же для не-выбранного metric_type (null/undefined).
+      return null
   }
 }
 

@@ -154,3 +154,63 @@ describe('parseDataPeekCsv — proportion sanity warning', () => {
     expect(res.warnings.some((w) => /проценты/.test(w))).toBe(true)
   })
 })
+
+describe('parseDataPeekCsv — raw_values_numerator/denominator (C-2)', () => {
+  it('ratio: exposes synchronized numerator + denominator samples', () => {
+    const text = [
+      'clicks,sessions',
+      '10,100',
+      '12,110',
+      '8,90',
+      '11,105',
+      '14,120',
+    ].join('\n')
+    const res = parseDataPeekCsv(
+      text,
+      brief({
+        metric_type: 'ratio',
+        ratio_components: { numerator: 'clicks', denominator: 'sessions' },
+        baseline: { value: 0.1, unit: 'fraction' },
+      }),
+    )
+    expect(res.ok).toBe(true)
+    expect(Array.isArray(res.raw_values_numerator)).toBe(true)
+    expect(Array.isArray(res.raw_values_denominator)).toBe(true)
+    expect(res.raw_values_numerator.length).toBe(5)
+    expect(res.raw_values_denominator.length).toBe(5)
+    expect(res.raw_values_numerator.every((v) => typeof v === 'number')).toBe(true)
+    expect(res.raw_values_denominator.every((v) => typeof v === 'number')).toBe(
+      true,
+    )
+  })
+
+  it('continuous: explicitly nulls the ratio-only fields for schema parity', () => {
+    const text = ['order_amount', '100', '120', '90'].join('\n')
+    const res = parseDataPeekCsv(
+      text,
+      brief({
+        metric_type: 'continuous',
+        metric_column: 'order_amount',
+        baseline: { value: 103, unit: null },
+      }),
+    )
+    expect(res.ok).toBe(true)
+    expect(res.raw_values_numerator).toBeNull()
+    expect(res.raw_values_denominator).toBeNull()
+  })
+
+  it('count: also nulls the ratio-only fields', () => {
+    const text = ['orders', '0', '1', '2', '3'].join('\n')
+    const res = parseDataPeekCsv(
+      text,
+      brief({
+        metric_type: 'count',
+        metric_column: 'orders',
+        baseline: { value: 1.5, unit: null },
+      }),
+    )
+    expect(res.ok).toBe(true)
+    expect(res.raw_values_numerator).toBeNull()
+    expect(res.raw_values_denominator).toBeNull()
+  })
+})

@@ -231,6 +231,50 @@ describe('saveState', () => {
   })
 })
 
+describe('loadState — Phase F session migration (Sprint 6 FIX iter 2)', () => {
+  // Iter 1 Phase B временно ставил baseline.unit='absolute' для continuous.
+  // Iter 2 канонизирует unit=null. На load чистим legacy.
+  it("normalizes legacy baseline.unit='absolute' to null for continuous", () => {
+    const persisted = {
+      started: true,
+      brief: {
+        metric_type: 'continuous',
+        baseline: { value: 100, unit: 'absolute' },
+      },
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
+    const restored = loadState(initialState)
+    expect(restored.brief.metric_type).toBe('continuous')
+    expect(restored.brief.baseline).toEqual({ value: 100, unit: null })
+  })
+
+  it("does not touch baseline.unit for non-continuous metric_type", () => {
+    const persisted = {
+      started: true,
+      brief: {
+        metric_type: 'proportion',
+        baseline: { value: 0.1, unit: 'fraction' },
+      },
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
+    const restored = loadState(initialState)
+    expect(restored.brief.baseline).toEqual({ value: 0.1, unit: 'fraction' })
+  })
+
+  it("preserves already-null unit for continuous", () => {
+    const persisted = {
+      started: true,
+      brief: {
+        metric_type: 'continuous',
+        baseline: { value: 100, unit: null },
+      },
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
+    const restored = loadState(initialState)
+    expect(restored.brief.baseline).toEqual({ value: 100, unit: null })
+  })
+})
+
 describe('clearState', () => {
   it('removes the stored state', () => {
     localStorage.setItem(STORAGE_KEY, '{"started":true}')

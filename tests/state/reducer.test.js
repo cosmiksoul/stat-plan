@@ -489,6 +489,66 @@ describe('GOTO_QUESTION — preselect defaults via applyEnterDefaults', () => {
     expect(next.brief.randomization_unit).toBe('user')
     expect(next.brief.defaultsApplied.randomization_unit).toBe(true)
   })
+
+  // Sprint 6 FIX iter 2 BUG-Q6 regression guard: на стартовый Q01 юзер
+  // попадает через initialBrief.currentQuestion=1, без диспатча
+  // GOTO_QUESTION(1). До iter 2 defaults для Q01 никогда не применялись, и
+  // карта показывала «·» после клика «ДАЛЬШЕ →». Теперь GOTO_QUESTION
+  // применяет defaults и для current (откуда уходим), и для target.
+  it('applies current question defaults when leaving Q01 (BUG-Q6)', () => {
+    // Юзер на Q01 (currentQuestion=1), goal_type=null. Клик «ДАЛЬШЕ →».
+    const next = reducer(initialState, {
+      type: Actions.GOTO_QUESTION,
+      num: 2,
+    })
+    expect(next.brief.currentQuestion).toBe(2)
+    expect(next.brief.goal_type).toBe('product_change')
+    expect(next.brief.defaultsApplied.goal_type).toBe(true)
+  })
+})
+
+describe('ANSWER_QUESTION baseline — continuous unit forced to null (Phase F)', () => {
+  // Sprint 6 FIX iter 2 Phase F: defensive backstop. UI больше не передаёт
+  // unit для continuous, но если другой caller отправит legacy 'absolute' или
+  // 'fraction' — reducer обнулит.
+  it("forces baseline.unit=null for continuous even if UI sends 'absolute'", () => {
+    const state = {
+      ...initialState,
+      brief: { ...initialState.brief, metric_type: 'continuous' },
+    }
+    const next = reducer(state, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'baseline',
+      value: { value: 100, unit: 'absolute' },
+    })
+    expect(next.brief.baseline).toEqual({ value: 100, unit: null })
+  })
+
+  it('preserves baseline.unit=fraction for proportion (not affected by Phase F)', () => {
+    const state = {
+      ...initialState,
+      brief: { ...initialState.brief, metric_type: 'proportion' },
+    }
+    const next = reducer(state, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'baseline',
+      value: { value: 0.1, unit: 'fraction' },
+    })
+    expect(next.brief.baseline).toEqual({ value: 0.1, unit: 'fraction' })
+  })
+
+  it('handles full reset value=null for continuous baseline without crashing', () => {
+    const state = {
+      ...initialState,
+      brief: { ...initialState.brief, metric_type: 'continuous' },
+    }
+    const next = reducer(state, {
+      type: Actions.ANSWER_QUESTION,
+      field: 'baseline',
+      value: { value: null, unit: null },
+    })
+    expect(next.brief.baseline).toEqual({ value: null, unit: null })
+  })
 })
 
 describe('SET_DATA_PEEK / RESET_DATA_PEEK — Sprint 6', () => {

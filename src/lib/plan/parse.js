@@ -477,6 +477,18 @@ function mapFrontmatter(fm, warnings) {
           Array.isArray(dp.raw_values) && dp.raw_values.every(isNum)
             ? dp.raw_values
             : null,
+        // C-2: separate samples for ratio peek so the 3-histogram view can be
+        // restored after round-trip. Non-ratio peeks carry null.
+        raw_values_numerator:
+          Array.isArray(dp.raw_values_numerator) &&
+          dp.raw_values_numerator.every(isNum)
+            ? dp.raw_values_numerator
+            : null,
+        raw_values_denominator:
+          Array.isArray(dp.raw_values_denominator) &&
+          dp.raw_values_denominator.every(isNum)
+            ? dp.raw_values_denominator
+            : null,
       }
     } else {
       warnings.push('Поле data_peek не объект — проигнорировано.')

@@ -717,6 +717,32 @@ describe('parseTestPlanMd — edge cases', () => {
     expect(r.ok).toBe(true)
     expect(r.brief.data_peek.raw_values).toBeNull()
   })
+
+  // Sprint 6 FIX iter 1 (C-2): synchronised numerator/denominator samples for
+  // the 3-up ratio histogram view. Parser must accept arrays of numbers and
+  // reject anything else (mirrors the raw_values handling above).
+  it('reads raw_values_numerator and raw_values_denominator when valid', () => {
+    const md = validProportionMd().replace(
+      'distribution_check: null',
+      [
+        'distribution_check: null',
+        '  raw_values: [0.09, 0.1, 0.11]',
+        '  raw_values_numerator: [10, 11, 9]',
+        '  raw_values_denominator: [100, 105, 95]',
+      ].join('\n'),
+    )
+    const r = parseTestPlanMd(md)
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek.raw_values_numerator).toEqual([10, 11, 9])
+    expect(r.brief.data_peek.raw_values_denominator).toEqual([100, 105, 95])
+  })
+
+  it('legacy YAML without raw_values_numerator/denominator stays null', () => {
+    const r = parseTestPlanMd(validProportionMd())
+    expect(r.ok).toBe(true)
+    expect(r.brief.data_peek.raw_values_numerator).toBeNull()
+    expect(r.brief.data_peek.raw_values_denominator).toBeNull()
+  })
 })
 
 // ---- Phase C: metric_name semantic shift + goal_description -------------

@@ -16,6 +16,7 @@ import {
   distributionLabel,
   deltaMethodVariance,
 } from './stats.js'
+import { baselineMatch as compareBaselines } from './baselineMatch.js'
 
 const MAX_BYTES = 50 * 1024 * 1024 // 50MB hard cap, ADR-001 gentle agreement
 const RAW_VALUES_LIMIT = 1000 // D3: random-sample down to this for histogram
@@ -237,6 +238,11 @@ export function parseDataPeekCsv(text, brief, options = {}) {
       cv_value: cv,
       stability_cv_under_threshold: stability,
       raw_values: reservoirSample(ratios, RAW_VALUES_LIMIT),
+      // C-2: same seed (default) across the three reservoirSample calls keeps
+      // the i-th sampled point synchronized between numerator / denominator /
+      // ratio — useful if we ever want a scatter plot N vs D.
+      raw_values_numerator: reservoirSample(nums, RAW_VALUES_LIMIT),
+      raw_values_denominator: reservoirSample(dens, RAW_VALUES_LIMIT),
       n_rows: ratios.length,
       n_days,
       warnings,
@@ -301,6 +307,10 @@ export function parseDataPeekCsv(text, brief, options = {}) {
     cv_value: cv,
     stability_cv_under_threshold: stability,
     raw_values: reservoirSample(values, RAW_VALUES_LIMIT),
+    // C-2: ratio-specific raw_values_numerator/denominator are explicitly null
+    // for single-column metric types so round-trip remains symmetrical.
+    raw_values_numerator: null,
+    raw_values_denominator: null,
     n_rows: values.length,
     n_days,
     warnings,
@@ -308,9 +318,3 @@ export function parseDataPeekCsv(text, brief, options = {}) {
   }
 }
 
-function compareBaselines(computed, userInput) {
-  if (!isFiniteNum(computed) || !isFiniteNum(userInput)) return null
-  if (userInput === 0) return Math.abs(computed) < 1e-9
-  const rel = Math.abs(computed - userInput) / Math.abs(userInput)
-  return rel < 0.1
-}

@@ -73,6 +73,8 @@ function renderDataPeekYaml(dp) {
     `  cv_value: ${yamlScalar(dp?.cv_value ?? null)}`,
     `  stability_cv_under_threshold: ${yamlScalar(dp?.stability_cv_under_threshold ?? null)}`,
     `  raw_values: ${renderRawValuesYaml(dp?.raw_values)}`,
+    `  raw_values_numerator: ${renderRawValuesYaml(dp?.raw_values_numerator)}`,
+    `  raw_values_denominator: ${renderRawValuesYaml(dp?.raw_values_denominator)}`,
   ]
   return lines.join('\n')
 }

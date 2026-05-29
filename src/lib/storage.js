@@ -47,6 +47,20 @@ function isPlainObject(v) {
   return v != null && typeof v === 'object' && !Array.isArray(v)
 }
 
+// Sprint 6 FIX iter 2 Phase F: iter 1 Phase B временно ставил
+// baseline.unit='absolute' для continuous (dropdown с одной опцией). Iter 2
+// убирает dropdown совсем и канонизирует unit=null для continuous. На load
+// чистим legacy.
+function migrateBaseline(brief) {
+  if (
+    brief?.metric_type === 'continuous' &&
+    brief?.baseline?.unit === 'absolute'
+  ) {
+    return { ...brief, baseline: { ...brief.baseline, unit: null } }
+  }
+  return brief
+}
+
 function mergeRestored(persisted, initial) {
   if (!isPlainObject(persisted)) return initial
   return {
@@ -55,13 +69,13 @@ function mergeRestored(persisted, initial) {
     test_id: persisted.test_id ?? initial.test_id,
     title: persisted.title ?? initial.title,
     brief: isPlainObject(persisted.brief)
-      ? {
+      ? migrateBaseline({
           ...initial.brief,
           ...persisted.brief,
           // UI-only fields always come from initialState, not persisted state
           currentQuestion: initial.brief.currentQuestion,
           advancedExpanded: initial.brief.advancedExpanded,
-        }
+        })
       : initial.brief,
     plan: isPlainObject(persisted.plan)
       ? {

@@ -84,7 +84,15 @@ export default function DataPeekBlock() {
                     </div>
                   }
                 >
-                  <DataPeekHistogram values={dp.raw_values} />
+                  <DataPeekHistogram
+                    values={dp.raw_values}
+                    valuesNumerator={dp.raw_values_numerator}
+                    valuesDenominator={dp.raw_values_denominator}
+                    labels={{
+                      numerator: brief.ratio_components?.numerator,
+                      denominator: brief.ratio_components?.denominator,
+                    }}
+                  />
                 </Suspense>
               )}
               <div>

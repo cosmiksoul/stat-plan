@@ -37,6 +37,9 @@ function baseShape(brief) {
     cv_value: null,
     stability_cv_under_threshold: null,
     raw_values: null,
+    // C-2: manual peek has no raw samples — kept null for schema parity with csv.js.
+    raw_values_numerator: null,
+    raw_values_denominator: null,
     n_rows: null,
     n_days: null,
     warnings: [],

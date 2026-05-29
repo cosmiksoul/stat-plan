@@ -217,6 +217,10 @@ describe('full round-trip — every brief field that the YAML carries', () => {
       cv_value: 0.12,
       stability_cv_under_threshold: true,
       raw_values: [0.09, 0.10, 0.11, 0.10, 0.09],
+      // Sprint 6 FIX iter 1 (C-2): synchronised samples for the 3-up
+      // histogram view. Round-trip must restore both arrays as-is.
+      raw_values_numerator: [10, 11, 9, 10, 12],
+      raw_values_denominator: [100, 105, 95, 100, 110],
     }
     const original = makeState({
       metric_type: 'ratio',
@@ -249,6 +253,12 @@ describe('full round-trip — every brief field that the YAML carries', () => {
     })
     expect(parsed.brief.data_peek.raw_values).toEqual([
       0.09, 0.1, 0.11, 0.1, 0.09,
+    ])
+    expect(parsed.brief.data_peek.raw_values_numerator).toEqual([
+      10, 11, 9, 10, 12,
+    ])
+    expect(parsed.brief.data_peek.raw_values_denominator).toEqual([
+      100, 105, 95, 100, 110,
     ])
   })
 })

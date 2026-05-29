@@ -356,6 +356,8 @@ describe('renderTestPlanMd — snapshot of full output', () => {
         cv_value: null
         stability_cv_under_threshold: null
         raw_values: null
+        raw_values_numerator: null
+        raw_values_denominator: null
 
       # Scoring snapshot (информационно, при загрузке игнорируется и пересчитывается)
       score: 80

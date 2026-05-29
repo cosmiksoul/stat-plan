@@ -167,23 +167,32 @@ function BaselineInput() {
   const { state, dispatch } = useAppState()
   const { brief } = state
   const unitOptions = baselineUnitOptionsFor(brief.metric_type)
-  const freeUnit = unitOptions === null
+  // Sprint 6 FIX iter 2 Phase F: для continuous (и для не-выбранного типа)
+  // unit бессмысленен — рендерим только number input + hint про реальные
+  // единицы (₽, сек, ARPU). reducer answerQuestion дополнительно форсирует
+  // unit=null для continuous как defensive backstop.
+  const noUnit = unitOptions === null
 
   return (
     <NumberWithUnit
       value={brief.baseline.value}
       unit={brief.baseline.unit}
       unitOptions={unitOptions ?? []}
-      freeUnit={freeUnit}
+      noUnit={noUnit}
       onChange={(next) =>
         dispatch({
           type: Actions.ANSWER_QUESTION,
           field: 'baseline',
-          value: next,
+          value: noUnit ? { ...next, unit: null } : next,
         })
       }
       placeholder={
         brief.metric_type === 'proportion' ? 'например: 3.1' : 'например: 250'
+      }
+      hint={
+        brief.metric_type === 'continuous'
+          ? 'В единицах метрики (₽, сек, ARPU и т.п.)'
+          : undefined
       }
     />
   )

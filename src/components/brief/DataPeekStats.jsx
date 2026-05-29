@@ -1,5 +1,6 @@
 import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
+import { baselineMatch } from '../../lib/data-peek/baselineMatch.js'
 
 function fmtNum(v, digits = 4) {
   if (v == null || !Number.isFinite(v)) return '—'
@@ -32,6 +33,12 @@ export default function DataPeekStats() {
     userBaseline != null && dp.baseline_computed != null && userBaseline !== 0
       ? ((dp.baseline_computed - userBaseline) / Math.abs(userBaseline)) * 100
       : null
+  // C-1: live-сравнение вместо frozen dp.baseline_match_user_input.
+  // После клика «↳ ПОДСТАВИТЬ В Q05» state.brief.baseline.value меняется и
+  // liveMatch мгновенно переключается на true → ⚠ → ✓, кнопка исчезает.
+  // dp.baseline_match_user_input остаётся в state — scoring.js читает его как
+  // snapshot момента peek (+5 pts).
+  const liveMatch = baselineMatch(dp.baseline_computed, userBaseline)
 
   function applyBaseline() {
     dispatch({
@@ -56,16 +63,14 @@ export default function DataPeekStats() {
               {delta != null && (
                 <span
                   className={
-                    dp.baseline_match_user_input
-                      ? 'text-ok ml-2'
-                      : 'text-warn ml-2'
+                    liveMatch ? 'text-ok ml-2' : 'text-warn ml-2'
                   }
                 >
-                  {dp.baseline_match_user_input ? '✓' : '⚠'} Δ ={' '}
+                  {liveMatch ? '✓' : '⚠'} Δ ={' '}
                   {delta.toFixed(1)}%
                 </span>
               )}
-              {dp.baseline_match_user_input === false && (
+              {liveMatch === false && (
                 <button
                   type="button"
                   onClick={applyBaseline}
