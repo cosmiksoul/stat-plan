@@ -21,8 +21,9 @@
       "outputs": [],
       "source": [
         "metric_col = '{{metric_column}}'\n",
-        "early = df[df['day'] <= 2]\n",
-        "later = df[df['day'] >= 3]\n",
+        "day_col = '{{day_column}}'\n",
+        "early = df[df[day_col] <= 2]\n",
+        "later = df[df[day_col] >= 3]\n",
         "\n",
         "def lift(part):\n",
         "    means = part.groupby('variant')[metric_col].mean()\n",
@@ -36,7 +37,12 @@
         "print(f'lift days 1-2: {lift_early:.3%}' if lift_early is not None else 'lift days 1-2: n/a')\n",
         "print(f'lift days 3+:  {lift_later:.3%}' if lift_later is not None else 'lift days 3+: n/a')\n",
         "\n",
-        "if lift_early is not None and lift_later is not None and abs(lift_early - lift_later) > 0.5 * abs(lift_later or 1):\n",
+        "novelty_flag = bool(\n",
+        "    lift_early is not None\n",
+        "    and lift_later is not None\n",
+        "    and abs(lift_early - lift_later) > 0.5 * abs(lift_later or 1)\n",
+        ")\n",
+        "if novelty_flag:\n",
         "    print('NOVELTY suspected — early lift differs by >50% relative from later days')"
       ]
     }

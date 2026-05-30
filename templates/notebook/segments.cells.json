@@ -21,7 +21,7 @@
       "outputs": [],
       "source": [
         "metric_col = '{{metric_column}}'\n",
-        "segment_col = 'geo'\n",
+        "segment_col = '{{geo_column}}'\n",
         "\n",
         "if segment_col not in df.columns:\n",
         "    print(f'segment column {segment_col!r} not in csv — skipping')\n",

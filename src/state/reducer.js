@@ -74,6 +74,27 @@ const initialNotebookConfig = {
   // demo_csv_choice tracks which demo file the user picked; null means
   // "default per metric_type" — the UI derives the actual file from brief.
   demo_csv_choice: null,
+  // Sprint 7 S11 (JTBD §6 ◆): per-column overrides for the expected schema.
+  // Shape: { [originalColumn]: { rename?: string, type?: string, enabled?: bool } }
+  // notebook-builder reads this when substituting placeholders and rendering
+  // the schema preview. Default empty — no overrides.
+  schema_overrides: {},
+}
+
+// Sprint 7 S8: results from the post-experiment notebook upload (or manual
+// form entry). source distinguishes ipynb-upload vs manual flow vs blank.
+// raw_results comes from parseIpynb's tagged-cell extraction; user_overrides
+// are edits in the form. Effective values for HTML/MD = raw merged with overrides.
+const initialResults = {
+  source: null, // 'ipynb' | 'manual' | null
+  raw_results: null,
+  user_overrides: {},
+  images: [],
+  ipynb_raw_text: null,
+  ipynb_filename: null,
+  user_checks: {}, // { ship?: bool, iterate?: bool, kill?: bool } — overrides auto_eval
+  user_decision: null, // 'SHIP' | 'ITERATE' | 'KILL' | null
+  warnings: [],
 }
 
 const initialPlan = {
@@ -101,6 +122,9 @@ export const initialState = {
   brief: initialBrief,
   plan: initialPlan,
   notebook_config: initialNotebookConfig,
+  // Sprint 7 (Step 4 «Валидация и отчёт»): top-level branch — results are a
+  // separate phase from planning, not part of the brief.
+  results: initialResults,
 }
 
 export { MANDATORY_NOTEBOOK_CELLS }
@@ -131,6 +155,17 @@ export const Actions = {
   // a peek changes the statistical basis of sample-size and scoring.
   SET_DATA_PEEK: 'SET_DATA_PEEK',
   RESET_DATA_PEEK: 'RESET_DATA_PEEK',
+  // Sprint 7 (Step 4): results upload + form editing + rule overrides +
+  // final decision dropdown. None of these recompute the plan — results are
+  // a separate phase from planning (ADR-013).
+  UPLOAD_IPYNB: 'UPLOAD_IPYNB',
+  SET_RESULTS_SOURCE_MANUAL: 'SET_RESULTS_SOURCE_MANUAL',
+  SET_RESULTS_FIELD: 'SET_RESULTS_FIELD',
+  TOGGLE_RULE_CHECK: 'TOGGLE_RULE_CHECK',
+  SET_USER_DECISION: 'SET_USER_DECISION',
+  RESET_RESULTS: 'RESET_RESULTS',
+  // Sprint 7 S11 (JTBD §6 ◆): per-column schema overrides on Step 3.
+  SET_SCHEMA_OVERRIDE: 'SET_SCHEMA_OVERRIDE',
 }
 
 function setBrief(state, patch) {
@@ -342,6 +377,79 @@ export function reducer(state, action) {
     case Actions.RESET_DATA_PEEK: {
       const next = setBrief(state, { data_peek: null })
       return recomputePlan(next)
+    }
+
+    case Actions.UPLOAD_IPYNB: {
+      const payload = action.payload || {}
+      const parsed = payload.parsed || {}
+      return {
+        ...state,
+        results: {
+          ...initialResults,
+          source: 'ipynb',
+          raw_results: parsed.results || null,
+          images: Array.isArray(parsed.images) ? parsed.images : [],
+          warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+          ipynb_filename: payload.ipynb_filename ?? null,
+          ipynb_raw_text: payload.ipynb_raw_text ?? null,
+        },
+      }
+    }
+
+    case Actions.SET_RESULTS_SOURCE_MANUAL:
+      return { ...state, results: { ...initialResults, source: 'manual' } }
+
+    case Actions.SET_RESULTS_FIELD: {
+      const { field, value } = action
+      if (typeof field !== 'string') return state
+      return {
+        ...state,
+        results: {
+          ...state.results,
+          source: state.results.source || 'manual',
+          user_overrides: { ...state.results.user_overrides, [field]: value },
+        },
+      }
+    }
+
+    case Actions.TOGGLE_RULE_CHECK: {
+      const { field, value } = action
+      if (typeof field !== 'string') return state
+      return {
+        ...state,
+        results: {
+          ...state.results,
+          user_checks: { ...state.results.user_checks, [field]: value },
+        },
+      }
+    }
+
+    case Actions.SET_USER_DECISION:
+      return {
+        ...state,
+        results: { ...state.results, user_decision: action.decision ?? null },
+      }
+
+    case Actions.RESET_RESULTS:
+      return { ...state, results: initialResults }
+
+    case Actions.SET_SCHEMA_OVERRIDE: {
+      const { column, patch } = action
+      if (typeof column !== 'string' || !patch || typeof patch !== 'object') {
+        return state
+      }
+      const prev = state.notebook_config.schema_overrides || {}
+      const prevCol = prev[column] || {}
+      return {
+        ...state,
+        notebook_config: {
+          ...state.notebook_config,
+          schema_overrides: {
+            ...prev,
+            [column]: { ...prevCol, ...patch },
+          },
+        },
+      }
     }
 
     default:

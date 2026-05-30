@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import StartScreen from './pages/StartScreen.jsx'
@@ -6,6 +6,17 @@ import BriefPage from './pages/BriefPage.jsx'
 import PlanPage from './pages/PlanPage.jsx'
 import NotebookBuilderPage from './pages/NotebookBuilderPage.jsx'
 import { useAppState } from './state/AppStateContext.jsx'
+
+// Sprint 7: Step 4 lazy-loaded — ipynb parser + html/md/zip builders ≈ 60-80 KB
+// gzip + jszip (~30 KB). Большинство юзеров проводят основное время на Steps
+// 1-3; Step 4 — финальная фаза, 1-2 секунды загрузки приемлемы.
+const ValidationReportPage = lazy(() => import('./pages/ValidationReportPage.jsx'))
+
+function PageLoading() {
+  return (
+    <div className="text-sm text-fg-faint p-8 text-center">Загрузка…</div>
+  )
+}
 
 function ProtectedStep({ requires = 'started', children }) {
   const { state } = useAppState()
@@ -57,6 +68,16 @@ export default function App() {
               element={
                 <ProtectedStep requires="approved">
                   <NotebookBuilderPage />
+                </ProtectedStep>
+              }
+            />
+            <Route
+              path="/step4"
+              element={
+                <ProtectedStep requires="approved">
+                  <Suspense fallback={<PageLoading />}>
+                    <ValidationReportPage />
+                  </Suspense>
                 </ProtectedStep>
               }
             />

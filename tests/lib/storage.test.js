@@ -33,6 +33,18 @@ const initialState = {
   notebook_config: {
     cells_enabled: ['load', 'srm', 'balance', 'novelty', 'main_test', 'guardrails'],
     demo_csv_choice: null,
+    schema_overrides: {},
+  },
+  results: {
+    source: null,
+    raw_results: null,
+    user_overrides: {},
+    images: [],
+    ipynb_raw_text: null,
+    ipynb_filename: null,
+    user_checks: {},
+    user_decision: null,
+    warnings: [],
   },
 }
 
@@ -272,6 +284,58 @@ describe('loadState — Phase F session migration (Sprint 6 FIX iter 2)', () => 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
     const restored = loadState(initialState)
     expect(restored.brief.baseline).toEqual({ value: 100, unit: null })
+  })
+})
+
+describe('Sprint 7 — results + schema_overrides persistence', () => {
+  it('persists state.results round-trip', () => {
+    const state = {
+      ...initialState,
+      started: true,
+      results: {
+        ...initialState.results,
+        source: 'ipynb',
+        raw_results: { control_n: 5000, treatment_n: 5020, delta_rel: 2.3 },
+        user_decision: 'SHIP',
+        ipynb_filename: 'analysis.ipynb',
+      },
+    }
+    saveState(state)
+    const restored = loadState(initialState)
+    expect(restored.results.source).toBe('ipynb')
+    expect(restored.results.raw_results.delta_rel).toBe(2.3)
+    expect(restored.results.user_decision).toBe('SHIP')
+    expect(restored.results.ipynb_filename).toBe('analysis.ipynb')
+  })
+
+  it('persists schema_overrides round-trip', () => {
+    const state = {
+      ...initialState,
+      notebook_config: {
+        ...initialState.notebook_config,
+        schema_overrides: { arpu: { rename: 'arpu_value', type: 'float' } },
+      },
+    }
+    saveState(state)
+    const restored = loadState(initialState)
+    expect(restored.notebook_config.schema_overrides.arpu).toEqual({
+      rename: 'arpu_value',
+      type: 'float',
+    })
+  })
+
+  it('legacy session without results field → default initialResults applied', () => {
+    const legacy = {
+      started: true,
+      brief: { goal_type: 'product_change' },
+      plan: { status: 'draft' },
+      notebook_config: { cells_enabled: ['load'] },
+      // no results, no schema_overrides
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+    const restored = loadState(initialState)
+    expect(restored.results).toEqual(initialState.results)
+    expect(restored.notebook_config.schema_overrides).toEqual({})
   })
 })
 

@@ -14,6 +14,7 @@ import noveltyCells from '../../../templates/notebook/novelty.cells.json'
 import guardrailsCells from '../../../templates/notebook/guardrails.cells.json'
 import segmentsCells from '../../../templates/notebook/segments.cells.json'
 import bootstrapCiCells from '../../../templates/notebook/bootstrap_ci.cells.json'
+import exportCells from '../../../templates/notebook/export.cells.json'
 import mainTestMeta from '../../../templates/notebook/main_test/_meta.json'
 import mainTestZ from '../../../templates/notebook/main_test/z_test.cells.json'
 import mainTestT from '../../../templates/notebook/main_test/t_test.cells.json'
@@ -87,6 +88,31 @@ function deriveMetricColumn(brief) {
   return brief?.metric_name || 'metric'
 }
 
+// Sprint 7 S11: per-column overrides from state.notebook_config.schema_overrides.
+// Shape: { [originalName]: { rename?, type?, enabled? } }. resolveCol returns
+// the effective column name (override.rename wins); resolveType returns the
+// effective type for the schema preview.
+function resolveCol(orig, overrides) {
+  const ov = overrides?.[orig]
+  if (ov && typeof ov.rename === 'string' && ov.rename.trim()) {
+    return ov.rename.trim()
+  }
+  return orig
+}
+
+function resolveType(orig, defaultType, overrides) {
+  const ov = overrides?.[orig]
+  if (ov && typeof ov.type === 'string' && ov.type.trim()) {
+    return ov.type.trim()
+  }
+  return defaultType
+}
+
+function getSchemaOverrides(state) {
+  const ov = state?.notebook_config?.schema_overrides
+  return ov && typeof ov === 'object' ? ov : {}
+}
+
 function pyRepr(value) {
   // Stringify JS primitives / arrays / objects as Python literals.
   // Strings: single-quoted; bools: capitalized; None for null.
@@ -106,48 +132,60 @@ function pyRepr(value) {
 
 function expectedSchema(state, cellsEnabled) {
   const brief = state.brief || {}
+  const overrides = getSchemaOverrides(state)
   const ru = brief.randomization_unit || 'user'
-  const metricCol = deriveMetricColumn(brief)
+  const ruOrig = `${ru}_id`
+  const metricColOrig = deriveMetricColumn(brief)
   const rows = [
     {
-      column: `${ru}_id`,
-      type: 'int / string',
+      original: ruOrig,
+      column: resolveCol(ruOrig, overrides),
+      type: resolveType(ruOrig, 'int / string', overrides),
       required: true,
       description: 'Идентификатор единицы рандомизации',
     },
     {
-      column: 'variant',
-      type: 'string',
+      original: 'variant',
+      column: resolveCol('variant', overrides),
+      type: resolveType('variant', 'string', overrides),
       required: true,
       description: '"control" или "treatment"',
     },
     {
-      column: metricCol,
-      type: brief.metric_type === 'proportion' ? 'int (0/1)' : 'float',
+      original: metricColOrig,
+      column: resolveCol(metricColOrig, overrides),
+      type: resolveType(
+        metricColOrig,
+        brief.metric_type === 'proportion' ? 'int (0/1)' : 'float',
+        overrides,
+      ),
       required: true,
       description: `Основная метрика (${brief.metric_type || 'metric'})`,
     },
   ]
   for (const g of brief.guardrails || []) {
     rows.push({
-      column: g.name,
-      type: 'float',
+      original: g.name,
+      column: resolveCol(g.name, overrides),
+      type: resolveType(g.name, 'float', overrides),
       required: cellsEnabled.includes('guardrails'),
       description: 'Guardrail',
     })
   }
   if (cellsEnabled.includes('novelty')) {
     rows.push({
-      column: 'day',
-      type: 'int (1..N)',
+      original: 'day',
+      column: resolveCol('day', overrides),
+      type: resolveType('day', 'int (1..N)', overrides),
       required: true,
       description: 'Номер дня (для novelty check)',
     })
   }
   if (cellsEnabled.includes('segments')) {
     rows.push({
-      column: 'geo',
-      type: 'string',
+      original: 'geo',
+      column: resolveCol('geo', overrides),
+      type: resolveType('geo', 'string', overrides),
       required: false,
       description: 'Сегмент для сегментного анализа',
     })
@@ -159,13 +197,22 @@ function buildPlaceholderMap(state) {
   const brief = state.brief || {}
   const plan = state.plan || {}
   const derived = plan.derived || {}
+  const overrides = getSchemaOverrides(state)
   const ru = brief.randomization_unit || 'user'
+  const ruIdOrig = `${ru}_id`
+  const metricColOrig = deriveMetricColumn(brief)
+  // Sprint 7 S11: rename per schema_overrides — Python code references the
+  // user's warehouse column names, not the canonical defaults.
+  const guardrailsResolved = (brief.guardrails || []).map((g) => ({
+    ...g,
+    name: resolveCol(g.name, overrides),
+  }))
   return {
     test_id: deriveTestId(state),
     title: deriveTitle(state),
     metric_name: brief.metric_name || '',
     metric_type: brief.metric_type || '',
-    metric_column: deriveMetricColumn(brief),
+    metric_column: resolveCol(metricColOrig, overrides),
     // baseline.unit is set to 'fraction' (proportions, already 0..1) or null
     // (continuous/ratio/count) by parse.js; values are already in the right
     // shape, so no normalization is needed here.
@@ -179,10 +226,12 @@ function buildPlaceholderMap(state) {
     sample_size_per_arm: derived.sample_size_per_arm ?? '',
     duration_days: derived.duration_days ?? '',
     randomization_unit: ru,
-    randomization_unit_column: `${ru}_id`,
-    guardrails_py_list: pyRepr((brief.guardrails || []).map((g) => g.name)),
+    randomization_unit_column: resolveCol(ruIdOrig, overrides),
+    day_column: resolveCol('day', overrides),
+    geo_column: resolveCol('geo', overrides),
+    guardrails_py_list: pyRepr(guardrailsResolved.map((g) => g.name)),
     guardrails_py_objects: pyRepr(
-      (brief.guardrails || []).map((g) => ({
+      guardrailsResolved.map((g) => ({
         name: g.name,
         direction: g.direction,
         threshold: g.threshold?.value ?? 0,
@@ -364,6 +413,14 @@ export function buildNotebook(state) {
     for (const cell of template.cells) {
       cells.push(substituteCell(cell, placeholderMap, missingPlaceholders))
     }
+  }
+
+  // Sprint 7 ADR-015: always-on export-cell with tag `stat-plan-results`.
+  // stat·plan Step 4 finds this tagged cell on .ipynb upload and pre-fills
+  // the validation form from its JSON output. Not in cells_enabled — it's
+  // not a user-toggleable analysis cell, it's a contract.
+  for (const cell of exportCells.cells) {
+    cells.push(substituteCell(cell, placeholderMap, missingPlaceholders))
   }
 
   if (missingPlaceholders.size > 0) {

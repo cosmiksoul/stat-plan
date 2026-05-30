@@ -40,7 +40,13 @@
         "print(f'relative lift  = {rel_lift:+.2%}')\n",
         "print(f't = {t_stat:.4f}, p = {p:.4f}  (Welch, unequal variance)')\n",
         "print(f'CI {1 - alpha:.0%}: [{ci_lo:+.4f}, {ci_hi:+.4f}]')\n",
-        "print('SIGNIFICANT' if p < alpha else 'not significant')"
+        "print('SIGNIFICANT' if p < alpha else 'not significant')\n",
+        "\n",
+        "# Canonical bindings (Sprint 7 ADR-015) — читается export-cell.\n",
+        "p_value = float(p)\n",
+        "ci_lower = float(ci_lo)\n",
+        "ci_upper = float(ci_hi)\n",
+        "delta_rel = float(rel_lift) * 100"
       ]
     }
   ]

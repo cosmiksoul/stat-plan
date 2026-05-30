@@ -22,12 +22,27 @@
       "source": [
         "import pandas as pd\n",
         "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "# Тёмная палитра под stat·plan — графики красиво вписываются в HTML-отчёт\n",
+        "# (Шаг 4). Если у тебя свой стиль — просто переопредели plt.rcParams ниже.\n",
+        "plt.rcParams.update({\n",
+        "    'figure.facecolor': '#0e1014', 'axes.facecolor': '#1a1d23',\n",
+        "    'axes.edgecolor': '#3a3f47', 'axes.labelcolor': '#ededed',\n",
+        "    'text.color': '#ededed', 'xtick.color': '#a8a8a8',\n",
+        "    'ytick.color': '#a8a8a8', 'grid.color': '#2a2d33',\n",
+        "    'axes.prop_cycle': plt.cycler('color', ['#a3e635', '#60a5fa', '#fbbf24', '#f87171']),\n",
+        "})\n",
         "\n",
         "CSV_PATH = 'experiment_results.csv'  # рядом с ноутбуком, или укажи полный путь / URL\n",
         "df = pd.read_csv(CSV_PATH)\n",
         "print(f'rows: {len(df):,}')\n",
         "df.info()\n",
-        "df.head()"
+        "df.head()\n",
+        "\n",
+        "# Canonical counts — читается export-cell в конце ноутбука.\n",
+        "control_n = int((df['variant'] == 'control').sum())\n",
+        "treatment_n = int((df['variant'] == 'treatment').sum())"
       ]
     }
   ]

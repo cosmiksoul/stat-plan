@@ -1,0 +1,53 @@
+{
+  "id": "export",
+  "name": "Export results (stat-plan)",
+  "description": "Финальная ячейка — собирает результаты теста в JSON и печатает их. Помечена тегом stat-plan-results — stat·plan Шаг 4 автоматически распарсит выполненный ноутбук и предзаполнит форму отчёта (ADR-015).",
+  "default_enabled": true,
+  "requires": ["load"],
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Export results\n",
+        "\n",
+        "Финальная ячейка с тегом `stat-plan-results`. **Не редактируй** — её ищет stat·plan на Шаге 4, чтобы автоматически подтянуть числа в отчёт. Если ты переименовал переменные выше — обнови `globals().get(...)` соответствующе."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": { "tags": ["stat-plan-results"] },
+      "outputs": [],
+      "source": [
+        "import json\n",
+        "\n",
+        "def _safe(v, default=None):\n",
+        "    if v is None:\n",
+        "        return default\n",
+        "    # numpy scalar → Python native\n",
+        "    if hasattr(v, 'item'):\n",
+        "        try:\n",
+        "            return v.item()\n",
+        "        except Exception:\n",
+        "            return default\n",
+        "    if hasattr(v, 'tolist'):\n",
+        "        return v.tolist()\n",
+        "    return v\n",
+        "\n",
+        "results = {\n",
+        "    'control_n':   _safe(globals().get('control_n')),\n",
+        "    'treatment_n': _safe(globals().get('treatment_n')),\n",
+        "    'delta_rel':   _safe(globals().get('delta_rel')),\n",
+        "    'p_value':     _safe(globals().get('p_value')),\n",
+        "    'ci_lower':    _safe(globals().get('ci_lower')),\n",
+        "    'ci_upper':    _safe(globals().get('ci_upper')),\n",
+        "    'srm_pvalue':  _safe(globals().get('srm_pvalue')),\n",
+        "    'novelty_flag': _safe(globals().get('novelty_flag'), False),\n",
+        "    'guardrails':  _safe(globals().get('guardrail_results'), []),\n",
+        "}\n",
+        "print(json.dumps(results, indent=2, default=str))"
+      ]
+    }
+  ]
+}

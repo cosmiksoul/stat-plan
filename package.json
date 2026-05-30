@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "js-yaml": "^4.1.1",
+    "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

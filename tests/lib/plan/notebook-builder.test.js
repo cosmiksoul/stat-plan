@@ -285,13 +285,17 @@ describe('buildNotebook — filename and JSON shape', () => {
 // ---- Edge cases ---------------------------------------------------------
 
 describe('buildNotebook — edge cases', () => {
-  it('runs with no enabled cells (just produces a header)', () => {
+  it('runs with no enabled cells (header + always-on export-cell pair)', () => {
     const state = makeState({
       notebook_config: { cells_enabled: [], demo_csv_choice: null },
     })
     const { json } = buildNotebook(state)
-    expect(json.cells).toHaveLength(1)
+    // Sprint 7 ADR-015: export-cell (markdown + code) is always appended.
+    expect(json.cells).toHaveLength(3)
     expect(json.cells[0].cell_type).toBe('markdown')
+    expect(json.cells[1].cell_type).toBe('markdown') // export markdown
+    expect(json.cells[2].cell_type).toBe('code') // export code
+    expect(json.cells[2].metadata.tags).toContain('stat-plan-results')
   })
 
   it('derives test_id from metric_column when state.test_id is null', () => {
@@ -418,5 +422,173 @@ describe('CELL_CATALOG', () => {
     ])
     const mandatory = ids.filter((id) => CELL_CATALOG[id].mandatory)
     expect(mandatory).toHaveLength(6)
+  })
+})
+
+// ---- Sprint 7 ADR-015: export-cell + plt.rcParams ----------------------
+
+describe('Sprint 7 — export-cell with stat-plan-results tag', () => {
+  it('always appends an export-cell tagged stat-plan-results', () => {
+    const { json } = buildNotebook(makeState())
+    const tagged = json.cells.find(
+      (c) => c.metadata?.tags?.includes('stat-plan-results'),
+    )
+    expect(tagged).toBeDefined()
+    expect(tagged.cell_type).toBe('code')
+    expect(flatSource(tagged)).toContain('json.dumps')
+    expect(flatSource(tagged)).toContain('globals().get')
+  })
+
+  it('export-cell reads canonical variable names', () => {
+    const { json } = buildNotebook(makeState())
+    const tagged = json.cells.find(
+      (c) => c.metadata?.tags?.includes('stat-plan-results'),
+    )
+    const src = flatSource(tagged)
+    for (const name of [
+      'control_n',
+      'treatment_n',
+      'delta_rel',
+      'p_value',
+      'ci_lower',
+      'ci_upper',
+      'srm_pvalue',
+      'novelty_flag',
+      'guardrail_results',
+    ]) {
+      expect(src).toContain(`'${name}'`)
+    }
+  })
+
+  it('main_test variants bind canonical p_value/ci_lower/ci_upper/delta_rel', () => {
+    for (const method of ['z_test_proportions', 't_test', 'welch_t_test', 'bootstrap']) {
+      const state = makeState({
+        plan: {
+          ...makeState().plan,
+          derived: { ...makeState().plan.derived, test_method: method },
+        },
+      })
+      const { json } = buildNotebook(state)
+      const all = flatAllSources(json)
+      expect(all).toContain('p_value = float(p)')
+      expect(all).toContain('ci_lower = float(ci_lo)')
+      expect(all).toContain('ci_upper = float(ci_hi)')
+      expect(all).toContain('delta_rel = float(rel_lift) * 100')
+    }
+  })
+
+  it('srm cell binds srm_pvalue (renamed from ambiguous p)', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('srm_pvalue')
+    expect(all).toContain('chi2_srm')
+  })
+
+  it('guardrails cell binds guardrail_results (not generic results)', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('guardrail_results')
+  })
+
+  it('novelty cell binds novelty_flag bool', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('novelty_flag = bool(')
+  })
+})
+
+describe('Sprint 7 — plt.rcParams in load cell', () => {
+  it('load cell sets matplotlib dark theme via plt.rcParams', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('import matplotlib.pyplot as plt')
+    expect(all).toContain('plt.rcParams.update')
+    expect(all).toContain('figure.facecolor')
+    expect(all).toContain('#0e1014')
+  })
+
+  it('load cell binds control_n / treatment_n from df', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain("control_n = int((df['variant'] == 'control')")
+    expect(all).toContain("treatment_n = int((df['variant'] == 'treatment')")
+  })
+})
+
+// ---- Sprint 7 S11: schema_overrides ------------------------------------
+
+describe('Sprint 7 — schema_overrides rename + type', () => {
+  it('renames metric_column via override in Python code', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { cr_to_click: { rename: 'cr_to_click_v2' } },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const all = flatAllSources(json)
+    expect(all).toContain("metric_col = 'cr_to_click_v2'")
+    expect(all).not.toContain("metric_col = 'cr_to_click'")
+  })
+
+  it('renames randomization_unit_column via override', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { user_id: { rename: 'visitor_id' } },
+      },
+    })
+    const { json, schema } = buildNotebook(state)
+    expect(schema[0].column).toBe('visitor_id')
+    expect(schema[0].original).toBe('user_id')
+  })
+
+  it('renames guardrail columns and reflects in py_repr lists', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { bounce_rate: { rename: 'bounce_pct' } },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const all = flatAllSources(json)
+    expect(all).toContain("guardrail_cols = ['bounce_pct']")
+    expect(all).toContain("'name': 'bounce_pct'")
+  })
+
+  it('renames day column for novelty cell', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { day: { rename: 'experiment_day' } },
+      },
+    })
+    const { json } = buildNotebook(state)
+    const all = flatAllSources(json)
+    expect(all).toContain("day_col = 'experiment_day'")
+  })
+
+  it('expectedSchema reflects type override in preview row', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { cr_to_click: { type: 'float (legacy)' } },
+      },
+    })
+    const { schema } = buildNotebook(state)
+    const metricRow = schema.find((r) => r.original === 'cr_to_click')
+    expect(metricRow.type).toBe('float (legacy)')
+  })
+
+  it('empty rename string is ignored (falls back to original)', () => {
+    const state = makeState({
+      notebook_config: {
+        ...makeState().notebook_config,
+        schema_overrides: { cr_to_click: { rename: '   ' } },
+      },
+    })
+    const { schema } = buildNotebook(state)
+    const metricRow = schema.find((r) => r.original === 'cr_to_click')
+    expect(metricRow.column).toBe('cr_to_click')
   })
 })

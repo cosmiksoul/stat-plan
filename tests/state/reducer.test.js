@@ -627,3 +627,125 @@ describe('SET_DATA_PEEK / RESET_DATA_PEEK — Sprint 6', () => {
     expect(next.brief.data_peek).toBeNull()
   })
 })
+
+describe('Sprint 7 — state.results actions', () => {
+  it('initialState has results: top-level branch with default shape', () => {
+    expect(initialState.results).toEqual({
+      source: null,
+      raw_results: null,
+      user_overrides: {},
+      images: [],
+      ipynb_raw_text: null,
+      ipynb_filename: null,
+      user_checks: {},
+      user_decision: null,
+      warnings: [],
+    })
+  })
+
+  it('UPLOAD_IPYNB stores parsed results + images + raw text', () => {
+    const next = reducer(initialState, {
+      type: Actions.UPLOAD_IPYNB,
+      payload: {
+        parsed: {
+          results: { control_n: 100, delta_rel: 2 },
+          images: [{ base64_png: 'AAA' }],
+          warnings: ['hello'],
+        },
+        ipynb_filename: 'analysis.ipynb',
+        ipynb_raw_text: '{"nbformat":4}',
+      },
+    })
+    expect(next.results.source).toBe('ipynb')
+    expect(next.results.raw_results.control_n).toBe(100)
+    expect(next.results.images).toHaveLength(1)
+    expect(next.results.warnings).toEqual(['hello'])
+    expect(next.results.ipynb_filename).toBe('analysis.ipynb')
+    expect(next.results.ipynb_raw_text).toBe('{"nbformat":4}')
+  })
+
+  it('SET_RESULTS_SOURCE_MANUAL resets results to manual blank shape', () => {
+    const state = {
+      ...initialState,
+      results: {
+        ...initialState.results,
+        source: 'ipynb',
+        raw_results: { control_n: 1 },
+      },
+    }
+    const next = reducer(state, { type: Actions.SET_RESULTS_SOURCE_MANUAL })
+    expect(next.results.source).toBe('manual')
+    expect(next.results.raw_results).toBeNull()
+  })
+
+  it('SET_RESULTS_FIELD patches user_overrides and infers manual source', () => {
+    const next = reducer(initialState, {
+      type: Actions.SET_RESULTS_FIELD,
+      field: 'delta_rel',
+      value: 7.5,
+    })
+    expect(next.results.user_overrides.delta_rel).toBe(7.5)
+    expect(next.results.source).toBe('manual')
+  })
+
+  it('TOGGLE_RULE_CHECK sets user_checks[field]', () => {
+    const next = reducer(initialState, {
+      type: Actions.TOGGLE_RULE_CHECK,
+      field: 'ship',
+      value: true,
+    })
+    expect(next.results.user_checks.ship).toBe(true)
+  })
+
+  it('SET_USER_DECISION sets user_decision', () => {
+    const next = reducer(initialState, {
+      type: Actions.SET_USER_DECISION,
+      decision: 'SHIP',
+    })
+    expect(next.results.user_decision).toBe('SHIP')
+  })
+
+  it('RESET_RESULTS returns to initialResults', () => {
+    const state = {
+      ...initialState,
+      results: {
+        ...initialState.results,
+        source: 'ipynb',
+        user_decision: 'KILL',
+      },
+    }
+    const next = reducer(state, { type: Actions.RESET_RESULTS })
+    expect(next.results.user_decision).toBeNull()
+    expect(next.results.source).toBeNull()
+  })
+
+  it('SET_SCHEMA_OVERRIDE merges patch into notebook_config.schema_overrides[col]', () => {
+    const next1 = reducer(initialState, {
+      type: Actions.SET_SCHEMA_OVERRIDE,
+      column: 'arpu',
+      patch: { rename: 'arpu_value' },
+    })
+    expect(next1.notebook_config.schema_overrides.arpu).toEqual({
+      rename: 'arpu_value',
+    })
+    const next2 = reducer(next1, {
+      type: Actions.SET_SCHEMA_OVERRIDE,
+      column: 'arpu',
+      patch: { type: 'float' },
+    })
+    expect(next2.notebook_config.schema_overrides.arpu).toEqual({
+      rename: 'arpu_value',
+      type: 'float',
+    })
+  })
+
+  it('SET_SCHEMA_OVERRIDE no-op for invalid input', () => {
+    expect(
+      reducer(initialState, { type: Actions.SET_SCHEMA_OVERRIDE, column: 'x' }),
+    ).toBe(initialState)
+  })
+
+  it('initialNotebookConfig has schema_overrides: {} default', () => {
+    expect(initialState.notebook_config.schema_overrides).toEqual({})
+  })
+})

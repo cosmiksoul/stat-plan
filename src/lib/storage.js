@@ -6,7 +6,8 @@
 //   - state.test_id, state.title (set after LOAD_TEST_PLAN_MD)
 //   - state.brief (all fields except currentQuestion + advancedExpanded — UI state)
 //   - state.plan (status / approvedAt / editedExternally / briefSubmitted)
-//   - state.notebook_config (cells_enabled + demo_csv_choice)
+//   - state.notebook_config (cells_enabled + demo_csv_choice + schema_overrides)
+//   - state.results (Sprint 7 — Step 4 form + uploaded ipynb + images)
 //
 // What we don't persist:
 //   - state.tourEnabled (per-session preference)
@@ -38,6 +39,7 @@ function pickForStorage(state) {
     brief: pickBrief(state.brief),
     plan: pickPlan(state.plan),
     notebook_config: state.notebook_config,
+    results: state.results,
   }
 }
 
@@ -95,8 +97,18 @@ function mergeRestored(persisted, initial) {
           cells_enabled: Array.isArray(persisted.notebook_config.cells_enabled)
             ? persisted.notebook_config.cells_enabled
             : initial.notebook_config.cells_enabled,
+          // Sprint 7 S11: schema_overrides absent in pre-Sprint-7 sessions →
+          // default to {} from initial.
+          schema_overrides: isPlainObject(persisted.notebook_config.schema_overrides)
+            ? persisted.notebook_config.schema_overrides
+            : initial.notebook_config.schema_overrides,
         }
       : initial.notebook_config,
+    // Sprint 7: state.results — absent in pre-Sprint-7 sessions → default
+    // to initial empty shape. We merge shallowly to tolerate partial restores.
+    results: isPlainObject(persisted.results)
+      ? { ...initial.results, ...persisted.results }
+      : initial.results,
   }
 }
 

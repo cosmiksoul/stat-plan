@@ -22,17 +22,17 @@
       "source": [
         "guardrails = {{guardrails_py_objects}}\n",
         "\n",
-        "results = []\n",
+        "guardrail_results = []  # Sprint 7 ADR-015: read by export-cell\n",
         "for g in guardrails:\n",
         "    col = g['name']\n",
         "    if col not in df.columns:\n",
-        "        results.append({'guardrail': col, 'status': 'column_missing'})\n",
+        "        guardrail_results.append({'name': col, 'breached': False, 'value': None, 'status': 'column_missing'})\n",
         "        continue\n",
         "    means = df.groupby('variant')[col].mean()\n",
         "    base = means.get('control', None)\n",
         "    trt = means.get('treatment', None)\n",
         "    if base is None or trt is None or base == 0:\n",
-        "        results.append({'guardrail': col, 'status': 'no_data'})\n",
+        "        guardrail_results.append({'name': col, 'breached': False, 'value': None, 'status': 'no_data'})\n",
         "        continue\n",
         "    rel = (trt - base) / base * 100\n",
         "    breached = False\n",
@@ -40,16 +40,17 @@
         "        breached = True\n",
         "    if g['direction'] == 'min' and rel < g['threshold']:\n",
         "        breached = True\n",
-        "    results.append({\n",
-        "        'guardrail': col,\n",
-        "        'rel_change_%': round(rel, 2),\n",
+        "    guardrail_results.append({\n",
+        "        'name': col,\n",
+        "        'rel_change_%': round(float(rel), 2),\n",
         "        'threshold_%': g['threshold'],\n",
         "        'direction': g['direction'],\n",
-        "        'breached': breached,\n",
+        "        'breached': bool(breached),\n",
+        "        'value': round(float(trt), 6),\n",
         "    })\n",
         "\n",
         "import pandas as pd\n",
-        "pd.DataFrame(results)"
+        "pd.DataFrame(guardrail_results)"
       ]
     }
   ]
