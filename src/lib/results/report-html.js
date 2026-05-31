@@ -5,6 +5,7 @@
 
 import { srmCheck, sanityCheck } from './checks.js'
 import { evaluateAllRules, recommendNextStep } from './decision-rules.js'
+import { effectiveResults } from './effective.js'
 
 const STYLES = `
   body { background: #0e1014; color: #ededed; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif; max-width: 920px; margin: 0 auto; padding: 32px 24px 80px; line-height: 1.55; }
@@ -53,16 +54,6 @@ function fmtNum(v, digits = 4) {
 function fmtInt(v) {
   if (!Number.isFinite(Number(v))) return '—'
   return Number(v).toLocaleString('ru-RU')
-}
-
-function effectiveResults(results) {
-  const raw = results?.raw_results || {}
-  const over = results?.user_overrides || {}
-  const out = { ...raw }
-  for (const [k, v] of Object.entries(over)) {
-    if (v !== undefined && v !== null && v !== '') out[k] = v
-  }
-  return out
 }
 
 // G-2 — CI bounds are an ABSOLUTE difference in the metric's units (proportion

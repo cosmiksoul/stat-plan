@@ -8,9 +8,9 @@ export default function LoadedBadge({ visible }) {
   return (
     <span
       className="mono-label inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 border border-border-soft bg-bg-elev-2 text-fg-faint"
-      title="План пришёл из загруженного test_plan.md. Локальные правки в брифе по-прежнему меняют его."
+      title="Этот план загружен из внешнего .md файла, а не сгенерирован из брифа."
     >
-      ↳ ЗАГРУЖЕН
+      ↳ ИЗ ФАЙЛА
     </span>
   )
 }

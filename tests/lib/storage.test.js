@@ -9,7 +9,6 @@ import {
 const initialState = {
   started: false,
   currentStep: 1,
-  tourEnabled: false,
   test_id: null,
   title: null,
   brief: {
@@ -94,8 +93,6 @@ describe('loadState', () => {
     // derived/score not persisted → empty
     expect(restored.plan.derived).toEqual({})
     expect(restored.plan.score).toEqual({})
-    // tour is not persisted
-    expect(restored.tourEnabled).toBe(false)
   })
 
   it('returns initialState when stored JSON is broken', () => {
@@ -122,10 +119,9 @@ describe('saveState', () => {
     expect(stored.brief.goal_type).toBe('marketing')
   })
 
-  it('does NOT persist currentQuestion, advancedExpanded, tourEnabled', () => {
+  it('does NOT persist currentQuestion, advancedExpanded', () => {
     const state = {
       ...initialState,
-      tourEnabled: true,
       brief: {
         ...initialState.brief,
         currentQuestion: 7,
@@ -134,7 +130,6 @@ describe('saveState', () => {
     }
     saveState(state)
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored.tourEnabled).toBeUndefined()
     expect(stored.brief.currentQuestion).toBeUndefined()
     expect(stored.brief.advancedExpanded).toBeUndefined()
   })

@@ -1,10 +1,12 @@
-import { useEffect, lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import StartScreen from './pages/StartScreen.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import PlanPage from './pages/PlanPage.jsx'
 import NotebookBuilderPage from './pages/NotebookBuilderPage.jsx'
+import TutorialPage from './pages/TutorialPage.jsx'
+import MethodologyPage from './pages/MethodologyPage.jsx'
 import { useAppState } from './state/AppStateContext.jsx'
 
 // Sprint 7: Step 4 lazy-loaded — ipynb parser + html/md/zip builders ≈ 60-80 KB
@@ -30,23 +32,16 @@ function ProtectedStep({ requires = 'started', children }) {
   return children
 }
 
-function TourBodyClass() {
-  const { state } = useAppState()
-  useEffect(() => {
-    document.body.classList.toggle('tour', state.tourEnabled)
-  }, [state.tourEnabled])
-  return null
-}
-
 export default function App() {
   return (
     <HashRouter>
-      <TourBodyClass />
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 w-full max-w-[1240px] mx-auto px-6 md:px-8 pb-20">
           <Routes>
             <Route path="/" element={<StartScreen />} />
+            <Route path="/tutorial" element={<TutorialPage />} />
+            <Route path="/methodology" element={<MethodologyPage />} />
             <Route
               path="/step1"
               element={

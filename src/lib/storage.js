@@ -10,7 +10,6 @@
 //   - state.results (Sprint 7 — Step 4 form + uploaded ipynb + images)
 //
 // What we don't persist:
-//   - state.tourEnabled (per-session preference)
 //   - state.brief.currentQuestion / advancedExpanded (UI state, restart from Q01)
 //   - state.plan.derived / score (cheap to recompute, avoids stale data)
 //   - state.plan.parse_warnings (transient, dismissed by the user)

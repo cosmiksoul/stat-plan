@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, NavLink } from 'react-router-dom'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
 import { clearState } from '../lib/storage.js'
 import ConfirmDialog from './plan/ConfirmDialog.jsx'
 
+const NAV_LINK = 'mono-label text-fg-faint hover:text-fg border border-border-soft rounded-md px-3 py-1.5 transition-colors'
+
 export default function Header() {
   const { state, dispatch } = useAppState()
   const navigate = useNavigate()
   const [showRestart, setShowRestart] = useState(false)
-  const tour = state.tourEnabled
 
   function handleRestart() {
     clearState()
@@ -29,7 +30,25 @@ export default function Header() {
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        <nav className="flex items-center gap-1.5">
+          <NavLink to="/tutorial" className={NAV_LINK}>
+            📖 Туториал
+          </NavLink>
+          <NavLink to="/methodology" className={NAV_LINK}>
+            📘 Методология
+          </NavLink>
+          <a
+            href="https://notebooklm.google.com/notebook/040498fe-3843-4562-a854-863d2101a0d8"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Внешний AI-ассистент по A/B методологии (NotebookLM)"
+            className="mono-label text-tour border border-tour rounded-md px-3 py-1.5 hover:bg-tour-soft transition-colors"
+          >
+            ↗ CRO Эксперт
+          </a>
+        </nav>
+
         {state.started && (
           <button
             type="button"
@@ -40,19 +59,6 @@ export default function Header() {
             ↺ НАЧАТЬ СНАЧАЛА
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={() => dispatch({ type: Actions.TOGGLE_TOUR })}
-          className={`mono-label font-semibold border rounded-md px-3.5 py-1.5 inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-            tour
-              ? 'bg-tour text-bg border-tour'
-              : 'bg-tour-soft text-tour border-tour hover:bg-tour-hover'
-          }`}
-          aria-pressed={tour}
-        >
-          {tour ? '✕ Закрыть тур' : '? Включить тур'}
-        </button>
       </div>
 
       <ConfirmDialog

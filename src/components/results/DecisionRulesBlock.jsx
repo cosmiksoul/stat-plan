@@ -91,8 +91,9 @@ export default function DecisionRulesBlock() {
 
       {nonEmpty.length > 0 && (
         <p className="text-xs text-fg-faint m-0">
-          ⓘ threshold сравнивается с ci_lower/ci_upper в абс. единицах метрики
-          (для правил в % rel конвертация — на стороне пользователя).
+          ⓘ Правила с суффиксом <code className="font-mono">% rel</code>{' '}
+          сравниваются автоматически через baseline из ноутбука. Без суффикса —
+          threshold в абс. единицах метрики.
         </p>
       )}
 

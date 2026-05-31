@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
+import Banner from '../components/layout/Banner.jsx'
 import MdPreview from '../components/plan/MdPreview.jsx'
 import ScoringCard from '../components/plan/ScoringCard.jsx'
 import PlanActions from '../components/plan/PlanActions.jsx'
@@ -80,20 +81,23 @@ export default function PlanPage() {
       </div>
 
       {status === 'approved' && (
-        <div className="mb-6 text-sm text-accent bg-accent-soft border border-accent rounded-md px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-          <span>
-            План утверждён. Бриф переключён в режим «только-чтение». Чтобы
-            внести правки — верни план в черновик.
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate('/step4')}
-            className="text-xs bg-transparent border border-accent text-accent rounded px-3 py-1.5 hover:bg-accent hover:text-bg cursor-pointer transition-colors whitespace-nowrap"
-            title="Если ноутбук уже выполнен — сразу к валидации"
-          >
-            У меня есть выполненный ноутбук →
-          </button>
-        </div>
+        <Banner
+          type="status"
+          icon="✓"
+          action={
+            <button
+              type="button"
+              onClick={() => navigate('/step4')}
+              className="text-xs bg-transparent border border-accent text-accent rounded px-3 py-1.5 hover:bg-accent hover:text-bg cursor-pointer transition-colors whitespace-nowrap"
+              title="Если ноутбук уже выполнен — сразу к валидации"
+            >
+              У меня есть выполненный ноутбук →
+            </button>
+          }
+        >
+          План утверждён. Бриф переключён в режим «только-чтение». Чтобы внести
+          правки — верни план в черновик.
+        </Banner>
       )}
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-6">

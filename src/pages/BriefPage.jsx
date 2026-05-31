@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
+import Banner from '../components/layout/Banner.jsx'
 import ProgressBar from '../components/brief/ProgressBar.jsx'
 import QuestionRenderer from '../components/brief/QuestionRenderer.jsx'
 import QuestionNav from '../components/brief/QuestionNav.jsx'
@@ -135,23 +136,34 @@ export default function BriefPage() {
         briefSubmitted={state.plan.briefSubmitted}
       />
 
+      <header className="mb-6">
+        <h1 className="font-serif text-3xl font-medium tracking-tight m-0 text-fg">
+          Бриф
+        </h1>
+        <p className="text-sm text-fg-dim m-0 mt-1">
+          Опиши тест в 10 вопросах — sample size и план посчитаются
+          автоматически.
+        </p>
+      </header>
+
       {isApproved && (
-        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap text-sm bg-accent-soft border border-accent rounded-md px-4 py-3 text-accent">
-          <span>
-            <span className="mono-label font-semibold mr-2">
-              ПЛАН УТВЕРЖДЁН
-            </span>
-            Бриф в режиме только-чтения. Чтобы внести правки — верни план в
-            черновик.
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate('/step2')}
-            className="mono-label text-accent underline-offset-2 hover:underline cursor-pointer"
-          >
-            ↗ К ТЕСТ-ПЛАНУ
-          </button>
-        </div>
+        <Banner
+          type="status"
+          icon="✓"
+          action={
+            <button
+              type="button"
+              onClick={() => navigate('/step2')}
+              className="mono-label text-accent underline-offset-2 hover:underline cursor-pointer"
+            >
+              ↗ К ТЕСТ-ПЛАНУ
+            </button>
+          }
+        >
+          <span className="mono-label font-semibold mr-2">ПЛАН УТВЕРЖДЁН</span>
+          Бриф в режиме только-чтения. Чтобы внести правки — верни план в
+          черновик.
+        </Banner>
       )}
 
       <div className="grid md:grid-cols-[1.4fr_1fr] gap-6">

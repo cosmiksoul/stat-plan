@@ -114,7 +114,6 @@ const initialPlan = {
 export const initialState = {
   started: false,
   currentStep: 1,
-  tourEnabled: false,
   // Set on successful LOAD_TEST_PLAN_MD; otherwise derived on the fly from
   // brief.metric_name (see render.js / notebook-builder).
   test_id: null,
@@ -131,7 +130,6 @@ export { MANDATORY_NOTEBOOK_CELLS }
 
 export const Actions = {
   START_BRIEF: 'START_BRIEF',
-  TOGGLE_TOUR: 'TOGGLE_TOUR',
   ANSWER_QUESTION: 'ANSWER_QUESTION',
   UPDATE_HYPOTHESIS: 'UPDATE_HYPOTHESIS',
   GOTO_QUESTION: 'GOTO_QUESTION',
@@ -215,9 +213,6 @@ export function reducer(state, action) {
   switch (action.type) {
     case Actions.START_BRIEF:
       return { ...state, started: true, currentStep: 1 }
-
-    case Actions.TOGGLE_TOUR:
-      return { ...state, tourEnabled: !state.tourEnabled }
 
     case Actions.ANSWER_QUESTION:
       return answerQuestion(state, action.field, action.value)

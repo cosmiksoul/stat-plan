@@ -42,6 +42,7 @@
         "    'p_value':     _safe(globals().get('p_value')),\n",
         "    'ci_lower':    _safe(globals().get('ci_lower')),\n",
         "    'ci_upper':    _safe(globals().get('ci_upper')),\n",
+        "    'control_mean': _safe(globals().get('control_mean')),\n",
         "    'srm_pvalue':  _safe(globals().get('srm_pvalue')),\n",
         "    'novelty_flag': _safe(globals().get('novelty_flag'), None),\n",
         "    'guardrails':  _safe(globals().get('guardrail_results'), []),\n",

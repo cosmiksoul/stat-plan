@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Stepper from '../components/Stepper.jsx'
+import Banner from '../components/layout/Banner.jsx'
 import ParseWarningsBanner from '../components/ParseWarningsBanner.jsx'
 import PlanInfoCard from '../components/notebook/PlanInfoCard.jsx'
 import CellsList from '../components/notebook/CellsList.jsx'
@@ -52,6 +53,26 @@ export default function NotebookBuilderPage() {
         briefSubmitted={state.plan.briefSubmitted}
       />
       <ParseWarningsBanner />
+
+      {state.plan.status === 'approved' && (
+        <Banner
+          type="status"
+          icon="✓"
+          action={
+            <button
+              type="button"
+              onClick={() => navigate('/step2')}
+              className="mono-label text-accent underline-offset-2 hover:underline cursor-pointer whitespace-nowrap"
+            >
+              ← К ПЛАНУ
+            </button>
+          }
+        >
+          План утверждён. Конструируешь ноутбук на основе финального плана.
+          Хочешь поменять — верни план в черновик на Шаге 2.
+        </Banner>
+      )}
+
       <PlanInfoCard state={state} />
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-6">

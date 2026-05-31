@@ -13,10 +13,18 @@
 // "нижняя/верхняя граница", "% rel." suffixes. Longer alternatives come first
 // so they win over the bare `ci`. No `\b` — JS word boundaries are ASCII-only
 // and would break the Cyrillic alternatives.
+// Sprint 8 P-13 — alias real PM phrasing (lift / эффект / Δ rel / p value).
+// Sprint 8 P-14d — optional trailing `% rel` suffix → unit-aware comparison.
+// Longer alternatives first; bare `ci` last. No `\b` (ASCII-only, breaks
+// Cyrillic). m[1]=variable, m[2]=operator, m[3]=threshold, m[4]=unit suffix.
 const COND_REGEX = new RegExp(
   '(ci_lower|ci_upper|p_value|delta_rel|ci\\s+lower|ci\\s+upper|' +
-    'нижняя\\s+граница|верхняя\\s+граница|ci)' +
-    '\\s*(>=|<=|==|>|<)\\s*([+-]?\\d+(?:\\.\\d+)?)',
+    'нижняя\\s+граница|верхняя\\s+граница|' +
+    'relative\\s+effect|delta\\s*rel|[Δδ]\\s*rel|' +
+    'p\\s*value|p-value|p-значение|' +
+    'lift|эффект|ci)' +
+    '\\s*(>=|<=|==|>|<)\\s*([+-]?\\d+(?:\\.\\d+)?)' +
+    '\\s*(%\\s*rel(?:ative)?|%)?',
   'i',
 )
 
@@ -27,10 +35,13 @@ export const FIELDS = ['ship', 'iterate', 'kill']
 // resolved by operator: "CI ≤ X" = whole CI below X = ci_upper; "CI ≥ X" =
 // whole CI above X = ci_lower. Explicit ci_lower/ci_upper are never remapped.
 function normalizeVariable(rawVar, operator) {
-  const v = rawVar.toLowerCase().replace(/\s+/g, '_')
+  let v = rawVar.toLowerCase().replace(/\s+/g, '_')
+  v = v.replace(/^δ_?/, '') // 'δ_rel' / 'δrel' → 'rel'
   if (['ci_lower', 'ci_upper', 'p_value', 'delta_rel'].includes(v)) return v
   if (v === 'нижняя_граница') return 'ci_lower'
   if (v === 'верхняя_граница') return 'ci_upper'
+  if (['lift', 'эффект', 'relative_effect', 'rel'].includes(v)) return 'delta_rel'
+  if (['p-value', 'p-значение'].includes(v)) return 'p_value'
   if (v === 'ci') {
     if (operator === '<=' || operator === '<') return 'ci_upper'
     if (operator === '>=' || operator === '>') return 'ci_lower'
@@ -46,6 +57,7 @@ export function parseDecisionRule(text) {
     variable: null,
     operator: null,
     threshold: null,
+    unit: null,
     raw,
   }
   if (!raw.trim()) return result
@@ -61,18 +73,28 @@ export function parseDecisionRule(text) {
   if (!variable) return result
   const threshold = Number(m[3])
   if (!Number.isFinite(threshold)) return result
+  const unit = /rel/.test((m[4] || '').toLowerCase()) ? 'pct_rel' : null
   return {
     parsed: true,
     variable,
     operator,
     threshold,
+    unit,
     raw,
   }
 }
 
 export function evaluateRule(rule, results) {
   if (!rule?.parsed || !results) return null
-  const value = Number(results[rule.variable])
+  // P-14d — `% rel` rules on CI bounds read the derived pct_rel field.
+  let key = rule.variable
+  if (
+    rule.unit === 'pct_rel' &&
+    (rule.variable === 'ci_lower' || rule.variable === 'ci_upper')
+  ) {
+    key = `${rule.variable}_pct_rel`
+  }
+  const value = Number(results[key])
   if (!Number.isFinite(value)) return null
   switch (rule.operator) {
     case '>':
@@ -105,6 +127,7 @@ export function evaluateAllRules(decision_rules, results) {
         variable: null,
         operator: null,
         threshold: null,
+        unit: null,
         auto_eval: null,
         empty: true,
       }
@@ -118,6 +141,7 @@ export function evaluateAllRules(decision_rules, results) {
       variable: parsed.variable,
       operator: parsed.operator,
       threshold: parsed.threshold,
+      unit: parsed.unit,
       auto_eval: parsed.parsed ? evaluateRule(parsed, results) : null,
       empty: false,
     }

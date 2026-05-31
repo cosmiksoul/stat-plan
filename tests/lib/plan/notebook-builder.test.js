@@ -518,6 +518,29 @@ describe('Sprint 7 — export-cell with stat-plan-results tag', () => {
     }
   })
 
+  it('main_test binds observed_diff + control_mean (Sprint 8 P-12/P-14a)', () => {
+    for (const method of ['z_test_proportions', 't_test', 'welch_t_test', 'bootstrap']) {
+      const state = makeState({
+        plan: {
+          ...makeState().plan,
+          derived: { ...makeState().plan.derived, test_method: method },
+        },
+      })
+      const all = flatAllSources(buildNotebook(state).json)
+      expect(all).toContain('observed_diff = float(')
+      expect(all).toContain('control_mean = float(')
+      expect(all).toContain('center = observed_diff')
+    }
+  })
+
+  it('export-cell reads control_mean (Sprint 8 P-14b)', () => {
+    const { json } = buildNotebook(makeState())
+    const tagged = json.cells.find(
+      (c) => c.metadata?.tags?.includes('stat-plan-results'),
+    )
+    expect(flatSource(tagged)).toContain("'control_mean'")
+  })
+
   it('srm cell binds srm_pvalue (renamed from ambiguous p)', () => {
     const { json } = buildNotebook(makeState())
     const all = flatAllSources(json)

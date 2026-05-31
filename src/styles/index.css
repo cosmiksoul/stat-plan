@@ -56,3 +56,22 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
+
+/* Sprint 8 P-9 — dark themed scrollbar for the test_plan.md preview. */
+.md-preview::-webkit-scrollbar {
+  width: 8px;
+}
+.md-preview::-webkit-scrollbar-track {
+  background: var(--color-bg-elev-2);
+}
+.md-preview::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 4px;
+}
+.md-preview::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ok);
+}
+.md-preview {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) var(--color-bg-elev-2);
+}

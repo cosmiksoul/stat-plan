@@ -2,11 +2,14 @@ import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
 import { baselineMatch } from '../../lib/data-peek/baselineMatch.js'
 
-function fmtNum(v, digits = 4) {
-  if (v == null || !Number.isFinite(v)) return '—'
-  return Number(v).toLocaleString('ru-RU', {
-    maximumFractionDigits: digits,
-  })
+// Sprint 8 P-8 — adaptive precision by default (2 dp for |n|>=1, 4 dp below),
+// with an optional explicit `digits` override for callers that need a fixed
+// precision (variance, skew/kurt, cv). Exported for unit tests.
+export function fmtNum(v, digits) {
+  if (v == null || !Number.isFinite(Number(v))) return '—'
+  const n = Number(v)
+  if (digits != null) return n.toFixed(digits)
+  return Math.abs(n) >= 1 || n === 0 ? n.toFixed(2) : n.toFixed(4)
 }
 
 function distributionRu(label) {
@@ -54,12 +57,12 @@ export default function DataPeekStats() {
 
       {dp.baseline_computed != null && (
         <Row label="BASELINE">
-          <span className="font-mono">{fmtNum(dp.baseline_computed, 6)}</span>
+          <span className="font-mono">{fmtNum(dp.baseline_computed)}</span>
           {userBaseline != null && (
             <>
               {' '}
               <span className="text-fg-faint">vs твой</span>{' '}
-              <span className="font-mono">{fmtNum(userBaseline, 6)}</span>
+              <span className="font-mono">{fmtNum(userBaseline)}</span>
               {delta != null && (
                 <span
                   className={
@@ -86,7 +89,7 @@ export default function DataPeekStats() {
 
       {dp.std_computed != null && (
         <Row label="σ">
-          <span className="font-mono">{fmtNum(dp.std_computed)}</span>
+          <span className="font-mono">{fmtNum(dp.std_computed, 4)}</span>
         </Row>
       )}
 
@@ -95,8 +98,8 @@ export default function DataPeekStats() {
           <span className="font-mono">{fmtNum(dp.ratio_variance, 6)}</span>
           {dp.ratio_mean_numerator != null && (
             <span className="text-fg-faint ml-3">
-              μN={fmtNum(dp.ratio_mean_numerator)} · μD=
-              {fmtNum(dp.ratio_mean_denominator)} · Cov=
+              μN={fmtNum(dp.ratio_mean_numerator, 4)} · μD=
+              {fmtNum(dp.ratio_mean_denominator, 4)} · Cov=
               {fmtNum(dp.ratio_cov_nd, 6)}
             </span>
           )}

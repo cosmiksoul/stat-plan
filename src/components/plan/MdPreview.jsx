@@ -7,7 +7,7 @@ export default function MdPreview({ content }) {
         <span>test_plan.md</span>
         <span className="text-fg-faint">PREVIEW</span>
       </div>
-      <pre className="font-mono text-xs leading-relaxed text-fg-dim whitespace-pre-wrap break-words m-0 p-4 max-h-[640px] overflow-auto">
+      <pre className="md-preview font-mono text-xs leading-relaxed text-fg-dim whitespace-pre-wrap break-words m-0 p-4 max-h-[640px] overflow-auto">
         {content}
       </pre>
     </div>

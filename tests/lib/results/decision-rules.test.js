@@ -101,15 +101,83 @@ describe('parseDecisionRule', () => {
   })
 })
 
-describe('evaluateRule — G-4 CI mapping (FIX iter 2)', () => {
-  it('ci_upper <= -2.5 fires when ci_upper is -3', () => {
+describe('evaluateRule — G-4 CI mapping (FIX iter 2 / Sprint 8 unit-aware)', () => {
+  // Sprint 8 P-14d: "% rel" rules now read the derived *_pct_rel field.
+  it('ci_upper <= -2.5% rel fires against ci_upper_pct_rel', () => {
     const r = parseDecisionRule('CI ≤ −2.5% rel.')
+    expect(r.unit).toBe('pct_rel')
+    expect(evaluateRule(r, { ci_upper_pct_rel: -3 })).toBe(true)
+  })
+
+  it('ci_lower >= 5% rel fires against ci_lower_pct_rel', () => {
+    const r = parseDecisionRule('CI ≥ +5% rel.')
+    expect(evaluateRule(r, { ci_lower_pct_rel: 7 })).toBe(true)
+  })
+})
+
+describe('parseDecisionRule — Sprint 8 aliases (P-13)', () => {
+  it('"Lift ≥ +5% rel." → delta_rel >= 5', () => {
+    expect(parseDecisionRule('Lift ≥ +5% rel.')).toMatchObject({
+      parsed: true,
+      variable: 'delta_rel',
+      operator: '>=',
+      threshold: 5,
+      unit: 'pct_rel',
+    })
+  })
+
+  it('"Эффект > 0" → delta_rel > 0', () => {
+    expect(parseDecisionRule('Эффект > 0')).toMatchObject({
+      parsed: true,
+      variable: 'delta_rel',
+      operator: '>',
+      threshold: 0,
+    })
+  })
+
+  it('"Δ rel >= 5" → delta_rel >= 5', () => {
+    expect(parseDecisionRule('Δ rel >= 5')).toMatchObject({
+      parsed: true,
+      variable: 'delta_rel',
+      operator: '>=',
+      threshold: 5,
+    })
+  })
+
+  it('"p value < 0.05" → p_value < 0.05', () => {
+    expect(parseDecisionRule('p value < 0.05')).toMatchObject({
+      parsed: true,
+      variable: 'p_value',
+      operator: '<',
+      threshold: 0.05,
+    })
+  })
+
+  it('"relative effect <= -2" → delta_rel <= -2', () => {
+    expect(parseDecisionRule('relative effect <= -2')).toMatchObject({
+      parsed: true,
+      variable: 'delta_rel',
+      operator: '<=',
+      threshold: -2,
+    })
+  })
+})
+
+describe('parseDecisionRule / evaluateRule — Sprint 8 unit-aware (P-14d)', () => {
+  it('no suffix → unit null, compares raw ci bound', () => {
+    const r = parseDecisionRule('ci_upper <= -2.5')
+    expect(r.unit).toBeNull()
     expect(evaluateRule(r, { ci_upper: -3 })).toBe(true)
   })
 
-  it('ci_lower >= 5 fires when ci_lower is 7', () => {
-    const r = parseDecisionRule('CI ≥ +5% rel.')
-    expect(evaluateRule(r, { ci_lower: 7 })).toBe(true)
+  it('% rel rule returns null when pct_rel field is absent (backward-compat)', () => {
+    const r = parseDecisionRule('CI ≤ −2.5% rel.')
+    expect(evaluateRule(r, { ci_upper: -3 })).toBeNull()
+  })
+
+  it('delta_rel % rel compares the raw (already-percent) value', () => {
+    const r = parseDecisionRule('Lift ≥ +5% rel.')
+    expect(evaluateRule(r, { delta_rel: 7 })).toBe(true)
   })
 })
 
