@@ -69,4 +69,33 @@ describe('buildReadoutMd', () => {
     const md = buildReadoutMd(s)
     expect(md).toMatch(/delta_rel: 7\.7/)
   })
+
+  // FIX iter 1 — F-8/F-9c: bold significance + novelty lines in TL;DR.
+  it('puts a bold significance verdict in TL;DR', () => {
+    const md = buildReadoutMd(makeState()) // p=0.012, alpha=0.05
+    expect(md).toMatch(/\*\*✅ Statistically significant\*\*/)
+  })
+
+  it('puts a bold novelty verdict when novelty_flag is set', () => {
+    const s = makeState()
+    s.results.raw_results.novelty_flag = true
+    const md = buildReadoutMd(s)
+    expect(md).toMatch(/\*\*⚠ Novelty effect suspected\*\*/)
+  })
+
+  it('omits the novelty verdict when novelty_flag is null (FIX iter 2 — G-1)', () => {
+    const s = makeState()
+    s.results.raw_results.novelty_flag = null
+    const md = buildReadoutMd(s)
+    expect(md).not.toMatch(/Novelty effect/)
+  })
+
+  // FIX iter 2 — G-2: honest CI unit label in TL;DR.
+  it('labels CI with metric units for continuous (no *100)', () => {
+    const s = makeState()
+    s.brief.metric_type = 'continuous'
+    s.brief.metric_name = 'ARPU'
+    const md = buildReadoutMd(s)
+    expect(md).toMatch(/_\(абс\. разность, ед\. ARPU\)_/)
+  })
 })

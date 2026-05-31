@@ -54,6 +54,63 @@ describe('parseDecisionRule', () => {
     expect(r.parsed).toBe(true)
     expect(r.threshold).toBe(-2)
   })
+
+  // G-4 (FIX iter 2) — tolerant of real PM phrasing.
+  it('bare CI with ≥ → ci_lower (unicode + % rel suffix)', () => {
+    const r = parseDecisionRule('CI ≥ +5% rel.')
+    expect(r).toMatchObject({ parsed: true, variable: 'ci_lower', operator: '>=', threshold: 5 })
+  })
+
+  it('Russian "Нижняя граница ≥ +5% rel." → ci_lower', () => {
+    const r = parseDecisionRule('Нижняя граница ≥ +5% rel.')
+    expect(r).toMatchObject({ parsed: true, variable: 'ci_lower', operator: '>=', threshold: 5 })
+  })
+
+  it('bare CI with ≤ and unicode minus → ci_upper', () => {
+    const r = parseDecisionRule('CI ≤ −2.5% rel.')
+    expect(r).toMatchObject({ parsed: true, variable: 'ci_upper', operator: '<=', threshold: -2.5 })
+  })
+
+  it('Russian "Верхняя граница <= -2.5%" → ci_upper', () => {
+    const r = parseDecisionRule('Верхняя граница <= -2.5%')
+    expect(r).toMatchObject({ parsed: true, variable: 'ci_upper', operator: '<=', threshold: -2.5 })
+  })
+
+  it('mixed sentence "Guardrail breach или CI ≤ −5% rel." parses the CI condition', () => {
+    const r = parseDecisionRule('Guardrail breach или CI ≤ −5% rel.')
+    expect(r).toMatchObject({ parsed: true, variable: 'ci_upper', operator: '<=', threshold: -5 })
+    expect(r.raw).toContain('Guardrail breach')
+  })
+
+  it('semantic sentence with no numeric condition → not parsed', () => {
+    const r = parseDecisionRule(
+      'Статистически незначимо, но направление positive в 2+ сегментах — итерируем.',
+    )
+    expect(r.parsed).toBe(false)
+  })
+
+  it('explicit ci_lower/ci_upper are never remapped by the bare-CI logic', () => {
+    expect(parseDecisionRule('ci_lower <= 0.01')).toMatchObject({
+      variable: 'ci_lower',
+      operator: '<=',
+    })
+    expect(parseDecisionRule('ci_upper >= 0.01')).toMatchObject({
+      variable: 'ci_upper',
+      operator: '>=',
+    })
+  })
+})
+
+describe('evaluateRule — G-4 CI mapping (FIX iter 2)', () => {
+  it('ci_upper <= -2.5 fires when ci_upper is -3', () => {
+    const r = parseDecisionRule('CI ≤ −2.5% rel.')
+    expect(evaluateRule(r, { ci_upper: -3 })).toBe(true)
+  })
+
+  it('ci_lower >= 5 fires when ci_lower is 7', () => {
+    const r = parseDecisionRule('CI ≥ +5% rel.')
+    expect(evaluateRule(r, { ci_lower: 7 })).toBe(true)
+  })
 })
 
 describe('evaluateRule', () => {

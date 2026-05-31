@@ -46,7 +46,22 @@
         "p_value = float(p)\n",
         "ci_lower = float(ci_lo)\n",
         "ci_upper = float(ci_hi)\n",
-        "delta_rel = float(rel_lift) * 100"
+        "delta_rel = float(rel_lift) * 100\n",
+        "\n",
+        "# Точечный график эффекта: CI абсолютной разности vs 0 (Δrel в title).\n",
+        "import matplotlib.pyplot as plt\n",
+        "if all(v is not None for v in (ci_lower, ci_upper, delta_rel, p_value)):\n",
+        "    center = (ci_lower + ci_upper) / 2\n",
+        "    fig, ax = plt.subplots(figsize=(8, 3))\n",
+        "    ax.errorbar([center], [0], xerr=[[center - ci_lower], [ci_upper - center]],\n",
+        "                fmt='o', color='#a3e635', ecolor='#a3e635', capsize=10, markersize=12)\n",
+        "    ax.axvline(0, color='#f87171', linestyle='--', linewidth=1, alpha=0.7, label='No effect')\n",
+        "    ax.set_yticks([])\n",
+        "    ax.set_xlabel('Absolute effect (treatment − control)')\n",
+        "    ax.set_title(f'Δrel = {delta_rel:+.2f}%   CI95 (абс. разность) [{ci_lower:+.4f}, {ci_upper:+.4f}]   p = {p_value:.4f}')\n",
+        "    ax.legend(loc='upper right', frameon=False)\n",
+        "    plt.tight_layout()\n",
+        "    plt.show()"
       ]
     }
   ]

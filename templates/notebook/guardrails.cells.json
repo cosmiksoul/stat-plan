@@ -50,7 +50,24 @@
         "    })\n",
         "\n",
         "import pandas as pd\n",
-        "pd.DataFrame(guardrail_results)"
+        "display(pd.DataFrame(guardrail_results))\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "plottable = [g for g in guardrail_results if g.get('value') is not None]\n",
+        "if plottable:\n",
+        "    names = [g['name'] for g in plottable]\n",
+        "    values = [g['value'] for g in plottable]\n",
+        "    breached = [g['breached'] for g in plottable]\n",
+        "    colors = ['#f87171' if b else '#a3e635' for b in breached]\n",
+        "    fig, ax = plt.subplots(figsize=(7, max(2, len(names) * 0.6)))\n",
+        "    bars = ax.barh(names, values, color=colors)\n",
+        "    ax.set_xlabel('value')\n",
+        "    ax.set_title('Guardrails (✓ ok / ⚠ breached)')\n",
+        "    for bar, b, val in zip(bars, breached, values):\n",
+        "        marker = '⚠' if b else '✓'\n",
+        "        ax.text(val, bar.get_y() + bar.get_height() / 2, f' {marker} {val:.3f}', va='center', ha='left')\n",
+        "    plt.tight_layout()\n",
+        "    plt.show()"
       ]
     }
   ]

@@ -89,6 +89,13 @@ export default function DecisionRulesBlock() {
         </ul>
       )}
 
+      {nonEmpty.length > 0 && (
+        <p className="text-xs text-fg-faint m-0">
+          ⓘ threshold сравнивается с ci_lower/ci_upper в абс. единицах метрики
+          (для правил в % rel конвертация — на стороне пользователя).
+        </p>
+      )}
+
       <div className="text-sm bg-bg-elev-2 border border-border rounded px-3 py-2">
         <span className="mono-label text-fg-faint mr-2">RECOMMENDED:</span>
         <span className="text-fg">{recommendation}</span>

@@ -90,6 +90,16 @@ describe('parseIpynb — happy paths', () => {
     expect(res.results.control_n).toBe(5000)
   })
 
+  it('passes through optional significant flag (FIX iter 1 — F-6)', () => {
+    const text = makeNotebook([
+      streamCell(JSON.stringify({ ...FULL_RESULTS, significant: true })),
+    ])
+    const res = parseIpynb(text)
+    expect(res.ok).toBe(true)
+    expect(res.results.significant).toBe(true)
+    expect(res.warnings).toHaveLength(0) // significant is not a required field
+  })
+
   it('extracts results from application/json output', () => {
     const cell = {
       cell_type: 'code',

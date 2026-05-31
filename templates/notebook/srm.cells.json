@@ -33,7 +33,24 @@
         "if srm_pvalue < 0.001:\n",
         "    print('SRM detected — stop and investigate randomization')\n",
         "else:\n",
-        "    print('no SRM detected')"
+        "    print('no SRM detected')\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "labels = ['control', 'treatment']\n",
+        "observed = [int(group_sizes.get('control', 0)), int(group_sizes.get('treatment', 0))]\n",
+        "expected = [len(df) / 2, len(df) / 2]\n",
+        "x = range(len(labels))\n",
+        "width = 0.35\n",
+        "fig, ax = plt.subplots(figsize=(7, 4))\n",
+        "ax.bar([i - width / 2 for i in x], observed, width, label='Observed', color='#a3e635')\n",
+        "ax.bar([i + width / 2 for i in x], expected, width, label='Expected (50/50)', color='#3a3f47')\n",
+        "ax.set_xticks(list(x))\n",
+        "ax.set_xticklabels(labels)\n",
+        "ax.set_ylabel('n')\n",
+        "ax.set_title(f'SRM check: observed vs expected (χ²={chi2_srm:.2f}, p={srm_pvalue:.4f})')\n",
+        "ax.legend()\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
       ]
     }
   ]

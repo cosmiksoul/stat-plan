@@ -90,4 +90,54 @@ describe('buildReportHtml', () => {
     expect(html).not.toMatch(/<script>alert/)
     expect(html).toMatch(/&lt;script&gt;/)
   })
+
+  // FIX iter 1 — F-8/F-9c: explicit significance + novelty badges in TL;DR.
+  it('shows an OK significance badge when p < alpha', () => {
+    const html = buildReportHtml(makeState()) // p=0.012, alpha=0.05
+    expect(html).toMatch(/significance-badge ok/)
+    expect(html).toMatch(/Statistically significant/)
+  })
+
+  it('shows a WARN significance badge when p >= alpha', () => {
+    const s = makeState()
+    s.results.raw_results.p_value = 0.5
+    const html = buildReportHtml(s)
+    expect(html).toMatch(/significance-badge warn/)
+    expect(html).toMatch(/Not statistically significant/)
+  })
+
+  it('shows a WARN novelty badge when novelty_flag is true', () => {
+    const s = makeState()
+    s.results.raw_results.novelty_flag = true
+    const html = buildReportHtml(s)
+    expect(html).toMatch(/novelty-badge warn/)
+    expect(html).toMatch(/Novelty effect suspected/)
+  })
+
+  it('omits the novelty badge when novelty_flag is absent', () => {
+    const html = buildReportHtml(makeState()) // no novelty_flag
+    // CSS always defines .novelty-badge; assert the rendered div is absent.
+    expect(html).not.toMatch(/class="novelty-badge/)
+  })
+
+  it('omits the novelty badge when novelty_flag is explicitly null', () => {
+    const s = makeState()
+    s.results.raw_results.novelty_flag = null
+    const html = buildReportHtml(s)
+    expect(html).not.toMatch(/class="novelty-badge/)
+  })
+
+  // FIX iter 2 — G-2: honest CI unit label in TL;DR (no *100 conversion).
+  it('labels CI as абс. разность долей for proportion', () => {
+    const html = buildReportHtml(makeState()) // metric_type: proportion
+    expect(html).toMatch(/абс\. разность долей/)
+  })
+
+  it('labels CI with metric units for continuous', () => {
+    const s = makeState()
+    s.brief.metric_type = 'continuous'
+    s.brief.metric_name = 'ARPU'
+    const html = buildReportHtml(s)
+    expect(html).toMatch(/абс\. разность, ед\. ARPU/)
+  })
 })

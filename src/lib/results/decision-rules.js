@@ -9,10 +9,35 @@
 // Unparseable rules round-trip as-is — UI shows a manual checkbox so the
 // user marks fired/not-fired themselves.
 
-const COND_REGEX = /(ci_lower|ci_upper|p_value|delta_rel)\s*(>=|<=|==|>|<)\s*(-?\d+(?:\.\d+)?)/i
+// G-4 — tolerant of real PM phrasing: unicode ≤/≥/− , bare "CI", Russian
+// "нижняя/верхняя граница", "% rel." suffixes. Longer alternatives come first
+// so they win over the bare `ci`. No `\b` — JS word boundaries are ASCII-only
+// and would break the Cyrillic alternatives.
+const COND_REGEX = new RegExp(
+  '(ci_lower|ci_upper|p_value|delta_rel|ci\\s+lower|ci\\s+upper|' +
+    'нижняя\\s+граница|верхняя\\s+граница|ci)' +
+    '\\s*(>=|<=|==|>|<)\\s*([+-]?\\d+(?:\\.\\d+)?)',
+  'i',
+)
 
 export const ACTIONS = ['SHIP', 'ITERATE', 'KILL']
 export const FIELDS = ['ship', 'iterate', 'kill']
+
+// Map a matched variable token to a canonical results key. Bare "CI" is
+// resolved by operator: "CI ≤ X" = whole CI below X = ci_upper; "CI ≥ X" =
+// whole CI above X = ci_lower. Explicit ci_lower/ci_upper are never remapped.
+function normalizeVariable(rawVar, operator) {
+  const v = rawVar.toLowerCase().replace(/\s+/g, '_')
+  if (['ci_lower', 'ci_upper', 'p_value', 'delta_rel'].includes(v)) return v
+  if (v === 'нижняя_граница') return 'ci_lower'
+  if (v === 'верхняя_граница') return 'ci_upper'
+  if (v === 'ci') {
+    if (operator === '<=' || operator === '<') return 'ci_upper'
+    if (operator === '>=' || operator === '>') return 'ci_lower'
+    return 'ci_lower'
+  }
+  return null
+}
 
 export function parseDecisionRule(text) {
   const raw = (text ?? '').toString()
@@ -24,10 +49,16 @@ export function parseDecisionRule(text) {
     raw,
   }
   if (!raw.trim()) return result
-  const m = raw.match(COND_REGEX)
+  const normalized = raw
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/[−–—]/g, '-')
+    .replace(/\s+/g, ' ')
+  const m = normalized.match(COND_REGEX)
   if (!m) return result
-  const variable = m[1].toLowerCase()
   const operator = m[2]
+  const variable = normalizeVariable(m[1], operator)
+  if (!variable) return result
   const threshold = Number(m[3])
   if (!Number.isFinite(threshold)) return result
   return {

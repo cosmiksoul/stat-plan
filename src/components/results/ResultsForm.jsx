@@ -42,6 +42,17 @@ export default function ResultsForm() {
   const results = state.results
   const eff = effectiveResults(results)
 
+  // F-7/D-4 — significant is computed-only (no state). Prefer the notebook's
+  // own verdict; fall back to p < alpha for the manual flow.
+  const alpha = state.brief?.advanced?.alpha ?? 0.05
+  const sig =
+    typeof eff.significant === 'boolean'
+      ? eff.significant
+      : eff.p_value != null && Number.isFinite(Number(eff.p_value))
+        ? Number(eff.p_value) < alpha
+        : null
+  const novelty = eff.novelty_flag
+
   function set(field, value) {
     dispatch({ type: Actions.SET_RESULTS_FIELD, field, value })
   }
@@ -55,29 +66,65 @@ export default function ResultsForm() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {FIELDS.map((f) => (
-        <label key={f.id} className="block">
-          <div className="mono-label text-fg-faint mb-1">{f.label.toUpperCase()}</div>
-          <NumInput
-            field={f}
-            value={eff[f.id]}
-            onChange={(v) => set(f.id, v)}
-          />
-        </label>
-      ))}
-      <label className="block col-span-2 md:col-span-1 self-end">
-        <div className="mono-label text-fg-faint mb-1">NOVELTY?</div>
-        <div className="flex items-center gap-2 h-[34px]">
-          <input
-            type="checkbox"
-            checked={eff.novelty_flag === true}
-            onChange={(e) => setNoveltyFlag(e.target.checked)}
-            className="accent-accent"
-          />
-          <span className="text-xs text-fg-dim">эффект новизны замечен</span>
+    <div className="space-y-4">
+      {sig !== null && (
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium ${
+            sig
+              ? 'bg-green-900/30 text-green-400'
+              : 'bg-yellow-900/30 text-yellow-400'
+          }`}
+        >
+          {sig ? '✅ Statistically significant' : '⚠ Not significant'}
+          {eff.p_value != null && (
+            <span className="opacity-80">(p = {Number(eff.p_value).toFixed(4)})</span>
+          )}
         </div>
-      </label>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {FIELDS.map((f) => (
+          <label key={f.id} className="block">
+            <div className="mono-label text-fg-faint mb-1">{f.label.toUpperCase()}</div>
+            <NumInput
+              field={f}
+              value={eff[f.id]}
+              onChange={(v) => set(f.id, v)}
+            />
+          </label>
+        ))}
+      </div>
+
+      <div>
+        <div className="mono-label text-fg-faint mb-1">NOVELTY</div>
+        <div
+          className={`inline-flex items-center px-3 py-1.5 rounded text-sm font-medium ${
+            novelty === true
+              ? 'bg-yellow-900/30 text-yellow-400'
+              : novelty === false
+                ? 'bg-green-900/30 text-green-400'
+                : 'bg-bg-elev-2 text-fg-dim'
+          }`}
+        >
+          {novelty === true
+            ? '⚠ Novelty: suspected'
+            : novelty === false
+              ? '✓ Novelty: not detected'
+              : 'N/A — нет данных'}
+        </div>
+        <details className="mt-1">
+          <summary className="text-xs text-fg-dim cursor-pointer">override</summary>
+          <label className="flex items-center gap-2 mt-1 text-xs text-fg-dim">
+            <input
+              type="checkbox"
+              checked={novelty === true}
+              onChange={(e) => setNoveltyFlag(e.target.checked)}
+              className="accent-accent"
+            />
+            эффект новизны замечен
+          </label>
+        </details>
+      </div>
     </div>
   )
 }

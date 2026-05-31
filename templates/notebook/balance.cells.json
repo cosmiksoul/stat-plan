@@ -26,7 +26,23 @@
         "summary_cols = [metric_col] + guardrail_cols\n",
         "balance = df.groupby('variant')[summary_cols].mean().round(4)\n",
         "balance['n'] = df.groupby('variant').size()\n",
-        "balance"
+        "display(balance)\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "group_colors = ['#60a5fa', '#a3e635']  # control, treatment\n",
+        "fig, axes = plt.subplots(1, 2, figsize=(10, 4))\n",
+        "axes[0].bar(balance.index, balance['n'], color=group_colors)\n",
+        "axes[0].set_title('Размер групп (n)')\n",
+        "axes[0].set_ylabel('n')\n",
+        "for i, v in enumerate(balance['n']):\n",
+        "    axes[0].text(i, v, f' {int(v):,}', va='bottom', ha='center')\n",
+        "axes[1].bar(balance.index, balance[metric_col], color=group_colors)\n",
+        "axes[1].set_title(f'Среднее по группам: {metric_col}')\n",
+        "axes[1].set_ylabel(metric_col)\n",
+        "for i, v in enumerate(balance[metric_col]):\n",
+        "    axes[1].text(i, v, f' {v:.4f}', va='bottom', ha='center')\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
       ]
     }
   ]

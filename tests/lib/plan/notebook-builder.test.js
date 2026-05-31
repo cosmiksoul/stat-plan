@@ -460,6 +460,47 @@ describe('Sprint 7 — export-cell with stat-plan-results tag', () => {
     }
   })
 
+  it('export-cell derives a significant flag (FIX iter 1 — F-5)', () => {
+    const { json } = buildNotebook(makeState())
+    const tagged = json.cells.find(
+      (c) => c.metadata?.tags?.includes('stat-plan-results'),
+    )
+    const src = flatSource(tagged)
+    expect(src).toContain("results['significant']")
+    expect(src).toContain('_pv < _alpha')
+  })
+
+  it('test cells emit matplotlib graphs (FIX iter 1 — F-1..F-4, F-9a)', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    // plt.show() now present beyond the load-cell styling preset.
+    const showCount = all.split('plt.show()').length - 1
+    expect(showCount).toBeGreaterThanOrEqual(4)
+    expect(all).toContain('ax.errorbar') // main_test effect plot
+  })
+
+  it('export-cell defaults novelty_flag to None, not False (FIX iter 2 — G-1)', () => {
+    const { json } = buildNotebook(makeState())
+    const tagged = json.cells.find(
+      (c) => c.metadata?.tags?.includes('stat-plan-results'),
+    )
+    const src = flatSource(tagged)
+    expect(src).toContain("_safe(globals().get('novelty_flag'), None)")
+    expect(src).not.toContain("_safe(globals().get('novelty_flag'), False)")
+  })
+
+  it('novelty cell initialises novelty_flag = None (tri-state, FIX iter 2 — G-1)', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('novelty_flag = None')
+  })
+
+  it('main_test graph title labels CI as absolute difference (FIX iter 2 — G-2c)', () => {
+    const { json } = buildNotebook(makeState())
+    const all = flatAllSources(json)
+    expect(all).toContain('CI95 (абс. разность)')
+  })
+
   it('main_test variants bind canonical p_value/ci_lower/ci_upper/delta_rel', () => {
     for (const method of ['z_test_proportions', 't_test', 'welch_t_test', 'bootstrap']) {
       const state = makeState({

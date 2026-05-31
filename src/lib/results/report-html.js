@@ -26,6 +26,9 @@ const STYLES = `
   img.graph { max-width: 100%; height: auto; border: 1px solid #2a2d33; border-radius: 6px; margin: 12px 0; background: #1a1d23; }
   footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid #2a2d33; color: #6b7280; font-size: 12px; }
   .final-decision { background: #1a1d23; border: 1px dashed #3a3f47; padding: 16px; border-radius: 4px; min-height: 40px; }
+  .significance-badge, .novelty-badge { display: inline-block; padding: 8px 12px; border-radius: 4px; margin: 0 0 8px; font-weight: 600; }
+  .significance-badge.ok, .novelty-badge.ok { background: #1a3a1a; color: #a3e635; }
+  .significance-badge.warn, .novelty-badge.warn { background: #3a2a1a; color: #fbbf24; }
 `
 
 function esc(v) {
@@ -62,14 +65,31 @@ function effectiveResults(results) {
   return out
 }
 
+// G-2 — CI bounds are an ABSOLUTE difference in the metric's units (proportion
+// fractions / currency / ratio). Label it explicitly; never multiply by 100.
+function ciUnitNote(brief) {
+  const metricLabel = brief?.metric_label || brief?.metric_name || 'ед. метрики'
+  switch (brief?.metric_type) {
+    case 'proportion':
+      return 'абс. разность долей'
+    case 'continuous':
+      return `абс. разность, ед. ${metricLabel}`
+    case 'ratio':
+      return 'абс. разность ratio'
+    default:
+      return 'абс. разность'
+  }
+}
+
 function buildTldr(state, eff) {
   const decision = state?.results?.user_decision
   const delta = fmtPct(eff.delta_rel, 2)
   const ciLow = fmtNum(eff.ci_lower, 4)
   const ciHigh = fmtNum(eff.ci_upper, 4)
   const p = fmtNum(eff.p_value, 4)
+  const ciNote = ciUnitNote(state?.brief)
   const decisionStr = decision || '—'
-  return `Δ rel = ${delta}, 95% CI [${ciLow}…${ciHigh}], p = ${p}. Решение: <strong>${esc(decisionStr)}</strong>.`
+  return `Δ rel = ${delta}, 95% CI [${ciLow}…${ciHigh}] <em>(${ciNote})</em>, p = ${p}. Решение: <strong>${esc(decisionStr)}</strong>.`
 }
 
 function buildImages(images) {
@@ -95,6 +115,30 @@ export function buildReportHtml(state) {
   const rulesEval = evaluateAllRules(brief.decision_rules, eff)
   const userChecks = results.user_checks || {}
   const recommendation = recommendNextStep(rulesEval, userChecks)
+  // F-8/F-9c/D-4 — explicit significance + novelty verdicts in the TL;DR.
+  const alpha = Number.isFinite(Number(brief?.advanced?.alpha))
+    ? Number(brief.advanced.alpha)
+    : 0.05
+  const sig =
+    typeof eff.significant === 'boolean'
+      ? eff.significant
+      : Number.isFinite(Number(eff.p_value))
+        ? Number(eff.p_value) < alpha
+        : null
+  const sigBadge =
+    sig === null
+      ? ''
+      : `<div class="significance-badge ${sig ? 'ok' : 'warn'}">${
+          sig ? '✅ Statistically significant' : '⚠ Not statistically significant'
+        } (p = ${fmtNum(eff.p_value, 4)}, α = ${alpha})</div>`
+  const noveltyBadge =
+    eff.novelty_flag === true || eff.novelty_flag === false
+      ? `<div class="novelty-badge ${eff.novelty_flag ? 'warn' : 'ok'}">${
+          eff.novelty_flag
+            ? '⚠ Novelty effect suspected'
+            : '✓ No novelty effect detected'
+        }</div>`
+      : ''
   const today = new Date().toISOString().slice(0, 10)
   const testId = state?.test_id || '—'
   const title = state?.title || brief.metric_name || 'A/B тест'
@@ -115,6 +159,8 @@ export function buildReportHtml(state) {
 
   <section>
     <h2>TL;DR</h2>
+    ${sigBadge}
+    ${noveltyBadge}
     <p class="tldr">${buildTldr(state, eff)}</p>
   </section>
 
@@ -151,7 +197,6 @@ export function buildReportHtml(state) {
           ? `<li>SRM p-value из ноутбука: ${fmtNum(eff.srm_pvalue, 4)}</li>`
           : ''
       }
-      ${eff.novelty_flag === true ? '<li><span class="warn">⚠</span> Novelty effect замечен</li>' : ''}
     </ul>
   </section>
 

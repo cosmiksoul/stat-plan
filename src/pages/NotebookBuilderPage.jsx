@@ -86,6 +86,15 @@ export default function NotebookBuilderPage() {
             ← К ПЛАНУ
           </button>
         }
+        secondary={
+          <button
+            type="button"
+            onClick={() => navigate('/step4')}
+            className="mono-label text-fg border border-border rounded-md px-4 py-3 hover:bg-bg-elev-2 transition-colors cursor-pointer text-sm"
+          >
+            К ВАЛИДАЦИИ →
+          </button>
+        }
         primary={
           <button
             type="button"

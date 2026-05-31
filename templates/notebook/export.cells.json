@@ -43,9 +43,12 @@
         "    'ci_lower':    _safe(globals().get('ci_lower')),\n",
         "    'ci_upper':    _safe(globals().get('ci_upper')),\n",
         "    'srm_pvalue':  _safe(globals().get('srm_pvalue')),\n",
-        "    'novelty_flag': _safe(globals().get('novelty_flag'), False),\n",
+        "    'novelty_flag': _safe(globals().get('novelty_flag'), None),\n",
         "    'guardrails':  _safe(globals().get('guardrail_results'), []),\n",
         "}\n",
+        "_pv = _safe(globals().get('p_value'))\n",
+        "_alpha = _safe(globals().get('alpha'), 0.05)\n",
+        "results['significant'] = bool(_pv is not None and _pv < _alpha)\n",
         "print(json.dumps(results, indent=2, default=str))"
       ]
     }

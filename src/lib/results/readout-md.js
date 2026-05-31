@@ -25,6 +25,22 @@ function fmtMark(v) {
   return '—'
 }
 
+// G-2 — CI bounds are an ABSOLUTE difference in the metric's units; label it
+// explicitly (never multiply by 100).
+function ciUnitNote(brief) {
+  const metricLabel = brief?.metric_label || brief?.metric_name || 'ед. метрики'
+  switch (brief?.metric_type) {
+    case 'proportion':
+      return 'абс. разность долей'
+    case 'continuous':
+      return `абс. разность, ед. ${metricLabel}`
+    case 'ratio':
+      return 'абс. разность ratio'
+    default:
+      return 'абс. разность'
+  }
+}
+
 export function buildReadoutMd(state) {
   const brief = state?.brief || {}
   const plan = state?.plan || {}
@@ -38,6 +54,16 @@ export function buildReadoutMd(state) {
   const rulesEval = evaluateAllRules(brief.decision_rules, eff)
   const userChecks = results.user_checks || {}
   const recommendation = recommendNextStep(rulesEval, userChecks)
+  // F-8/F-9c/D-4 — explicit significance + novelty verdicts in the TL;DR.
+  const alpha = Number.isFinite(Number(brief?.advanced?.alpha))
+    ? Number(brief.advanced.alpha)
+    : 0.05
+  const sig =
+    typeof eff.significant === 'boolean'
+      ? eff.significant
+      : Number.isFinite(Number(eff.p_value))
+        ? Number(eff.p_value) < alpha
+        : null
   const today = new Date().toISOString().slice(0, 10)
   const testId = state?.test_id || 'unknown'
   const title = state?.title || brief.metric_name || 'A/B тест'
@@ -65,8 +91,21 @@ export function buildReadoutMd(state) {
   lines.push('')
   lines.push('## TL;DR')
   lines.push('')
+  if (sig !== null) {
+    lines.push(
+      `**${sig ? '✅ Statistically significant' : '⚠ Not statistically significant'}** (p = ${fmtNum(eff.p_value, 4)}, α = ${alpha})`,
+    )
+  }
+  if (eff.novelty_flag === true || eff.novelty_flag === false) {
+    lines.push(
+      `**${eff.novelty_flag ? '⚠ Novelty effect suspected' : '✓ No novelty effect detected'}**`,
+    )
+  }
+  if (sig !== null || eff.novelty_flag === true || eff.novelty_flag === false) {
+    lines.push('')
+  }
   lines.push(
-    `Δ rel = ${fmtNum(eff.delta_rel, 2)}%, 95% CI [${fmtNum(eff.ci_lower, 4)}…${fmtNum(eff.ci_upper, 4)}], p = ${fmtNum(eff.p_value, 4)}.`,
+    `Δ rel = **${fmtNum(eff.delta_rel, 2)}%**, 95% CI [${fmtNum(eff.ci_lower, 4)}…${fmtNum(eff.ci_upper, 4)}] _(${ciUnitNote(brief)})_, p = ${fmtNum(eff.p_value, 4)}.`,
   )
   lines.push('')
   lines.push('## Results')
@@ -81,9 +120,6 @@ export function buildReadoutMd(state) {
   lines.push(`- ${fmtMark(srm.pass)} SRM: p = ${fmtNum(srm.pvalue, 4)}`)
   lines.push(`- ${fmtMark(sanity.total_n_match)} Sample size vs план`)
   lines.push(`- ${fmtMark(sanity.direction_match)} Направление эффекта vs MDE direction`)
-  if (eff.novelty_flag === true) {
-    lines.push('- ⚠ Novelty effect замечен')
-  }
   lines.push('')
   lines.push('## Decision rules application')
   lines.push('')
