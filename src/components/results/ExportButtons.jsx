@@ -66,14 +66,14 @@ export default function ExportButtons() {
         <button
           type="button"
           onClick={handleHtml}
-          className="text-sm bg-bg-elev border border-border rounded px-3 py-2 text-fg hover:border-accent hover:text-accent cursor-pointer transition-colors"
+          className="text-sm bg-download text-bg font-medium rounded px-3 py-2 hover:opacity-90 cursor-pointer transition-opacity"
         >
           ↓ Скачать report.html
         </button>
         <button
           type="button"
           onClick={handleMd}
-          className="text-sm bg-bg-elev border border-border rounded px-3 py-2 text-fg hover:border-accent hover:text-accent cursor-pointer transition-colors"
+          className="text-sm bg-download text-bg font-medium rounded px-3 py-2 hover:opacity-90 cursor-pointer transition-opacity"
         >
           ↓ Скачать readout.md
         </button>
@@ -81,7 +81,7 @@ export default function ExportButtons() {
           type="button"
           onClick={handleZip}
           disabled={zipBusy}
-          className="text-sm bg-accent border border-accent rounded px-3 py-2 text-bg font-medium hover:opacity-90 cursor-pointer transition-opacity disabled:opacity-50"
+          className="text-sm bg-download text-bg font-medium rounded px-3 py-2 hover:opacity-90 cursor-pointer transition-opacity disabled:opacity-50"
         >
           {zipBusy ? '…' : '↓ Скачать всё (.zip)'}
         </button>

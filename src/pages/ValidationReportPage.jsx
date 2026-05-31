@@ -198,17 +198,6 @@ export default function ValidationReportPage() {
         </section>
       )}
 
-      <section className="mt-8 pt-6 border-t border-border-soft text-center">
-        <p className="text-sm text-fg-faint mb-3">Готов начать следующий тест?</p>
-        <button
-          type="button"
-          onClick={() => setShowRestart(true)}
-          className="mono-label text-fg-faint border border-border-soft rounded-md px-4 py-2 hover:text-fg hover:border-border transition-colors cursor-pointer"
-        >
-          ↺ НОВЫЙ ТЕСТ
-        </button>
-      </section>
-
       <StepFooter
         back={
           <NavLink
@@ -218,12 +207,21 @@ export default function ValidationReportPage() {
             ← К КОНСТРУКТОРУ
           </NavLink>
         }
+        secondary={
+          <button
+            type="button"
+            onClick={() => setShowRestart(true)}
+            className="mono-label text-warn border border-warn rounded-md px-4 py-3 hover:bg-warn-soft transition-colors cursor-pointer text-sm"
+          >
+            ↺ НОВЫЙ ТЕСТ
+          </button>
+        }
         primary={
           <button
             type="button"
             onClick={handleDownloadZip}
             disabled={zipBusy}
-            className="mono-label font-semibold bg-accent text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base disabled:opacity-50"
+            className="mono-label font-semibold bg-download text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base disabled:opacity-50"
           >
             {zipBusy ? '…' : '↓ СКАЧАТЬ ВСЁ (.zip)'}
           </button>

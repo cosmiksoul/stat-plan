@@ -110,19 +110,19 @@ export default function NotebookBuilderPage() {
         secondary={
           <button
             type="button"
-            onClick={() => navigate('/step4')}
-            className="mono-label text-fg border border-border rounded-md px-4 py-3 hover:bg-bg-elev-2 transition-colors cursor-pointer text-sm"
+            onClick={handleDownload}
+            className="mono-label font-semibold bg-download text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base"
           >
-            К ВАЛИДАЦИИ →
+            ↓ СКАЧАТЬ {built.filename.toUpperCase()}
           </button>
         }
         primary={
           <button
             type="button"
-            onClick={handleDownload}
+            onClick={() => navigate('/step4')}
             className="mono-label font-semibold bg-accent text-bg rounded-md px-6 py-3 hover:opacity-90 transition-opacity cursor-pointer text-base"
           >
-            ↓ СКАЧАТЬ {built.filename.toUpperCase()}
+            К ВАЛИДАЦИИ →
           </button>
         }
       />

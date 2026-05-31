@@ -58,7 +58,7 @@ export default function PlanActions({
       <button
         type="button"
         onClick={onDownload}
-        className="mono-label text-fg-dim border border-border rounded-md px-4 py-2 hover:border-accent hover:text-accent transition-colors cursor-pointer"
+        className="mono-label font-semibold bg-download text-bg rounded-md px-4 py-2 hover:opacity-90 transition-opacity cursor-pointer"
       >
         ↓ СКАЧАТЬ TEST_PLAN.MD
       </button>

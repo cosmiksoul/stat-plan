@@ -21,6 +21,9 @@
   --color-tour: #7ab4ff;
   --color-tour-soft: rgba(122, 180, 255, 0.12);
   --color-tour-hover: rgba(122, 180, 255, 0.2);
+  /* Sprint 8 FIX F-6 — filled blue для кнопок «скачать артефакт». */
+  --color-download: #60a5fa;
+  --color-download-hover: #93c5fd;
 
   --font-serif: "Fraunces", Georgia, serif;
   --font-sans: "Inter", -apple-system, sans-serif;

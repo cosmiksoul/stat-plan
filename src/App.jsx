@@ -5,8 +5,10 @@ import StartScreen from './pages/StartScreen.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import PlanPage from './pages/PlanPage.jsx'
 import NotebookBuilderPage from './pages/NotebookBuilderPage.jsx'
-import TutorialPage from './pages/TutorialPage.jsx'
-import MethodologyPage from './pages/MethodologyPage.jsx'
+import DocsIndexPage from './pages/DocsIndexPage.jsx'
+import DocsStartPage from './pages/DocsStartPage.jsx'
+import DocsTutorialPage from './pages/DocsTutorialPage.jsx'
+import DocsMethodologyPage from './pages/DocsMethodologyPage.jsx'
 import { useAppState } from './state/AppStateContext.jsx'
 
 // Sprint 7: Step 4 lazy-loaded — ipynb parser + html/md/zip builders ≈ 60-80 KB
@@ -40,8 +42,10 @@ export default function App() {
         <main className="flex-1 w-full max-w-[1240px] mx-auto px-6 md:px-8 pb-20">
           <Routes>
             <Route path="/" element={<StartScreen />} />
-            <Route path="/tutorial" element={<TutorialPage />} />
-            <Route path="/methodology" element={<MethodologyPage />} />
+            <Route path="/docs" element={<DocsIndexPage />} />
+            <Route path="/docs/start" element={<DocsStartPage />} />
+            <Route path="/docs/tutorial" element={<DocsTutorialPage />} />
+            <Route path="/docs/methodology" element={<DocsMethodologyPage />} />
             <Route
               path="/step1"
               element={
