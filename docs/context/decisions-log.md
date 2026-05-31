@@ -170,7 +170,23 @@
 - `ci_lower / ci_upper` остаются в АБСОЛЮТНЫХ единицах метрики (доли для proportion, ед. метрики для continuous). НЕ конвертируем в `%` — это сломало бы continuous metrics. UI/HTML/MD добавляют label `(абс. разность, ед. <metric_name>)` для disambig.
 - `delta_rel` остаётся в `%` (хранится как 5.2, не 0.052).
 
-**Documented limitation (для Sprint 8):** decision rules в брифе часто пишут в `% rel.` (например `CI ≤ −2.5% rel.`), а `ci_lower/ci_upper` хранятся в абсолютных единицах. Сравнение нативно не работает для continuous — требует конверсии через baseline. В Sprint 7 FIX iter 2 (G-4) parser расширен для unicode/aliases, но конверсия единиц отложена — UI показывает hint про абс. единицы.
+**Documented limitation (закрыто в Sprint 8 P-14, см. amendment пункт 3 ниже):** decision rules в брифе часто пишут в `% rel.` (например `CI ≤ −2.5% rel.`), а `ci_lower/ci_upper` хранятся в абсолютных единицах. Сравнение нативно не работает для continuous — требовало конверсии через baseline. В Sprint 7 FIX iter 2 (G-4) parser расширен для unicode/aliases, в Sprint 8 P-14 добавлен `control_mean` binding + derived `ci_*_pct_rel` для автоматической конверсии.
+
+**3. `control_mean` (added in Sprint 8, P-14).** Optional float в export-dict. Используется для derived `ci_lower_pct_rel` / `ci_upper_pct_rel` в `effective.js`, что позволяет decision rules вида `CI ≤ −2.5% rel.` корректно сравниваться для всех metric_type (proportion / continuous / ratio). Парсер decision-rules.js распознаёт суффикс `% rel` / `% relative` → unit-aware comparison через derived `_pct_rel` ключи. Backward-compat: если `control_mean` отсутствует (старые ipynb до Sprint 8) — derived undefined, unit-aware сравнение возвращает null, UI fallback на manual checkbox (existing behaviour сохранён). `cm === 0` guard в effective.js защищает от div-by-zero.
+
+В export-cell:
+```python
+results = {
+    ...existing fields...,
+    'control_mean': _safe(globals().get('control_mean')),  # P-14 Sprint 8
+}
+```
+
+В main_test cells (z_test / t_test / welch / bootstrap) добавлены canonical bindings:
+- `observed_diff = float(treatment_mean - control_mean)` — точечная оценка эффекта (P-12 D-2 fix, replaces midpoint CI как `center` в errorbar)
+- `control_mean = float(control.mean())` (или `p_control` для z_test) — baseline для derived `_pct_rel`
+
+ADR-015 контракт расширен; парсер не нарушает старых ipynb.
 
 ---
 
@@ -302,7 +318,7 @@
 - **Roadmap до v1 сокращается** с ~16-21 ч до ~10-13 ч active.
 - **Не теряем критически важных фич** — SRM check, sanity check, decision rules → рекомендация остаются полезными.
 - **Усиливаем позиционирование** open-source vibe + честный disclaimer about ограничениях.
-- **Методология-страница (JTBD §10, Sprint 8) становится критичнее** — там нужен явный disclaimer-блок «что мы НЕ делаем» (уже запланирован).
+- **Методология-страница (JTBD §9, Sprint 9) становится критичнее** — там нужен явный disclaimer-блок «что мы НЕ делаем» (уже запланирован).
 
 **Alternatives considered:**
 - **Сохранить independent validation** — отклонено, см. context. Circular validation = self-deception.

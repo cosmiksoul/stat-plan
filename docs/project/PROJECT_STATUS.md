@@ -1,21 +1,28 @@
 # Project Status — stat·plan
 
-**Обновлено:** 2026-05-31 (Sprint 7 ЗАКРЫТ полностью — main + FIX iter 1 + FIX iter 2 + RETEST на сценариях A+B + Cowork CLOSE; ADR-015 Accepted + amended — notebook results export через tagged cell + tri-state novelty + significant)
+**Обновлено:** 2026-06-01 (Sprint 8 ЗАКРЫТ полностью — main + FIX iter 1 + FIX iter 2 + RETEST + Cowork CLOSE; ADR-015 amended 2nd time с `control_mean` P-14 для unit-aware `% rel`; продукт **v1-presentation-ready**)
 **Назначение:** оперативный снимок проекта. Для пользователя или следующего инстанса Cowork — быстро войти в контекст.
 
 ---
 
 ## Где мы сейчас
 
-**Sprint 7 ЗАКРЫТ полностью** (main + FIX iter 1 + FIX iter 2 + RETEST + Cowork CLOSE). Шаг 4 «Валидация и отчёт» полностью реализован: drag-drop выполненного `.ipynb` → парсинг tagged cell `stat-plan-results` → авто-заполнение формы + 4-6 PNG графиков inline + SRM/sanity checks + decision rules auto-eval + HTML отчёт self-contained + Markdown readout + ZIP пакет. **448 тестов зелёных** (335 → 422 main → 431 FIX iter 1 → 448 FIX iter 2). Bundle initial **+1.86 KB gzip** за весь Sprint 7. Round-trip **6/6 canonical case** не задет (YAML test_plan.md не менялся).
+**Sprint 8 ЗАКРЫТ полностью** (main 14 P-items + FIX iter 1 6 F-items + FIX iter 2 3 F-items + RETEST + Cowork CLOSE). Продукт **v1-presentation-ready**: UX консистентен между шагами, broken tour-contract убран, добавлены onboarding routes (/docs index + 3 sub-routes), footer design pattern унифицирован (green=next / blue filled=download / amber=reset / border-only=back), decision rules поддерживают `% rel` unit-aware conversion. **467 тестов зелёных** (448 → 467 в main, FIX iters без unit-test delta). Bundle ~+2.2 KB gzip суммарно. Round-trip 6/6 не задет.
 
-**Закрыт главный value loop проекта** — пользователь теперь проходит полный цикл от брифа до презентационного HTML отчёта без ручного ввода чисел. Архитектурный pivot mid-PLAN на ipynb upload primary flow (ADR-015) убрал дублирование труда vs первоначальная idea «ввести 8 полей вручную».
+**Главные блоки Sprint 8:**
+- **P-1** Header rewrite — убран tour-toggle, добавлены 3 nav-link (после FIX iter 1 F-3 — один link «📖 Документация» → `/docs` index с 3 sub-routes + external «↗ AI-компаньон» на NotebookLM)
+- **P-2..P-5** Layout consistency: H1 на /step1, approval banner на /step3, sticky footer на /step4, unified `Banner` компонент
+- **P-6..P-11** UX micro: `↳ ИЗ ФАЙЛА`, reset confusion fix, fmtNum адаптивный, scrollbar, restart на финале, ScoringCard details (P-11 был помечен Code как «already implemented», но 2 UX-gap'а пришлось закрывать в FIX iter 2 F-9 — chevron + smart-open + empty fallback)
+- **P-12..P-14** Features: D-2 midpoint → observed_diff, parser aliases (lift/эффект/Δ rel/p value), **unit-aware `% rel`** через `control_mean` binding + derived `ci_*_pct_rel` (закрывает Sprint 7 G-4 documented limitation)
+- **FIX iter 1 F-1..F-6** UX audit правки: логотип clickable, «CRO Эксперт» → «AI-компаньон», /tutorial+/methodology → /docs с 3 sub-routes, amber accent для «Начать сначала», «Новый тест» в footer, footer button design pattern
+- **FIX iter 2 F-7..F-9** smoke retest правки: segments rename (geo → любая колонка), пропущенная download кнопка, ScoringCard chevron
 
-**Также закрыт** структурный переход Stepper'а на 4 шага (ADR-013 финализация). Labels Sprint 5 (`04 Быстрая валидация` / `05 Скачать артефакты`) заменены на `04 Валидация и отчёт`.
+**ADR-015 Accepted 2026-05-29, amended 2× (Sprint 7 FIX + Sprint 8 P-14):**
+1. `significant` optional field (Sprint 7 FIX iter 1 F-5)
+2. `novelty_flag` tri-state `True/False/None` (Sprint 7 FIX iter 2 G-1)
+3. `control_mean` optional field + derived `ci_*_pct_rel` для unit-aware decision rules (Sprint 8 P-14)
 
-**ADR-015 Accepted 2026-05-29, amended 2026-05-31** — `stat-plan-results` tagged cell контракт между Jupyter/Colab и stat·plan parser. Amendment: `significant` optional field (FIX iter 1 F-5), `novelty_flag` tri-state `True/False/None` (FIX iter 2 G-1).
-
-**Следующий спринт — Sprint 8 «Methodology + tutorial + NotebookLM integration + a11y/mobile audit»** или **Polish-pack v2 mini-sprint**. Скоуп polish-pack v2 — см. `docs/project/polish-pack-v2.md` (CR concerns + ◆ stories из Sprint 6+7 RETEST + G-4 unit conversion + NotebookLM integration).
+**Следующий спринт — Sprint 9 «Methodology content + a11y/mobile audit + tutorial deeper rewrite»**. Spec предстоит написать. Содержит content phase для /docs/methodology и /docs/tutorial (заполнение stub'ов), Methodology page со sticky TOC + disclaimer «Что мы НЕ делаем», NotebookLM MindMap customization (внешний content, не код), a11y audit + mobile read-only режим. Также — 1 ◆ candidate если будет запрос (explicit segment dropdown на /step3). ~4-5 ч.
 
 | Sprint | Type | Status | Active time |
 |---|---|---|---|
@@ -37,8 +44,11 @@
 | 7 FIX iter 1 | Code (F-1..F-9: matplotlib графики в шаблонах + significant flag + novelty visible badge) | Closed | ~1.5 ч |
 | 7 FIX iter 2 | Code (G-1..G-4: novelty tri-state + TL;DR honest unit labels + Step 3→4 nav + decision-rules parser improvements) | Closed | ~1.25 ч |
 | 7 CLOSE | Cowork (ADR-015 amendment + DATA_MODEL + JTBD §6+§7 + CONTEXT timeline + PROJECT_STATUS + polish-pack-v2) | Closed | ~50 мин |
-| **8** | **Code — Methodology + tutorial + NotebookLM «CRO эксперт» integration + a11y/mobile audit** | **Planned под JTBD §9** | ~4-5 ч (план) |
-| Polish-pack v2 mini-sprint | Code (см. `docs/project/polish-pack-v2.md` — 4 CR concerns + 5 ◆ stories из Sprint 6+7 RETEST) | Optional, можно совмещать со Sprint 8 | ~2-3 ч (план) |
+| 8 main | Code (P-1..P-14: tour cleanup + nav routes + layout consistency + UX micro + unit-aware decision rules) | Closed | ~3.5 ч |
+| 8 FIX iter 1 | Code (F-1..F-6: UX audit правки — logo clickable, AI-компаньон rename, /docs structure, amber reset, footer pattern) | Closed | ~1.5 ч |
+| 8 FIX iter 2 | Code (F-7..F-9: segments rename + missed bg-download + ScoringCard chevron) | Closed | ~20 мин |
+| 8 CLOSE | Cowork (ADR-015 amendment 3 + JTBD §1+§6+§7 + CONTEXT timeline Sprint 8 + PROJECT_STATUS + polish-pack-v2 updates) | Closed | ~30 мин |
+| **9** | **Code — Methodology page content + Tutorial content rewrite (e2e → user-facing) + a11y/mobile audit + NotebookLM MindMap (external content)** | **Planned** под JTBD §9 + polish-pack-v2 Pv9 secrions | ~4-5 ч (план) |
 
 ---
 
@@ -146,13 +156,11 @@
 
 ## Polish-pack v2 (КАНДИДАТЫ для будущего mini-sprint)
 
-Полный backlog с приоритизацией — см. `docs/project/polish-pack-v2.md`. Кратко:
+Полный backlog с приоритизацией — см. `docs/project/polish-pack-v2.md`. После добавления UX audit items (Pv2-12..18) скоуп вырос до 14 items и **полностью попал в Sprint 8** (spec: `sprint-8-prompt.md`).
 
-- **4 CR concerns** из Sprint 7 code reviews (D-2 midpoint refinement, parser aliases lift/Эффект/Δ, G-4 unit conversion % rel ↔ абс через baseline)
-- **5 ◆ stories** из Sprint 6+7 RETEST (restart button на финале, fmtNum precision, ScoringCard checklist, MdPreview scrollbar, NotebookLM «CRO эксперт» integration)
+- 4 CR concerns из Sprint 7 code reviews + 5 ◆ stories из Sprint 6+7 RETEST + 7 UX audit items
 - ~~Pv2-4 editable schema~~ — **закрыто в Sprint 7 S10**
-
-Можно сгруппировать как отдельный Sprint Pv2 (~2-3 ч) или совместить со Sprint 8 (Methodology — большая content phase).
+- ~~Pv2-11 semantic-rule hint expansion~~ — **skipped (P3, текущий UX достаточен)**
 
 ---
 
@@ -162,15 +170,15 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 
 ---
 
-## Roadmap до v1 (актуализирован 2026-05-31 после Sprint 7 CLOSE)
+## Roadmap до v1 (актуализирован 2026-06-01 после Sprint 8 CLOSE)
 
-1. **Sprint 8 — Methodology + tutorial + NotebookLM «CRO эксперт» integration + a11y/mobile audit.** ~4-5 ч. Скоуп в `docs/project/JTBD.md §9`. Главные блоки:
-   - `/#/methodology` страница со sticky TOC (выбор test_method, MDE, sample size, SRM, novelty, guardrails)
-   - `?` tooltip с deep-link в methodology рядом с каждым ключевым понятием в брифе
-   - Disclaimer-блок «Что мы НЕ делаем»
-   - **NEW:** интеграция NotebookLM `CRO эксперт` notebook как primary external reference resource (footer-link + tooltips в methodology)
-   - a11y audit + mobile read-only режим
-2. **Polish-pack v2 mini-sprint** — см. `docs/project/polish-pack-v2.md`. Можно отдельным ~2-3 ч или совместить со Sprint 8.
+1. **Sprint 9 — Methodology content + Tutorial content rewrite + a11y/mobile audit + NotebookLM finalization.** ~4-5 ч. Скоуп в `docs/project/JTBD.md §9` + `polish-pack-v2.md` Pv9 sections. Главные блоки:
+   - **Tutorial content** — переработать `docs/project/e2e-scenarios-sprint-7.md` (3 e2e сценария A/B/C) → user-facing markdown для `/docs/tutorial`. CSV-файлы как downloadable demo data.
+   - **Methodology content** — наполнить `/docs/methodology` (сейчас stub): объяснения test_method / MDE / sample size / SRM / novelty / guardrails со sticky TOC. Disclaimer «Что мы НЕ делаем» (sequential / HTE / causal). Cross-ref на NotebookLM AI-компаньон как primary external resource.
+   - **«С чего начать» content** — overview флоу 4 шагов для `/docs/start` (сейчас stub).
+   - **NotebookLM finalization (external content, не код)** — оформление обложки + MindMap кастомизация по терминам методологии + Audio Overview / Slide Deck / Video Overview через NotebookLM studio.
+   - **a11y audit + mobile read-only режим** — JTBD §8.
+   - **Опционально:** explicit segment dropdown на /step3 (Pv9-NEW-2, ~45 мин, если будет запрос).
 
 **Закрытые блоки до v1:**
 - ✅ Бриф (Sprint 2 + 5 polish)
@@ -180,7 +188,7 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 - ✅ Data Peek (Sprint 6)
 - ✅ Шаг 4 Валидация и отчёт + 4-шаговый Stepper (Sprint 7)
 
-**Итого осталось до v1:** ~4-5 ч active (Sprint 8 без polish) или ~7-8 ч (Sprint 8 + polish-pack v2). За 1 фокус-день реалистично.
+**Итого осталось до v1:** Sprint 8 (~5-6 ч) + Sprint 9 (~4-5 ч) = **~10-11 ч active** end-to-end. За 1.5-2 фокус-дня реалистично.
 
 ---
 
@@ -195,7 +203,7 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 5. **ADR-012** — Superseded by ADR-013 (2026-05-28). Концептуальный вклад «не делаем independent validation» сохранён в ADR-013.
 6. **ADR-013** — Accepted 2026-05-28. Объединение Шагов 4 и 5 в Шаг 4 «Валидация и отчёт». 4-шаговый флоу. ADR-005 superseded. **Реализован в Sprint 7** (Code: Шаг 4 + Stepper structural rewrite).
 7. **ADR-014** — Accepted 2026-05-28. recharts + papaparse как новые npm-deps, lazy-chunked. Уточняет ADR-010 пункт 6. После Sprint 6 — DataPeekHistogram + parseDataPeekCsv в lazy chunks (initial bundle +4.55 KB gzip).
-8. **ADR-015** — Accepted 2026-05-29, amended 2026-05-31. Notebook results export через tagged cell `stat-plan-results` с JSON. Amendment Sprint 7 FIX: `significant` optional field + `novelty_flag` tri-state (`True`/`False`/`None`). **CI хранится в АБСОЛЮТНЫХ единицах метрики** (доли для proportion, ед. метрики для continuous, ratio diff для ratio) — UI/HTML/MD добавляют label `(абс. разность, ед. <metric_name>)` для disambig. Конверсия `% rel ↔ абс` через baseline отложена в Sprint 8 (требует canonical `control_mean` binding).
+8. **ADR-015** — Accepted 2026-05-29, amended 2026-05-31. Notebook results export через tagged cell `stat-plan-results` с JSON. Amendment Sprint 7 FIX: `significant` optional field + `novelty_flag` tri-state (`True`/`False`/`None`). **CI хранится в АБСОЛЮТНЫХ единицах метрики** (доли для proportion, ед. метрики для continuous, ratio diff для ratio) — UI/HTML/MD добавляют label `(абс. разность, ед. <metric_name>)` для disambig. Конверсия `% rel ↔ абс` через baseline запланирована в Sprint 8 P-14 (canonical `control_mean` binding в main_test cells).
 8. **`editedExternally`** — `true` после `LOAD_TEST_PLAN_MD`, сбрасывается в `RETURN_PLAN_TO_DRAFT` / `RESET_STATE`. UI badge LoadedBadge.
 9. **localStorage** — `stat-plan:v1:state`, версионированный ключ.
 10. **`applyEnterDefaults`** — единый путь подстановки дефолтов, расширен в Sprint 4 FIX iter 1 для goal_type/randomization_unit (BUG-5). Sprint 6 FIX iter 2 BUG-Q6 закрыл regression для Q01 goal_type preselect.
@@ -227,21 +235,23 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 
 ## Что делать дальше (для следующего инстанса)
 
-**Прямо сейчас (Sprint 7 CLOSE commit):**
+**Прямо сейчас (Sprint 8 CLOSE commit):**
 
-1. Commit Cowork-зоны batch'ем — Sprint 7 артефакты + CLOSE правки:
-   - **Cowork-зона:** `decisions-log.md` (ADR-015 Accepted + amendment Sprint 7 FIX) / `sprint-7-prompt.md` / `code-review-sprint-7.md` / `test-cases-sprint-7.md` / `e2e-scenarios-sprint-7.md` / `sprint-7-fix-prompt.md` (iter 1) / `code-review-sprint-7-fix.md` / `test-cases-sprint-7-fix-retest.md` / `sprint-7-fix-iter2-prompt.md` (iter 2) / `code-review-sprint-7-fix-iter2.md` / `test-cases-sprint-7-fix-iter2-retest.md` / `JTBD.md` (§6+§7 закрытие + Sprint 8 ◆ stories) / `CONTEXT.md` (Sprint 7 timeline) / `PROJECT_STATUS.md` (этот файл) / `DATA_MODEL.md` (ipynb export + readout + report sections) / `polish-pack-v2.md` (новый файл).
-   - **Code-зона:** Sprint 7 main + FIX iter 1 + FIX iter 2 уже в main (отдельными commit'ами Code'а) + Code report `sprint-report-7.md` / `sprint-7-fix-report.md` / `sprint-7-fix-iter2-report.md`.
+1. Commit Cowork-зоны batch'ем — Sprint 8 артефакты + CLOSE правки:
+   - **Cowork-зона:** `decisions-log.md` (ADR-015 amendment пункт 3 — control_mean P-14) / `sprint-8-prompt.md` / `code-review-sprint-8.md` / `test-cases-sprint-8-retest.md` / `sprint-8-fix-prompt.md` (iter 1) / `sprint-8-fix-iter2-prompt.md` (iter 2) / `ux-audit-2026-05-31.md` / `JTBD.md` (§1 docs structure + §6 segments closure + §7 P-14 cross-ref) / `CONTEXT.md` (Sprint 8 timeline entry) / `PROJECT_STATUS.md` (этот файл) / `polish-pack-v2.md` (отметка items как закрытых).
+   - **Code-зона:** Sprint 8 main + FIX iter 1 + FIX iter 2 уже в main + Code report `sprint-8-report.md` / `sprint-8-fix-report.md` / `sprint-8-fix-iter2-report.md`.
 
-2. Push main → GitHub Actions деплоит на GitHub Pages. **Шаг 4 «Валидация и отчёт» теперь на проде**, Stepper 4-шаговый.
+2. Push main → GitHub Actions деплоит на GitHub Pages. **Продукт v1-presentation-ready**: docs routes (/docs index + 3 sub-routes как stubs), unified UX, footer design pattern, unit-aware decision rules.
 
-**Затем — выбор:**
+**Затем — Sprint 9 PLAN.** Главный content sprint до v1. Spec предстоит написать после согласования с пользователем. Содержит:
+- Tutorial content rewrite (e2e-scenarios → user-facing markdown для /docs/tutorial)
+- Methodology page content (/docs/methodology — sticky TOC + disclaimer + cross-ref на AI-компаньон)
+- «С чего начать» overview content (/docs/start)
+- NotebookLM finalization — обложка + MindMap по терминам методологии + Audio/Slide/Video Overview (external content, не код)
+- a11y audit + mobile read-only режим
+- Опционально: explicit segment dropdown на /step3 (Pv9-NEW-2)
 
-- **Вариант A: Sprint 8 (Methodology + NotebookLM integration + a11y/mobile)** — основной content sprint до v1. Скоуп в `JTBD.md §9`. ~4-5 ч.
-- **Вариант B: Polish-pack v2 mini-sprint** — см. `docs/project/polish-pack-v2.md`. ~2-3 ч.
-- **Вариант C: совместить** — Sprint 8 + polish-pack v2 в один большой блок. ~7-8 ч.
-
-Решает пользователь после CLOSE commit'а на основе приоритета (content vs UX polish).
+~4-5 ч active code + ~2-3 ч content (Cowork) — это **последний sprint до v1**.
 
 ---
 
@@ -250,6 +260,6 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 Зафиксированы в обсуждении, требуют решения:
 
 1. **DSL для decision_rules в Шаге 4 (Sprint 7).** Пользователь в брифе пишет правила свободным текстом (например, `«если CI нижняя > 0 → SHIP»`). Для генерации параграфа «Recommended next step» в readout.md нужен либо детерминированный мини-парсер этих строк (фрагильно), либо чек-боксы пользователя «правило сработало» (проще, надёжнее, требует ручного клика). Решаем в Sprint 7 PLAN.
-2. **Methodology + tutorial структура.** Три уровня (тур / demo / methodology reference) + явный tutorial «как использовать decision_rules в ноутбуке для пост-анализа» (новый акцент после ADR-013). JTBD §9. Sprint 8.
+2. **Methodology + tutorial структура.** Tutorial роут — Sprint 8 (stub + Cowork-content rewrite e2e-scenarios). Methodology content — Sprint 9. NotebookLM «CRO эксперт» — сквозная ссылка в Header (Sprint 8 P-1) + primary external reference в methodology (Sprint 9). JTBD §9.
 3. **`editedExternally` UI badge (LoadedBadge)** — реализован, поведение зафиксировано в ADR-006 consequences. Может быть переосмыслен по обратной связи реальных пользователей.
 4. **distribution_check threshold tuning** — текущие `|skew| > 1` и `excess kurt > 3` стандартные, проверены на log-normal CSV (skew=7.6, kurt=93.8 → `'skewed_heavy'` ✓). Реальные данные могут потребовать tuning. Замечать при использовании.

@@ -10,6 +10,83 @@
 
 > Записи в обратном хронологическом порядке (новые сверху).
 
+### Sprint 8 — UX polish + onboarding routes + decision-rules unit conversion (2026-05-31 / 2026-06-01)
+
+**Type:** Code main (Polish v2 = 14 P-items) + FIX iter 1 (6 F-items по UX audit) + FIX iter 2 (3 F-items по smoke RETEST) + RETEST + Cowork CLOSE
+**Status:** Complete (CLOSE 2026-06-01)
+**Goal:** Довести продукт до v1-presentation-ready: убрать broken contracts (фейковая кнопка тура с Sprint 1), унифицировать UX между шагами (H1 / banners / footers / button color pattern), закрыть polish-tail из Sprint 6+7 RETEST, добавить unit-aware `% rel` для decision rules.
+
+**Что построено в main P-1..P-14 (Code: `feat(sprint-8)`, +19 тестов 448 → 467):**
+
+- **P-1 Header rewrite** — убран broken tour-toggle (tourEnabled / TOGGLE_TOUR / class на body — функционал зафиксирован в Sprint 1 timeline как «toggle класса работает; плашек самих нет», но за 6 спринтов так и не получил визуальной реализации). Добавлены 3 nav-link: `📖 Туториал` / `📘 Методология` / `↗ CRO Эксперт` (внешний NotebookLM). 2 route + 2 stub pages.
+- **P-2..P-5 Layout consistency** — H1 «Бриф» + subtitle на /step1; approval banner на /step3; sticky bottom footer на /step4; новый `Banner` компонент с двумя variants (status ✓ / info ℹ) заменил 4 inline-banner'а.
+- **P-6..P-10 UX micro** — `↳ ЗАГРУЖЕН` → `↳ ИЗ ФАЙЛА`; `↺ Сбросить результаты` → `🗑 Очистить форму` с ConfirmDialog (scope=form-only); адаптивный `fmtNum` (2/4 dp); тёмный scrollbar в MdPreview; `↺ Новый тест` на финале /step4.
+- **P-11 ScoringCard checklist** — Code пометил «already implemented» (verify-only, без правок). Cowork review апрувнул на слово — в Sprint 8 FIX iter 2 F-9 закрыли 2 UX-gap'а которые остались (см. ниже).
+- **P-12 D-2 midpoint refinement** — в `templates/notebook/main_test/{z_test,t_test,welch,bootstrap}.cells.json` добавлено canonical binding `observed_diff = float(...)`, заменено `center = (ci_lower + ci_upper) / 2` на `center = observed_diff` (точечная оценка вместо midpoint).
+- **P-13 decision-rules aliases** — расширен regex parser: `lift`, `эффект`, `Δ rel` (unicode delta), `p value`, `relative effect`.
+- **P-14 unit-aware `% rel`** — multi-layer: `control_mean` binding в main_test cells + export-cell field + `effective.js` derived `ci_lower_pct_rel` / `ci_upper_pct_rel` + decision-rules.js unit-aware parser/evaluate (`% rel` суффикс → swap key на `_pct_rel`). **Side-improvement Code'а:** `report-html.js` и `readout-md.js` переключены на канонический `effectiveResults` (убраны 2 inline-дубля) — derived поля теперь доступны и в отчётах. Backward-compat: отсутствует `control_mean` → derived undefined → manual checkbox fallback (existing behaviour).
+
+**FIX iter 1 F-1..F-6 (Code: `fix(sprint-8) iter 1`):** UX audit после Sprint 8 main retest пользователем + UX-audit doc Cowork (`ux-audit-2026-05-31.md`). 6 правок:
+- **F-1** логотип `stat·plan` → `<Link to="/">`
+- **F-2** «CRO Эксперт» → **«AI-компаньон»** (rename label + title)
+- **F-3** /tutorial + /methodology → **`/docs`** с index page + 3 sub-routes (start / tutorial / methodology). 1 nav-link «📖 Документация» в Header вместо 2
+- **F-4** «↺ НАЧАТЬ СНАЧАЛА» в Header — amber accent (`text-warn border-warn`) вместо нейтрального серого; reset pattern из «Вернуть в черновик»
+- **F-5** `↺ Новый тест` на /step4 переехал из inline section под section 6 в footer (StepFooter slot `secondary`)
+- **F-6 Footer button design pattern** — cross-page refactor: **green primary = next step**, **blue filled = download artifact** (новый `bg-download` token / репурпоз `--color-tour`), **amber = reset**, **border-only = back**. Применено к /step2 (download test_plan.md → blue), /step3 (порядок: back / download blue / К валидации green), /step4 (footer + section 6 кнопок download). PlanPage.jsx «Утвердить» / «Перейти к конструктору» остаются accent green ✓ (forward primary).
+
+**FIX iter 2 F-7..F-9 (Code: `fix(sprint-8) iter 2`):** browser smoke iter 1 пользователем нашёл 3 issue:
+- **F-7 Segments rename** — cell label «Сегменты (geo)» → «Сегментный анализ»; description упоминает `geo / device / plan / CRM-метка`; markdown в ноутбуке → placeholder `{{segment_column}}`; placeholder в `notebook-builder.js` rename `geo_column` → `segment_column`. **Lookup key `'geo'` сохранён** для backward-compat существующих test_plan'ов.
+- **F-8 DemoCsvCard** — пропущенная в iter 1 F-6 кнопка «↓ Скачать demo-csv»: `bg-accent` → `bg-download` (unification download pattern).
+- **F-9 ScoringCard кликабельность** — Sprint 8 P-11 Cowork-review-miss: Code пометил «already implemented», но visual chevron отсутствовал (`list-none` убрал default disclosure triangle), и на 100/100 score клик показывал пустоту. Закрыли 3 sub-items: F-9a chevron `▸/▾` с Tailwind v4 `group-open:rotate-90`; F-9b `open={groupRemarks.length > 0}` (закрыто по умолчанию для групп без замечаний); F-9c fallback `<div>✓ Без замечаний — всё ок.</div>` для empty groupRemarks при manual open.
+
+**Архитектурные решения:**
+
+- **ADR-015 Amendment пункт 3** (2026-06-01) — `control_mean` optional field в export-dict (Sprint 8 P-14). Используется для derived `ci_*_pct_rel` в `effective.js`; парсер decision-rules.js распознаёт суффикс `% rel`/`% relative` → unit-aware comparison. Backward-compat: отсутствие `control_mean` → manual checkbox fallback.
+- **Design pattern для buttons (Sprint 8 FIX iter 1 F-6)** — зафиксирован 4-уровневый цветовой code: green primary (next step) / blue filled (download) / amber (reset/destructive) / border-only (back nav). Не отдельный ADR — pattern имплементирован в коде через переиспользование Tailwind tokens.
+
+**Tests:**
+- Sprint 8 main: 448 → 467 (+19): +5 DataPeekStats (fmtNum адаптив), +4 effective.js (derived pct_rel), +2 notebook-builder (observed_diff + control_mean), +8 decision-rules (aliases + unit-aware), −2 удалённые TOGGLE_TOUR storage-фикстуры (контракта больше нет).
+- Sprint 8 FIX iter 1: 467 (no test changes — UI/text only, UI без unit-тестов).
+- Sprint 8 FIX iter 2: 467 (delta 0 — UI/text changes).
+
+**Bundle (Sprint 8 main + FIX iter 1 + FIX iter 2):**
+- Sprint 7 closed: initial 134.40 KB gzip → Sprint 8 final: ~136.59 KB gzip (+~2.2 KB суммарно: P-14 unit-aware logic + Banner + Header nav + DocsIndexPage + 3 stub pages + decision-rules regex + chevron utilities).
+- 693 модуля. Round-trip 6/6 не задет.
+
+**Cowork review-miss (Sprint 8 P-11):** Code в Sprint 8 main report'е пометил P-11 ScoringCard как «already implemented in prior sprint, verify-only, no changes». Cowork в code review апрувнул на слово, не сделав Read относительных строк. User в browser smoke на скриншоте показал ScoringCard 100/100 и спросил «обсуждали ли мы что эти пункты кликабельные» — Cowork повторно проверил код, нашёл 2 UX-gap'а: (а) нет visible chevron — пользователь не понимает что кликабельно, (б) пустота на 100/100. Закрыли в FIX iter 2 F-9. **Урок зафиксирован в memory как feedback** «Verify «already implemented» claims — обязательно Read + smoke, не доверять уверенному тону Code».
+
+**Polish-pack v2 candidates (для Sprint 9 backlog):**
+- NotebookLM кастомный MindMap по терминам методологии (Pv9-NEW, content task, не код)
+- Explicit segment column dropdown на /step3 (Pv9-NEW-2, ~45 мин feature если будет запрос)
+- Tutorial content rewrite — e2e-scenarios-sprint-7.md → user-facing markdown для DocsTutorialPage. Cowork-задача, отложена в Sprint 9 (Methodology content phase) вместо Sprint 8 follow-up. Stub'ы в /docs/{tutorial,methodology} достаточны для v1.
+
+**Metrics — длительность фаз:**
+
+| Фаза | Δ |
+|---|---|
+| Sprint 8 PROMPT (Cowork, 14 P-items от polish-pack-v2 + ux-audit) | ~30 мин |
+| Sprint 8 DEV main (Code, по самозамеру) | ~3.5 ч |
+| Sprint 8 CODE REVIEW + retest prep (Cowork) | ~30 мин |
+| QA Sprint 8 main (user, smoke — 6 UX-улучшений найдено) | ~20 мин |
+| Sprint 8 FIX iter 1 PROMPT (Cowork, 6 F-items по UX audit) | ~25 мин |
+| Sprint 8 FIX iter 1 DEV (Code) | ~1.5 ч |
+| QA iter 1 (user, smoke — 3 issue: segments hardcoded + missed bg-accent button + ScoringCard chevron) | ~10 мин |
+| Sprint 8 FIX iter 2 PROMPT (Cowork, F-7 → F-7+F-8 → F-7+F-8+F-9, incrementally дописывался) | ~25 мин |
+| Sprint 8 FIX iter 2 DEV (Code) | ~20 мин |
+| QA iter 2 (user, smoke OK) | ~5 мин |
+| Sprint 8 CLOSE (Cowork: этот entry + ADR-015 amendment + JTBD §1+§6+§7 + PROJECT_STATUS + polish-pack-v2 updates) | ~30 мин |
+| **Total active** | **~7-7.5 ч end-to-end** |
+
+**Notes:**
+
+- ✅ **Tour broken contract finally закрыт.** Кнопка с Sprint 1 timeline помечена как partial implementation («toggle класса работает; плашек самих нет») и провисела через 6 спринтов, создавая ложное обещание для пользователя. UX audit 2026-05-31 поднял это как P1 (broken contract), решение пользователя — заменить на 2 onboarding-раздела (Туториал + Методология), позже в FIX iter 1 объединено в /docs index с 3 sub-routes. Tutorial / Methodology content — Sprint 9.
+- ✅ **P-14 unit-aware decision rules — закрывает documented limitation Sprint 7 FIX iter 2 G-4.** Полное решение mismatch единиц `% rel ↔ абс` через `control_mean` binding + derived. Параллельно — DRY side-improvement Code'а (канонический `effectiveResults` в reports вместо 2 дублей).
+- ✅ **Footer design pattern systematized.** До Sprint 8 footers были ad-hoc: где-то green primary везде, где-то один link + один primary. После F-6 — 4-уровневый цветовой code применён cross-page consistently. Это снижает когнитивную нагрузку («все download кнопки выглядят одинаково»).
+- 🟡 **Cowork review-miss на P-11.** Уверенный тон Code report «already implemented» обманул review. Закрыто в FIX iter 2 F-9, но это **второй такой случай** в проекте (первый — Sprint 5 C-1 dead-branch, Code нашёл 2 места, Cowork в review нашёл 3-е). Урок зафиксирован в memory как feedback rule.
+- 🟢 **3 итерации FIX в Sprint 8** vs обычно 1-2 — связано с тем что это **polish + onboarding routes**, где много мелких UX-моментов проявляются только в реальном browser smoke. Каждая итерация ловила всё более точечные issue (P-1..P-14 main → F-1..F-6 UX audit gaps → F-7..F-9 точечные правки + review-miss).
+
+---
+
 ### Sprint 7 — Шаг 4 «Валидация и отчёт»: ipynb upload primary flow + HTML report + ADR-015 (2026-05-29 / 2026-05-31)
 
 **Type:** Code main + FIX iter 1 + FIX iter 2 + RETEST + Architecture (ADR-015 Accepted + amended)
@@ -39,7 +116,7 @@
 - **G-1 novelty tri-state** — export-cell `_safe(novelty_flag, None)` (был `False`) + novelty.cells.json строго трёхзначна (`None` default → `True`/`False` если есть данные). UI/HTML/MD не трогали (умеют null с iter 1).
 - **G-2 TL;DR honest unit labels** — `ciUnitNote(brief)` хелпер: proportion → `(абс. разность долей)`, continuous → `(абс. разность, ед. <metric_name>)`, ratio → `(абс. разность ratio)`. **БЕЗ `* 100`** (моя первоначальная idea сломала бы continuous metrics — Scenario B показал что `ci_lower = -1.13` для ARPU). 4× main_test title аналогично.
 - **G-3 Step 3 → Step 4 navigation** — secondary кнопка «К ВАЛИДАЦИИ →» в footer NotebookBuilderPage через `navigate('/step4')`. StepFooter уже имел `secondary` slot.
-- **G-4 decision rules parser** — unicode normalize (`≤`/`≥`/`−`), CI aliases (`CI lower`, `нижняя граница`), bare `ci` с semantic mapping (`CI ≤ X` → `ci_upper`, `CI ≥ X` → `ci_lower`), strip `%`/`rel` суффиксов. UI hint про абс. единицы в DecisionRulesBlock. Конверсия `% rel ↔ абс` через baseline — отложена в Sprint 8 (требует canonical `control_mean` binding в main_test cells).
+- **G-4 decision rules parser** — unicode normalize (`≤`/`≥`/`−`), CI aliases (`CI lower`, `нижняя граница`), bare `ci` с semantic mapping (`CI ≤ X` → `ci_upper`, `CI ≥ X` → `ci_lower`), strip `%`/`rel` суффиксов. UI hint про абс. единицы в DecisionRulesBlock. Конверсия `% rel ↔ абс` через baseline — запланирована в Sprint 8 P-14 (canonical `control_mean` binding в main_test cells).
 
 **Архитектурные решения:**
 
@@ -57,7 +134,7 @@
 - **Scenario A (proportion):** cr_first_deposit, baseline 0.031, MDE 10%. Полный flow: бриф → план (score 80) → конструктор → ipynb download → Colab run с CSV → drag-drop → /step4. Все 4 PNG inline, significance badge зелёный, decision rule SHIP auto-eval сработало через G-4, ZIP скачан. Verdict: SHIP.
 - **Scenario B (continuous):** ARPU, baseline 100 (data peek уточнил до 106.31, σ=73.28), MDE 5%. Полный flow + data peek. Novelty cell отработала с duration=7, флаг suspected. CI [-1.13, 4.58] показан с label `(абс. разность, ед. arpu)` — НЕ умножен на 100. Verdict: KILL.
 
-**Polish-pack v2 кандидаты (для Sprint 8 или отдельного mini-sprint):**
+**Polish-pack v2 кандидаты (объединены в Sprint 8 после UX audit 2026-05-31):**
 - CR-1 (main_test plot midpoint): добавить canonical `point_estimate` binding в main_test cells (визуально корректнее для асимметричных bootstrap CI).
 - CR-1 iter 2 (parser aliases): support `lift`, `Эффект`, `Δ rel` (unicode delta), `p value` (с пробелом) в decision-rules parser.
 - G-4 unit conversion (% rel ↔ абс по baseline): требует `control_mean` canonical binding.
@@ -94,7 +171,7 @@ Sprint 7 — самый длинный спринт проекта (предыд
 - ✅ **CR-1 D-2 midpoint на практике не проблема.** Code в iter 1 переписал main_test errorbar на `(ci_lower + ci_upper) / 2` вместо реального `treatment - control`. Я опасался asymmetric bootstrap CI. Scenario A z-test verify'd: midpoint = 0.008666 vs observed = 0.008667 — identical для wald CI. Для bootstrap может слегка отличаться, но визуально приемлемо.
 - ✅ **G-4 parser semantic CI mapping.** «CI ≤ X» → `ci_upper ≤ X` («весь CI ниже X» = strong negative для KILL), «CI ≥ X» → `ci_lower ≥ X` («весь CI выше X» = strong positive для SHIP). Семантически правильно для типичных PM-формулировок.
 - 🟡 **Mismatch единиц `% rel` vs абс. в decision rules — open issue.** Пользователь часто пишет правила «CI ≤ −2.5% rel.», но `ci_lower/upper` хранятся в абсолютных единицах. В Sprint 7 FIX iter 2 G-4 parser расширен, но конверсия отложена — требует canonical `control_mean` binding во всех main_test cells. Для proportion `-0.025` ≈ `-2.5%` (так что user может писать `ci_upper <= -0.025`). Для continuous — пользователь должен знать абсолютную величину. UI hint про это есть. Полная конверсия — Sprint 8.
-- 🟢 **5 polish ◆ stories** + **4 CR concerns** для Sprint 8 — здоровый backlog, не critical paths.
+- 🟢 **5 polish ◆ stories** + **4 CR concerns** для Sprint 8 (+ 7 UX audit items добавлены позже 2026-05-31) — здоровый backlog, не critical paths. Все 14 items объединены в Sprint 8 polish (см. `sprint-8-prompt.md`).
 - 🟢 **JTBD.md modified во время Code FIX iter 1** — это были мои pending polish ideas из прошлых сессий (◆ NOVELTY, restart button, fmtNum, ScoringCard, MdPreview, NotebookLM). Не bug координации, просто pending Cowork-зона коммит до Sprint 7 FIX. Закоммитим в финальный CLOSE batch.
 
 ---
@@ -439,7 +516,7 @@ Sprint 6 — самый длинный спринт проекта на моме
 
 - Warning при невалидном загруженном md (зависит от Sprint 7 парсера)
 - Q07 sensitivity helper (slider «MDE × duration») — в Sprint 3 scope не входил
-- Methodology раздел — Sprint 8 по roadmap
+- Methodology раздел — Sprint 9 по roadmap
 
 **Key decisions:**
 
