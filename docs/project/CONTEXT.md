@@ -10,6 +10,95 @@
 
 > Записи в обратном хронологическом порядке (новые сверху).
 
+### Sprint 7 — Шаг 4 «Валидация и отчёт»: ipynb upload primary flow + HTML report + ADR-015 (2026-05-29 / 2026-05-31)
+
+**Type:** Code main + FIX iter 1 + FIX iter 2 + RETEST + Architecture (ADR-015 Accepted + amended)
+**Status:** Complete (CLOSE 2026-05-31)
+**Goal:** Закрыть финальный value loop — драг-дроп выполненного `.ipynb` → HTML отчёт + Markdown readout + ZIP пакет артефактов. Финализировать переход на 4-шаговый флоу (ADR-013), реализовать структурный rewrite Stepper'а.
+
+**Что построено в main (Code: `feat(sprint-7)`, +87 тестов 335 → 422):**
+
+- **S1 ipynb parser** — `src/lib/results/ipynb.js`: открывает ipynb как JSON, ищет cell с tag `stat-plan-results`, парсит JSON output, извлекает все PNG из других cells (base64). REQUIRED_FIELDS = 6; significant/srm_pvalue/novelty/guardrails — optional (backward-compat).
+- **S2 drag-drop UI** — `src/pages/ValidationReportPage.jsx` + `src/components/results/UploadZone.jsx`: drag-drop с visual feedback, error states, fallback на manual flow.
+- **S3 checks + decision rules** — `src/lib/results/checks.js` (srmCheck chi² через Lanczos gammaLn без scipy + sanityCheck total_n + direction), `decision-rules.js` (parseDecisionRule regex + evaluateRule + recommendNextStep), `effective.js` (raw_results + user_overrides merge).
+- **S4-S7 UI components** — ResultsForm, ChecksSection, DecisionRulesBlock, ImagesGallery, ExportSection.
+- **S5/S6 generators** — `report-html.js` (self-contained HTML с inline CSS dark palette + PNG base64), `readout-md.js` (YAML frontmatter + markdown с decision: "" пустым).
+- **S7 ZIP bundle** — `zip.js` через JSZip lazy chunk (buildFileMap pure helper + lazy await import).
+- **S8 Stepper structural rewrite** — STEPS array 5 → 4, labels Sprint 5 заменены на ADR-013 контракт («04 Валидация и отчёт»). isStepUnlocked перенастроен.
+- **S9 templates extension** — `templates/notebook/export.cells.json` новый файл с tagged cell + `_safe(globals().get(...))` defensive read; `load.cells.json` обновлён с `plt.rcParams` dark palette preset.
+- **S10 editable schema** — `ExpectedSchemaCard` теперь editable: inline rename column / type toggle / add-remove optional; sync с placeholders в `notebook-builder.js`. Закрывает JTBD §6 ◆ story из Sprint 6.
+
+**FIX iter 1 (Code: `fix(sprint-7) iter 1`, +9 тестов 422 → 431):** закрыл 3 функциональных gap'а из e2e QA сценария A (proportion SHIP):
+- **F-1..F-4 + F-9a** — matplotlib графики в шаблонах balance/srm/4× main_test/guardrails/novelty (4-6 PNG в ноутбуке после прогона). Палитра под stat·plan UI (`#60a5fa` control / `#a3e635` treatment / `#f87171` breach).
+- **F-2 D-1 adaptation** — Code адаптировал srm-график под фактические `chi2_srm/srm_pvalue/group_sizes` bindings вместо моих fictional `chi2/p/n_ctrl`.
+- **F-3 D-2 critical units fix** — мой prompt-snippet смешивал единицы (`delta_rel` в %, `ci_lower/upper` абсолютные). Code заметил и переписал на CI абсолютной разности вокруг midpoint; визуально корректно (для z-test wald CI midpoint = point estimate точно).
+- **F-5..F-8** — `significant: bool(p<alpha)` в export-cell + парсер extra fields + UI readonly chip + TL;DR badge в HTML/MD.
+- **F-9b..c** — NOVELTY badge во всех 3 местах (UI readonly + override спрятан в `<details>` + HTML/MD verdict).
+
+**FIX iter 2 (Code: `fix(sprint-7) iter 2`, +17 тестов 431 → 448):** закрыл 4 UX-issue из e2e QA сценариев A + B (continuous ARPU):
+- **G-1 novelty tri-state** — export-cell `_safe(novelty_flag, None)` (был `False`) + novelty.cells.json строго трёхзначна (`None` default → `True`/`False` если есть данные). UI/HTML/MD не трогали (умеют null с iter 1).
+- **G-2 TL;DR honest unit labels** — `ciUnitNote(brief)` хелпер: proportion → `(абс. разность долей)`, continuous → `(абс. разность, ед. <metric_name>)`, ratio → `(абс. разность ratio)`. **БЕЗ `* 100`** (моя первоначальная idea сломала бы continuous metrics — Scenario B показал что `ci_lower = -1.13` для ARPU). 4× main_test title аналогично.
+- **G-3 Step 3 → Step 4 navigation** — secondary кнопка «К ВАЛИДАЦИИ →» в footer NotebookBuilderPage через `navigate('/step4')`. StepFooter уже имел `secondary` slot.
+- **G-4 decision rules parser** — unicode normalize (`≤`/`≥`/`−`), CI aliases (`CI lower`, `нижняя граница`), bare `ci` с semantic mapping (`CI ≤ X` → `ci_upper`, `CI ≥ X` → `ci_lower`), strip `%`/`rel` суффиксов. UI hint про абс. единицы в DecisionRulesBlock. Конверсия `% rel ↔ абс` через baseline — отложена в Sprint 8 (требует canonical `control_mean` binding в main_test cells).
+
+**Архитектурные решения:**
+
+- **ADR-015 Accepted 2026-05-29** — notebook results export format через tagged cell `stat-plan-results`. Контракт между Jupyter/Colab и stat·plan parser.
+- **ADR-015 Amendment 2026-05-31** — `significant` (Sprint 7 FIX iter 1) добавлено как optional поле в export-cell; `novelty_flag` стал tri-state `True/False/None` (Sprint 7 FIX iter 2). Документация про абсолютные единицы CI добавлена.
+
+**Tests:**
+- Sprint 7 main: 335 → 422 (+87).
+- Sprint 7 FIX iter 1: 422 → 431 (+9).
+- Sprint 7 FIX iter 2: 431 → 448 (+17). Total **448 зелёных**.
+
+**Bundle:** initial 132.54 → 134.40 KB gzip (+1.86 KB суммарно за весь Sprint 7, в том числе matplotlib-строки в шаблонах +1.75 KB iter 1 + ciUnitNote +0.11 KB iter 2). Lazy chunks: `ValidationReportPage` 5.55 → 5.93 KB, `readout-md` ~4.7 → 5.09 KB, `ipynb` 1.16 KB, `JSZip` lazy chunk через dynamic import. Никаких новых npm-deps. Round-trip 6/6 не задет (YAML test_plan.md не менялся).
+
+**E2E проверка (real data scenarios):**
+- **Scenario A (proportion):** cr_first_deposit, baseline 0.031, MDE 10%. Полный flow: бриф → план (score 80) → конструктор → ipynb download → Colab run с CSV → drag-drop → /step4. Все 4 PNG inline, significance badge зелёный, decision rule SHIP auto-eval сработало через G-4, ZIP скачан. Verdict: SHIP.
+- **Scenario B (continuous):** ARPU, baseline 100 (data peek уточнил до 106.31, σ=73.28), MDE 5%. Полный flow + data peek. Novelty cell отработала с duration=7, флаг suspected. CI [-1.13, 4.58] показан с label `(абс. разность, ед. arpu)` — НЕ умножен на 100. Verdict: KILL.
+
+**Polish-pack v2 кандидаты (для Sprint 8 или отдельного mini-sprint):**
+- CR-1 (main_test plot midpoint): добавить canonical `point_estimate` binding в main_test cells (визуально корректнее для асимметричных bootstrap CI).
+- CR-1 iter 2 (parser aliases): support `lift`, `Эффект`, `Δ rel` (unicode delta), `p value` (с пробелом) в decision-rules parser.
+- G-4 unit conversion (% rel ↔ абс по baseline): требует `control_mean` canonical binding.
+- 4 ◆ из Sprint 6 RETEST: restart button, fmtNum precision, ScoringCard checklist, MdPreview scrollbar.
+- JTBD §9 NotebookLM «CRO эксперт» integration (как methodology external resource).
+
+**Metrics — длительность фаз:**
+
+| Фаза | Δ |
+|---|---|
+| PLAN + ADR-015 (Cowork ↔ пользователь, включая pivot на ipynb upload primary flow) | ~45 мин |
+| PROMPT main (Cowork, `sprint-7-prompt.md` 13 scope items S1-S13) | ~30 мин |
+| DEV main (Claude Code, по самозамеру 4.5ч active) | ~4.5 ч |
+| CODE REVIEW (Cowork, `code-review-sprint-7.md` 0 blockers + 3 minor concerns C-1..C-3) | ~30 мин |
+| TEST PREP (Cowork — `test-cases-sprint-7.md` 12 кейсов + `e2e-scenarios-sprint-7.md` 3 сценария + 3 CSV генерация + 6 placeholder ipynb) | ~1.5 ч |
+| QA Sprint 7 main scenario A (пользователь, обнаружил BUG-7F1 missing plots + BUG-7F2 missing significant) | ~30 мин |
+| FIX PROMPT iter 1 (Cowork — F-1..F-9, изначально F-1..F-8, добавил F-9 NOVELTY как visible badge по запросу) | ~30 мин |
+| FIX DEV iter 1 (Claude Code, по самозамеру) | ~1.5 ч |
+| CODE REVIEW + retest iter 1 (Cowork + пользователь) | ~30-40 мин |
+| QA iter 1 (пользователь — сценарий A прошёл, нашёл BUG-7F1 novelty false-positive + BUG-7F2 units mismatch) | ~20 мин |
+| QA iter 1 (пользователь — сценарий B прошёл, нашёл BUG-7F4 decision-rules parser слишком узкий) | ~20 мин |
+| FIX PROMPT iter 2 (Cowork — изначально G-1..G-3, добавил G-4 по запросу; пересмотрел G-2 после обнаружения continuous units bug) | ~50 мин |
+| FIX DEV iter 2 (Claude Code, по самозамеру 1.25 ч) | ~1.25 ч |
+| CODE REVIEW + retest iter 2 (Cowork + пользователь) | ~30 мин |
+| CLOSE (Cowork — этот файл + ADR-015 amendment + DATA_MODEL + JTBD §6+§7 + PROJECT_STATUS + polish-pack-v2.md) | ~50 мин |
+| **Total active** | **~12-14 часов end-to-end** |
+
+Sprint 7 — самый длинный спринт проекта (предыдущий рекорд Sprint 6 = ~8-9 ч). Причины: (а) **архитектурный pivot mid-PLAN** на ipynb upload primary flow (ADR-015), что сократило кодовый scope но добавил 6 test ipynb generation + 3 e2e scenarios с CSV; (б) **2 итерации FIX** вместо запланированной 1, из-за UX-discovery (novelty visible badge, units mismatch для continuous, узкий decision rules parser); (в) пересмотр G-2 spec mid-iter-2 после ошибочного `* 100` подхода — хорошо что Code ещё не начал работу; (г) e2e сценарии в 2 metric_type (proportion + continuous) дали полное покрытие edge cases; (д) Cowork CLOSE с двумя amendments к ADR-015 и расширением DATA_MODEL под новые artifact types (report.html + readout.md + ipynb export schema).
+
+**Notes:**
+
+- ✅ **ADR-015 pivot — лучшее продуктовое решение Sprint 7.** Изначально PLAN был «ручной ввод 7-10 полей в форму». Пользователь резонно заметил «можем ли мы отработанный ноутбук скачать назад?» — это убрало дублирование труда и риск опечаток, плюс дало bonus inline PNG графики в HTML отчёте.
+- ✅ **G-2 critical save через QA Scenario B.** Я первоначально предложил `ci_lower * 100` (работало для proportion). Scenario B (continuous ARPU) показал что для абс. разности means в денежных единицах `* 100` даст бессмыслицу. Хорошо что user тестил оба metric_type — иначе bug ушёл бы в прод.
+- ✅ **CR-1 D-2 midpoint на практике не проблема.** Code в iter 1 переписал main_test errorbar на `(ci_lower + ci_upper) / 2` вместо реального `treatment - control`. Я опасался asymmetric bootstrap CI. Scenario A z-test verify'd: midpoint = 0.008666 vs observed = 0.008667 — identical для wald CI. Для bootstrap может слегка отличаться, но визуально приемлемо.
+- ✅ **G-4 parser semantic CI mapping.** «CI ≤ X» → `ci_upper ≤ X` («весь CI ниже X» = strong negative для KILL), «CI ≥ X» → `ci_lower ≥ X` («весь CI выше X» = strong positive для SHIP). Семантически правильно для типичных PM-формулировок.
+- 🟡 **Mismatch единиц `% rel` vs абс. в decision rules — open issue.** Пользователь часто пишет правила «CI ≤ −2.5% rel.», но `ci_lower/upper` хранятся в абсолютных единицах. В Sprint 7 FIX iter 2 G-4 parser расширен, но конверсия отложена — требует canonical `control_mean` binding во всех main_test cells. Для proportion `-0.025` ≈ `-2.5%` (так что user может писать `ci_upper <= -0.025`). Для continuous — пользователь должен знать абсолютную величину. UI hint про это есть. Полная конверсия — Sprint 8.
+- 🟢 **5 polish ◆ stories** + **4 CR concerns** для Sprint 8 — здоровый backlog, не critical paths.
+- 🟢 **JTBD.md modified во время Code FIX iter 1** — это были мои pending polish ideas из прошлых сессий (◆ NOVELTY, restart button, fmtNum, ScoringCard, MdPreview, NotebookLM). Не bug координации, просто pending Cowork-зона коммит до Sprint 7 FIX. Закоммитим в финальный CLOSE batch.
+
+---
+
 ### Sprint 6 — Data Peek (Шаг 1): CSV upload + ручной calculator + визуализация + ADR-014 (recharts) (2026-05-29)
 
 **Type:** Code main + FIX iter 1 + FIX iter 2 (BUG-Q5 BLOCKER recharts) + RETEST + ADR-013 implementation start

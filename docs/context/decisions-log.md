@@ -74,8 +74,8 @@
 
 ## ADR-015 — Notebook results export format: tagged cell `stat-plan-results` с JSON
 
-**Date:** 2026-05-29
-**Status:** Accepted (перед Sprint 7 PROMPT)
+**Date:** 2026-05-29 (изначально), amended 2026-05-31 (Sprint 7 CLOSE — добавлены `significant` + tri-state `novelty_flag`)
+**Status:** Accepted (перед Sprint 7 PROMPT) → Amended (Sprint 7 FIX iter 1+2)
 
 **Context:**
 После ADR-013 (4-шаговый флоу с объединённым Шагом 4 «Валидация и отчёт») главный продуктовый flow на Шаге 4 — пользователь приходит после прогона теста с числами из своего ноутбука. Изначально (ADR-013 + Sprint 7 PLAN draft) предполагался **ручной ввод** 7-10 полей в форму (control_n, treatment_n, delta_rel, p_value, ci_lower, ci_upper, ...).
@@ -96,16 +96,17 @@
    results = {
        'control_n': int(...),
        'treatment_n': int(...),
-       'delta_rel': float(...),         # relative effect, e.g. 0.052 for +5.2%
+       'delta_rel': float(...),         # relative effect в %, e.g. 5.2 for +5.2%
        'p_value': float(...),
-       'ci_lower': float(...),
+       'ci_lower': float(...),          # АБСОЛЮТНАЯ разность в ед. метрики (для proportion = доли, continuous = ед. метрики, ratio = разность ratio)
        'ci_upper': float(...),
        'srm_pvalue': float(...),
-       'novelty_flag': bool(...),       # детектировался ли novelty effect
+       'novelty_flag': bool(...) | None,  # tri-state: True/False/None — см. amendment
        'guardrails': [
            {'name': 'bounce_rate', 'breached': bool(...), 'value': float(...)},
            # ...
        ],
+       'significant': bool(...),         # ДОБАВЛЕНО в Sprint 7 FIX iter 1 — см. amendment
    }
    print(json.dumps(results, indent=2))
    ```
@@ -151,6 +152,25 @@
 - Sprint 7 prompt (`docs/project/sprint-7-prompt.md`) — детальная реализация.
 - DATA_MODEL.md — обновится новым разделом «Notebook results export schema».
 - `notebook-builder.js` (Sprint 6) — обновится в Sprint 7: добавление export-cell + matplotlib styling.
+
+### Amendment 2026-05-31 (Sprint 7 FIX iter 1 + iter 2)
+
+При e2e QA Sprint 7 main + iter 1 на сценариях A (proportion) + B (continuous) выявились 2 уточнения контракта:
+
+**1. Поле `significant` (added in Sprint 7 FIX iter 1, F-5).** Optional boolean. В export-cell вычисляется как `bool(p_value is not None and p_value < alpha)` (alpha из state.brief.advanced.alpha, default 0.05). Парсер на стороне stat·plan: НЕ в `REQUIRED_FIELDS` (backward-compat со старыми ipynb без поля). UI/HTML/MD используют для рендеринга явного verdict-badge в TL;DR (`✅ Statistically significant` / `⚠ Not significant`). Если поле отсутствует — fallback derive: `p_value < alpha`.
+
+**2. `novelty_flag` теперь tri-state `True | False | None` (changed in Sprint 7 FIX iter 2, G-1).** Семантика:
+- `True` — novelty cell отработала, расхождение early/later > 50% rel
+- `False` — novelty cell отработала, нет расхождения
+- `None` — **проверки не было** (cell skipped из-за duration < 3 OR оба `lift_early/lift_later` None из-за отсутствия данных)
+
+До iter 2 export-cell делал `_safe(novelty_flag, False)` → теряли информацию «не проверяли». Теперь `_safe(novelty_flag, None)`. UI/HTML/MD различают 3 состояния: жёлтый badge для `True`, зелёный для `False`, серый «N/A — нет данных» / скрытие для `None`.
+
+**Что НЕ изменилось:**
+- `ci_lower / ci_upper` остаются в АБСОЛЮТНЫХ единицах метрики (доли для proportion, ед. метрики для continuous). НЕ конвертируем в `%` — это сломало бы continuous metrics. UI/HTML/MD добавляют label `(абс. разность, ед. <metric_name>)` для disambig.
+- `delta_rel` остаётся в `%` (хранится как 5.2, не 0.052).
+
+**Documented limitation (для Sprint 8):** decision rules в брифе часто пишут в `% rel.` (например `CI ≤ −2.5% rel.`), а `ci_lower/ci_upper` хранятся в абсолютных единицах. Сравнение нативно не работает для continuous — требует конверсии через baseline. В Sprint 7 FIX iter 2 (G-4) parser расширен для unicode/aliases, но конверсия единиц отложена — UI показывает hint про абс. единицы.
 
 ---
 

@@ -84,13 +84,25 @@ decision_rules:
   iterate: "Статистически незначимо, но направление positive в 2+ сегментах — итерируем."
   kill: "Guardrail breach или CI ≤ −4% rel."
 
-# Data peek info
+# Data peek info (расширено Sprint 6 main S1 — 15 полей; см. полную schema в Sprint 6 timeline в CONTEXT.md)
 data_peek:
   uploaded: true
+  source: csv            # csv | manual | null
   baseline_computed: 0.031
   std_computed: null              # для continuous-метрик, иначе null
+  ratio_variance: null            # для ratio через delta method, иначе null
+  ratio_mean_numerator: null
+  ratio_mean_denominator: null
+  ratio_cov_nd: null
   baseline_match_user_input: true
-  distribution_check: ok
+  distribution_check: ok          # ok | skewed | heavy_tailed | skewed_heavy
+  skewness: null
+  kurtosis: null
+  cv_value: null                  # daily CV для stability check
+  stability_cv_under_threshold: null  # true если CV < 0.3
+  raw_values: null                # reservoir sample до 1000 для histogram
+  raw_values_numerator: null      # для ratio (Sprint 6 FIX iter 1)
+  raw_values_denominator: null
 
 # Scoring snapshot (информационно, при загрузке игнорируется и пересчитывается)
 score: 78
@@ -181,92 +193,159 @@ data_peek_uploaded: true
 
 ---
 
-## validation.md
+## validation.md — superseded (ADR-013, see below)
 
-Артефакт, генерируется на шаге 3. Содержит результаты независимого пересчёта.
+> **Status:** SUPERSEDED 2026-05-28 by ADR-013 (4-step flow, Шаги 4+5 merged into Шаг 4 «Валидация и отчёт»). После Sprint 7 main + FIX iter 1/2 этот артефакт **не генерируется** — его функционал заменён на:
+> - inline-валидацию в `/step4` (SRM/sanity checks без отдельного MD)
+> - `report.html` + `readout.md` через парсинг выполненного ipynb (см. ADR-015)
+>
+> Исторический пример schema оставлен для архивной справки — не отражает текущее состояние.
 
 ```markdown
 ---
+# (Архивный пример — НЕ генерируется текущей версией)
 test_id: bm-main-cta-v2
 type: validation
-validated_at: 2026-05-12T14:30:00Z
-csv_filename: experiment_results.csv
-csv_rows: 76814
-
-# Independently recalculated stats
-control_n: 38421
-treatment_n: 38393
-control_metric: 0.0312
-treatment_metric: 0.0341
-delta_relative: 0.093
-ci_lower: 0.040
-ci_upper: 0.146
-p_value: 0.0008
-srm_p_value: 0.79
-
-# Decision rule check
-ship_threshold_met: true
-guardrails_breached: []
-novelty_effect_detected: true
-novelty_stable_from_day: 3
-
-# Comparison with user's notebook (if provided)
-user_provided_stats: true
-all_match: true
-mismatches: []
+...
 ---
-
-# Validation Report: {{test_id}}
-
-## Independent recalculation
-{{summary_table}}
-
-## Decision rules check
-{{decision_status}}
-
-## Notes
-{{warnings_and_observations}}
 ```
 
 ---
 
-## readout.md
+## ipynb export-cell (stat-plan-results) — Sprint 7 ADR-015
 
-Финальный артефакт, генерируется на шаге 4.
+Контракт между ноутбуком пользователя (выполненным в Jupyter/Colab) и парсером /step4. Tagged cell с метатэгом `stat-plan-results` содержит JSON, который stat·plan извлекает и подставляет в форму результатов.
+
+```python
+# metadata.tags: ['stat-plan-results']
+import json
+results = {
+    'control_n': int,          # размер control группы
+    'treatment_n': int,        # размер treatment группы
+    'delta_rel': float,        # relative effect в ПРОЦЕНТАХ (5.2 = +5.2%)
+    'p_value': float,          # p-value основного теста
+    'ci_lower': float,         # АБСОЛЮТНАЯ нижняя граница CI в ед. метрики (proportion: доли; continuous: ед. метрики; ratio: разность ratio)
+    'ci_upper': float,         # АБСОЛЮТНАЯ верхняя граница CI
+    'srm_pvalue': float,       # p-value chi² теста на 50/50 разбиение
+    'novelty_flag': bool | None,  # tri-state с Sprint 7 FIX iter 2: True/False/None
+    'guardrails': [
+        {'name': str, 'value': float, 'rel_change_%': float, 'threshold_%': float, 'direction': 'min'|'max', 'breached': bool},
+    ],
+    'significant': bool,        # ДОБАВЛЕНО Sprint 7 FIX iter 1: bool(p_value < alpha)
+}
+print(json.dumps(results, indent=2, default=str))
+```
+
+### Семантика полей (важно — единицы)
+
+| Поле | Тип | Семантика | Пример |
+|---|---|---|---|
+| `control_n`, `treatment_n` | int | Counts по variant | 5000 |
+| `delta_rel` | float, **в %** | Relative lift (treatment − control) / control × 100 | 28.06 (= +28.06%) |
+| `p_value` | float | p-value двустороннего теста (one-sided обрабатывается внутри ноутбука) | 0.0257 |
+| `ci_lower`, `ci_upper` | float, **абсолют в ед. метрики** | Нижняя/верхняя граница CI **разности**, не relative. Для proportion = доли. Для continuous = ед. метрики (руб./сек./т.д.). Для ratio = разность ratio | 0.001 (proportion = +0.1pp) / −1.13 (continuous ARPU = −1.13 ₽) |
+| `srm_pvalue` | float | p-value chi² SRM-теста; < 0.001 → SRM detected | 0.83 |
+| `novelty_flag` | bool \| None | **tri-state с iter 2.** `True` — расхождение early vs later > 50% rel; `False` — нет novelty; `None` — проверки не было (cell skipped или нет данных) | true |
+| `guardrails` | list[dict] | Список с per-guardrail status. `breached: true` → guardrail сработал | `[{name: 'bounce_rate', breached: false, value: 0.42, ...}]` |
+| `significant` | bool | `p_value < alpha` (alpha из state.brief.advanced.alpha, default 0.05). UI/HTML/MD рендерят явный verdict-badge в TL;DR | true |
+
+### Парсинг на стороне stat·plan
+
+- `src/lib/results/ipynb.js`: открывает `.ipynb` как JSON, ищет cell с `cell.metadata.tags?.includes('stat-plan-results')`, берёт последний output (`text/plain` или `application/json`) → `JSON.parse`.
+- `REQUIRED_FIELDS` = `['control_n', 'treatment_n', 'delta_rel', 'p_value', 'ci_lower', 'ci_upper']`. `srm_pvalue`, `novelty_flag`, `guardrails`, `significant` — optional (backward-compat со Sprint 7 main ipynb без `significant`).
+- Все PNG outputs из других ячеек ноутбука извлекаются как base64 и встраиваются в `report.html` как `<img src="data:image/png;base64,...">` (self-contained).
+
+### state.results structure
+
+После загрузки ipynb состояние:
+```js
+state.results = {
+  raw_results: {...JSON_из_export_cell},     // immutable: то что пришло из ноутбука
+  user_overrides: {field: value, ...},        // если пользователь правит поле руками — wins over raw
+  images: [{base64_png, ...}],                // PNG из ipynb cells
+  user_checks: {ship: bool|null, iterate: ..., kill: ...},  // manual checkboxes для decision rules
+  user_decision: 'SHIP'|'ITERATE'|'KILL'|null,  // финальное решение (manual, ADR-004)
+}
+
+// effective = {...raw_results, ...user_overrides_non_null}
+```
+
+### Backward-compat
+
+- Старые ipynb (Sprint 6 main + FIX iter 1/2, без export-cell) — парсер не находит tagged cell → warning «Это ноутбук без stat-plan-results cell» → форма ручного ввода.
+- Sprint 7 main ipynb (без `significant`, с `novelty_flag: False` default) — парсятся OK, `significant` derived из `p < alpha`, novelty показывается зелёным «not detected» (формально верно для тех ноутбуков). Sprint 7 FIX iter 1+2 ipynb — полная поддержка.
+
+---
+
+## readout.md (Sprint 7)
+
+Финальный артефакт, генерируется в /step4 после загрузки выполненного ipynb. Содержит YAML frontmatter + markdown структуру с TL;DR (significance + novelty badges + Δ rel/CI/p) + applied decision rules + поле «Принятое решение» **пустое** (ADR-004).
 
 ```markdown
 ---
-test_id: bm-main-cta-v2
-type: readout
-sealed: 2026-05-12
-duration_days: 5
-n_users: 76814
-decision: null  # SHIP | ITERATE | KILL | null (пока не принято)
-recommended_decision: SHIP  # рекомендация тула на основе decision rules
+test_id: arpu-v1
+created: 2026-05-31
+status: completed
+results:
+  control_n: 5000
+  treatment_n: 5000
+  delta_rel: 1.6411
+  p_value: 0.2377
+  ci_lower: -1.1353       # в ед. метрики (ARPU)
+  ci_upper: 4.5771
+  srm_pvalue: 1.0000
+  novelty_flag: true       # tri-state — может быть true/false/null
+decision: ""               # ВСЕГДА пусто (ADR-004) — пользователь заполняет руками
 ---
 
-# Read-out: {{test_id}}
+# Тест: ARPU
 
 ## TL;DR
-{{auto_generated_summary}}
 
-## Что знаем точно
-{{confirmed_findings}}
+**⚠ Not statistically significant** (p = 0.2377, α = 0.05)
+**⚠ Novelty effect suspected**
 
-## Чего не знаем
-{{unknowns_and_limitations}}
+Δ rel = 1.64%, 95% CI [-1.1353…4.5771] _(абс. разность, ед. ARPU)_, p = 0.2377.
 
-## Follow-up
-- [ ] {{suggested_followup_1}}
-- [ ] {{suggested_followup_2}}
+## Results
+- n control = 5000, n treatment = 5000
+- Δ rel = 1.64%
+- 95% CI = [-1.1353 … 4.5771]
+- p-value = 0.2377
 
-## Принятое решение
-- [ ] SHIP
-- [ ] ITERATE
-- [ ] KILL
+## Sanity checks
+- ✓ SRM: p = 1.0000
+- ⚠ Sample size vs план
+- ✓ Направление эффекта vs MDE direction
 
-## Обоснование решения
-{{free_text}}
+## Decision rules application
+- **SHIP**: ... — сработало/не сработало/не оценено
+- **ITERATE**: ...
+- **KILL**: ...
+
+## Recommended next step
+Сработали правила: KILL. Рекомендуемое следующее действие — KILL.
+(Или: «Ни одно из decision rules не сработало. Решение остаётся за PM.»)
+
+## Decision
+_To be filled manually._
+```
+
+**Важно:** TL;DR строка имеет label `(абс. разность, ед. <metric_name>)` для CI — это потому что `ci_lower/upper` хранятся в абсолютных единицах метрики (см. ADR-015 amendment). Для proportion — `(абс. разность долей)`, для ratio — `(абс. разность ratio)`.
+
+---
+
+## report.html (Sprint 7)
+
+Self-contained HTML one-pager, генерируется в /step4. Inline CSS dark palette stat·plan. PNG графики из ipynb встроены как `data:image/png;base64,...`. Открывается в любом браузере, печатается в PDF через Ctrl+P. Содержит те же секции что readout.md, плюс embedded PNG графики из выполненного ноутбука.
+
+---
+
+## Зарезервировано (НЕ генерируется текущей версией)
+
+```markdown
+# brief.md — отдельный артефакт, не реализован, обсуждаем нужность для v2
+# validation.md — superseded ADR-013, не генерируется
 ```
 
 ---
