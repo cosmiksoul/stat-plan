@@ -1,7 +1,7 @@
 {
   "id": "segments",
-  "name": "Сегменты (geo)",
-  "description": "Сегментный анализ по `geo` — лифт по каждому сегменту отдельно, без формальных мульти-тестов.",
+  "name": "Сегментный анализ",
+  "description": "Лифт по любой категориальной колонке (geo, device, plan, CRM-метка) — sanity-check, что эффект не сидит в одном сегменте. Колонку можно переопределить в expected schema ниже.",
   "default_enabled": false,
   "requires": ["main_test"],
   "cells": [
@@ -11,7 +11,7 @@
       "source": [
         "## Сегментный анализ (опционально)\n",
         "\n",
-        "Лифт по `geo` — sanity-check, что эффект не сидит в одном сегменте. **Не используем для решений** (multi-testing не корректируется): только для постановки гипотез на следующий тест."
+        "Лифт по `{{segment_column}}` — sanity-check, что эффект не сидит в одном сегменте. **Не используем для решений** (multi-testing не корректируется): только для постановки гипотез на следующий тест."
       ]
     },
     {
@@ -21,7 +21,7 @@
       "outputs": [],
       "source": [
         "metric_col = '{{metric_column}}'\n",
-        "segment_col = '{{geo_column}}'\n",
+        "segment_col = '{{segment_column}}'\n",
         "\n",
         "if segment_col not in df.columns:\n",
         "    print(f'segment column {segment_col!r} not in csv — skipping')\n",

@@ -187,7 +187,8 @@ function expectedSchema(state, cellsEnabled) {
       column: resolveCol('geo', overrides),
       type: resolveType('geo', 'string', overrides),
       required: false,
-      description: 'Сегмент для сегментного анализа',
+      description:
+        'Категориальная колонка для сегментного анализа (geo / device / plan / country / CRM-метка)',
     })
   }
   return rows
@@ -228,7 +229,7 @@ function buildPlaceholderMap(state) {
     randomization_unit: ru,
     randomization_unit_column: resolveCol(ruIdOrig, overrides),
     day_column: resolveCol('day', overrides),
-    geo_column: resolveCol('geo', overrides),
+    segment_column: resolveCol('geo', overrides),
     guardrails_py_list: pyRepr(guardrailsResolved.map((g) => g.name)),
     guardrails_py_objects: pyRepr(
       guardrailsResolved.map((g) => ({

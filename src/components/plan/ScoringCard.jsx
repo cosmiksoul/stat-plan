@@ -24,9 +24,15 @@ function GroupRow({ name, pts, max, remarks }) {
   const filledPct = max > 0 ? (pts / max) * 100 : 0
   const groupRemarks = remarks.filter((r) => r.group === name)
   return (
-    <details className="border border-border-soft rounded-md bg-bg-elev-2" open>
-      <summary className="px-4 py-3 cursor-pointer flex items-center justify-between gap-3 list-none">
+    <details
+      className="group border border-border-soft rounded-md bg-bg-elev-2"
+      open={groupRemarks.length > 0}
+    >
+      <summary className="px-4 py-3 cursor-pointer flex items-center justify-between gap-3 list-none [&::-webkit-details-marker]:hidden">
         <div className="flex items-center gap-3 min-w-0">
+          <span className="text-fg-faint text-xs flex-shrink-0 group-open:rotate-90 transition-transform">
+            ▸
+          </span>
           <span className="mono-label text-fg-dim flex-shrink-0">
             {pts.toString().padStart(2, '0')}/{max}
           </span>
@@ -39,7 +45,7 @@ function GroupRow({ name, pts, max, remarks }) {
           />
         </div>
       </summary>
-      {groupRemarks.length > 0 && (
+      {groupRemarks.length > 0 ? (
         <ul className="px-4 pb-3 m-0 list-none space-y-1.5">
           {groupRemarks.map((r) => (
             <li
@@ -53,6 +59,10 @@ function GroupRow({ name, pts, max, remarks }) {
             </li>
           ))}
         </ul>
+      ) : (
+        <div className="px-4 pb-3 text-xs text-fg-faint">
+          ✓ Без замечаний — всё ок.
+        </div>
       )}
     </details>
   )

@@ -101,7 +101,7 @@ export default function DemoCsvCard() {
       <a
         href={downloadHref(chosen)}
         download={`${chosen}.csv`}
-        className="block text-center mono-label font-semibold bg-accent text-bg rounded-md px-4 py-2 hover:opacity-90 transition-opacity"
+        className="block text-center mono-label font-semibold bg-download text-bg rounded-md px-4 py-2 hover:opacity-90 transition-opacity"
       >
         ↓ СКАЧАТЬ DEMO-CSV
       </a>
