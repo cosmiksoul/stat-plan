@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAppState } from '../state/AppStateContext.jsx'
 import { Actions } from '../state/reducer.js'
 import { parseTestPlanMd } from '../lib/plan/parse.js'
@@ -71,11 +71,25 @@ export default function StartScreen() {
     <div>
       <section className="text-center pt-8 pb-8">
         <h1 className="font-serif text-4xl md:text-5xl font-medium tracking-tight leading-[1.1] m-0 mb-3">
-          Тест-план без сюрпризов
+          Управляем процессом тестирования без сюрпризов
         </h1>
-        <p className="text-base text-fg-dim max-w-[580px] mx-auto leading-relaxed m-0">
-          Пройди бриф, получи методологически проверенный план A/B-теста
-          и готовый Jupyter-ноутбук для анализа. Без серверов и регистрации.
+        <p className="text-base text-fg-dim max-w-[640px] mx-auto leading-relaxed m-0">
+          Пройди бриф, получи методологически проверенный план A/B-теста,
+          сгенерируй Jupyter-ноутбук для анализа, упакуй результаты в отчёт.
+          Есть вопросы — загляни в{' '}
+          <Link to="/docs" className="text-accent hover:underline">
+            документацию
+          </Link>{' '}
+          или проконсультируйся с{' '}
+          <a
+            href="https://notebooklm.google.com/notebook/040498fe-3843-4562-a854-863d2101a0d8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            AI-компаньоном
+          </a>
+          .
         </p>
       </section>
 
@@ -162,7 +176,7 @@ export default function StartScreen() {
       </div>
 
       <div className="mono-label text-fg-faint text-center mt-7">
-        ВСЁ ХРАНИТСЯ ЛОКАЛЬНО · NO BACKEND
+        ВСЕ ДАННЫЕ ХРАНЯТСЯ ЛОКАЛЬНО НА ВАШЕМ КОМПЬЮТЕРЕ
       </div>
     </div>
   )

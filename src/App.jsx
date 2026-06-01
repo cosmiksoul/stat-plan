@@ -6,10 +6,14 @@ import BriefPage from './pages/BriefPage.jsx'
 import PlanPage from './pages/PlanPage.jsx'
 import NotebookBuilderPage from './pages/NotebookBuilderPage.jsx'
 import DocsIndexPage from './pages/DocsIndexPage.jsx'
-import DocsStartPage from './pages/DocsStartPage.jsx'
-import DocsTutorialPage from './pages/DocsTutorialPage.jsx'
-import DocsMethodologyPage from './pages/DocsMethodologyPage.jsx'
 import { useAppState } from './state/AppStateContext.jsx'
+
+// Sprint 9 K-4 — docs content pages pull in react-markdown + remark-gfm
+// (~40 KB gzip). Lazy-loaded into a separate chunk so the main flow's initial
+// bundle is unaffected.
+const DocsStartPage = lazy(() => import('./pages/DocsStartPage.jsx'))
+const DocsTutorialPage = lazy(() => import('./pages/DocsTutorialPage.jsx'))
+const DocsMethodologyPage = lazy(() => import('./pages/DocsMethodologyPage.jsx'))
 
 // Sprint 7: Step 4 lazy-loaded — ipynb parser + html/md/zip builders ≈ 60-80 KB
 // gzip + jszip (~30 KB). Большинство юзеров проводят основное время на Steps
@@ -43,9 +47,30 @@ export default function App() {
           <Routes>
             <Route path="/" element={<StartScreen />} />
             <Route path="/docs" element={<DocsIndexPage />} />
-            <Route path="/docs/start" element={<DocsStartPage />} />
-            <Route path="/docs/tutorial" element={<DocsTutorialPage />} />
-            <Route path="/docs/methodology" element={<DocsMethodologyPage />} />
+            <Route
+              path="/docs/start"
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <DocsStartPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/docs/tutorial"
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <DocsTutorialPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/docs/methodology"
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <DocsMethodologyPage />
+                </Suspense>
+              }
+            />
             <Route
               path="/step1"
               element={

@@ -30,7 +30,10 @@ function GroupRow({ name, pts, max, remarks }) {
     >
       <summary className="px-4 py-3 cursor-pointer flex items-center justify-between gap-3 list-none [&::-webkit-details-marker]:hidden">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-fg-faint text-xs flex-shrink-0 group-open:rotate-90 transition-transform">
+          <span
+            aria-hidden="true"
+            className="text-fg-faint text-xs flex-shrink-0 group-open:rotate-90 transition-transform"
+          >
             ▸
           </span>
           <span className="mono-label text-fg-dim flex-shrink-0">

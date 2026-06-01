@@ -54,6 +54,16 @@ export default function NotebookBuilderPage() {
       />
       <ParseWarningsBanner />
 
+      <header className="mb-6">
+        <h1 className="font-serif text-3xl font-medium tracking-tight m-0 text-fg">
+          Конструктор
+        </h1>
+        <p className="text-sm text-fg-dim m-0 mt-1">
+          Выбери ячейки анализа, посмотри ожидаемую схему данных, скачай готовый
+          Jupyter-ноутбук под свой тест-план.
+        </p>
+      </header>
+
       {state.plan.status === 'approved' && (
         <Banner
           type="status"

@@ -6,22 +6,22 @@ const OPTIONS = [
     id: 'demo_proportion',
     label: 'demo_proportion.csv',
     metric: 'proportion',
-    description: '~75k user_id × variant × converted (CR 3.1% / 3.4%)',
+    description: '~9k user_id × variant × cr_first_deposit (CR 3.1% / 4.0%)',
     available: true,
   },
   {
     id: 'demo_continuous',
     label: 'demo_continuous.csv',
     metric: 'continuous',
-    description: '~75k user_id × variant × arpu (μ 100 / 106, σ ≈ 80)',
+    description: '~10k user_id × variant × arpu (μ 104.9 / 106.6, σ ≈ 72)',
     available: true,
   },
   {
     id: 'demo_ratio',
     label: 'demo_ratio.csv',
     metric: 'ratio',
-    description: 'появится в следующем спринте',
-    available: false,
+    description: '~7k user_id × variant × clicks/sessions (CTR 9.0% / 11.1%)',
+    available: true,
   },
   {
     id: 'demo_count',
@@ -34,6 +34,7 @@ const OPTIONS = [
 
 function defaultChoiceFor(metricType) {
   if (metricType === 'continuous') return 'demo_continuous'
+  if (metricType === 'ratio') return 'demo_ratio'
   return 'demo_proportion'
 }
 
@@ -42,8 +43,7 @@ export default function DemoCsvCard() {
   const metricType = state.brief?.metric_type
   const chosen =
     state.notebook_config.demo_csv_choice || defaultChoiceFor(metricType)
-  const showsFallbackHint =
-    metricType === 'ratio' || metricType === 'count'
+  const showsFallbackHint = metricType === 'count'
   const advancedVarianceReduction = state.brief?.advanced?.variance_reduction
 
   function setChoice(id) {

@@ -1,6 +1,7 @@
 import { CELL_CATALOG } from '../../lib/plan/notebook-builder.js'
 import { useAppState } from '../../state/AppStateContext.jsx'
 import { Actions } from '../../state/reducer.js'
+import SegmentColumnPicker from './SegmentColumnPicker.jsx'
 
 const FUTURE_PLACEHOLDERS = [
   {
@@ -90,6 +91,8 @@ export default function CellsList() {
           )
         })}
       </ul>
+
+      {enabled.includes('segments') && <SegmentColumnPicker />}
 
       <h3 className="mono-label text-fg-faint mb-3">СКОРО</h3>
       <ul className="m-0 p-0 list-none space-y-2">
