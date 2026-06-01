@@ -1,0 +1,53 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" width="1200" height="630">
+<title>stat·plan — A/B тест без сюрпризов</title>
+<desc>Open Graph картинка с логотипом stat·plan и TL;DR-карточкой результата A/B-теста.</desc>
+
+<rect width="1200" height="630" fill="#0e1014"/>
+
+<text x="60" y="50" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" letter-spacing="2" fill="#6b7280">OPEN SOURCE · CLIENT-SIDE · NO BACKEND</text>
+<line x1="60" y1="68" x2="1140" y2="68" stroke="#2a2d33" stroke-width="1"/>
+
+<text x="60" y="195" font-family="'Fraunces', Georgia, serif" font-weight="600" font-size="100" letter-spacing="-2"><tspan fill="#ededed">stat</tspan><tspan fill="#a3e635">·</tspan><tspan fill="#ededed">plan</tspan></text>
+<text x="62" y="245" font-family="'Fraunces', Georgia, serif" font-style="italic" font-size="28" fill="#a8a8a8">A/B тест без сюрпризов</text>
+
+<g font-family="'Inter', system-ui, sans-serif" font-size="18" fill="#ededed">
+  <circle cx="66" cy="316" r="3" fill="#a3e635"/>
+  <text x="82" y="321">Бриф из 10 вопросов → правильный test_method и sample size</text>
+
+  <circle cx="66" cy="356" r="3" fill="#a3e635"/>
+  <text x="82" y="361">SRM · novelty · guardrails · decision rules — из плана</text>
+
+  <circle cx="66" cy="396" r="3" fill="#a3e635"/>
+  <text x="82" y="401">Готовый Jupyter-ноутбук под твою конфигурацию</text>
+
+  <circle cx="66" cy="436" r="3" fill="#a3e635"/>
+  <text x="82" y="441">Готовый HTML-отчёт для стейкхолдеров со всеми артефактами</text>
+</g>
+
+<g transform="translate(700, 170)">
+  <rect x="0" y="0" width="420" height="340" rx="8" fill="#1a1d23" stroke="#2a2d33" stroke-width="1"/>
+
+  <text x="24" y="40" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" letter-spacing="2" fill="#6b7280">TL;DR FROM REPORT</text>
+
+  <rect x="24" y="60" width="280" height="36" rx="4" fill="#1a3a1a" stroke="#a3e635" stroke-width="1"/>
+  <text x="40" y="84" font-family="'Inter', system-ui, sans-serif" font-size="14" font-weight="600" fill="#a3e635">✓ Statistically significant</text>
+  <text x="220" y="84" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" fill="#a3e635" opacity="0.85">p = 0.026</text>
+
+  <text x="24" y="145" font-family="'Inter', system-ui, sans-serif" font-size="14" fill="#a8a8a8">Δ rel</text>
+  <text x="24" y="190" font-family="'Fraunces', Georgia, serif" font-size="56" font-weight="600" fill="#a3e635">+28.06%</text>
+
+  <text x="24" y="230" font-family="'Inter', system-ui, sans-serif" font-size="14" fill="#a8a8a8">95% CI (абс. разность долей)</text>
+  <text x="24" y="258" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="16" fill="#ededed">[+0.0011 … +0.0163]</text>
+
+  <line x1="24" y1="280" x2="396" y2="280" stroke="#2a2d33" stroke-width="1"/>
+
+  <text x="24" y="310" font-family="'Inter', system-ui, sans-serif" font-size="13" fill="#a8a8a8">Recommended next step:</text>
+  <rect x="200" y="293" width="60" height="24" rx="3" fill="#1a3a1a" stroke="#a3e635" stroke-width="1"/>
+  <text x="230" y="310" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" font-weight="600" fill="#a3e635">SHIP</text>
+  <text x="270" y="310" font-family="'Inter', system-ui, sans-serif" font-size="13" fill="#6b7280">из твоих decision rules</text>
+</g>
+
+<line x1="60" y1="555" x2="1140" y2="555" stroke="#2a2d33" stroke-width="1"/>
+<text x="60" y="585" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" letter-spacing="1" fill="#6b7280">cosmiksoul.github.io/stat-plan</text>
+<text x="1140" y="585" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" letter-spacing="1" fill="#6b7280">Apache 2.0 · pull requests welcome</text>
+</svg>

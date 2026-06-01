@@ -140,4 +140,11 @@ describe('buildReportHtml', () => {
     const html = buildReportHtml(s)
     expect(html).toMatch(/абс\. разность, ед\. ARPU/)
   })
+
+  // Sprint 9 FIX iter 1 — S-4: print-friendly light theme override.
+  it('includes an @media print block with a white-background body', () => {
+    const html = buildReportHtml(makeState())
+    expect(html).toContain('@media print')
+    expect(html).toMatch(/@media print[\s\S]*body\s*{\s*background:\s*#ffffff/)
+  })
 })
