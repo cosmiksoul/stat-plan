@@ -22,9 +22,9 @@
 
 Передачи между инстансами идут **через файлы**, не через пересказ:
 
-- Cowork → Code: `docs/project/sprint-N-prompt.md`
-- Code → Cowork: `docs/project/sprint-report-N.md`
-- Cowork → пользователь: `docs/project/code-review-sprint-N.md`, `docs/project/test-cases-sprint-N.md`
+- Cowork → Code: `docs/project/sprints/sprint-N-prompt.md`
+- Code → Cowork: `docs/project/sprints/sprint-report-N.md`
+- Cowork → пользователь: `docs/project/sprints/code-review-sprint-N.md`, `docs/project/sprints/test-cases-sprint-N.md`
 - Пользователь → Cowork: заполненные test-cases с багами, обсуждения в чате
 
 Полный цикл — `docs/project/Dev-Cycle.md`.
@@ -133,7 +133,7 @@
 - `mockups/**`
 
 **Исключения для Code-зоны:**
-- `docs/project/sprint-report-N.md` и `docs/project/sprint-N-fix-report.md` — это отчёты Code о своей работе. Code пишет их и **сам коммитит** в фазе DEV/FIX (как часть «code-готов» state). Cowork может редактировать их позже в CLOSE-фазе при необходимости.
+- `docs/project/sprints/sprint-report-N.md` и `docs/project/sprints/sprint-N-fix-report.md` — это отчёты Code о своей работе. Code пишет их и **сам коммитит** в фазе DEV/FIX (как часть «code-готов» state). Cowork может редактировать их позже в CLOSE-фазе при необходимости.
 
 **Порядок коммитов в одной фазе:**
 - Code сначала коммитит **свои зоны** (даже до того как Cowork сделал code review), формирует «code-готов» state
@@ -161,5 +161,5 @@
 | Какие архитектурные решения уже приняты | `docs/context/decisions-log.md` |
 | Что в скоупе, что готово | `docs/project/JTBD.md` |
 | История проекта, что было в прошлых спринтах | `docs/project/CONTEXT.md` |
-| Что было в последнем спринте | `docs/project/sprint-report-N.md` (последний по номеру) |
+| Что было в последнем спринте | `docs/project/sprints/sprint-report-N.md` (последний по номеру) |
 | Как у нас устроен процесс | `docs/project/Dev-Cycle.md` |

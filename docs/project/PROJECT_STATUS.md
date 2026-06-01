@@ -173,7 +173,7 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 ## Roadmap до v1 (актуализирован 2026-06-01 после Sprint 8 CLOSE)
 
 1. **Sprint 9 — Methodology content + Tutorial content rewrite + a11y/mobile audit + NotebookLM finalization.** ~4-5 ч. Скоуп в `docs/project/JTBD.md §9` + `polish-pack-v2.md` Pv9 sections. Главные блоки:
-   - **Tutorial content** — переработать `docs/project/e2e-scenarios-sprint-7.md` (3 e2e сценария A/B/C) → user-facing markdown для `/docs/tutorial`. CSV-файлы как downloadable demo data.
+   - **Tutorial content** — переработать `docs/project/sprints/e2e-scenarios-sprint-7.md` (3 e2e сценария A/B/C) → user-facing markdown для `/docs/tutorial`. CSV-файлы как downloadable demo data.
    - **Methodology content** — наполнить `/docs/methodology` (сейчас stub): объяснения test_method / MDE / sample size / SRM / novelty / guardrails со sticky TOC. Disclaimer «Что мы НЕ делаем» (sequential / HTE / causal). Cross-ref на NotebookLM AI-компаньон как primary external resource.
    - **«С чего начать» content** — overview флоу 4 шагов для `/docs/start` (сейчас stub).
    - **NotebookLM finalization (external content, не код)** — оформление обложки + MindMap кастомизация по терминам методологии + Audio Overview / Slide Deck / Video Overview через NotebookLM studio.
@@ -225,10 +225,10 @@ React 19 + Vite 8 + Tailwind v4 + react-router-dom v7 HashRouter + Vitest 4 + js
 | История проекта по спринтам | `docs/project/CONTEXT.md` (Development Timeline — Sprint 6 запись добавлена) |
 | Процесс (фазы спринта) | `docs/project/Dev-Cycle.md` |
 | Правила поведения обоих инстансов | `CLAUDE.md` |
-| Последний завершённый sprint phase | `docs/project/sprint-report-6.md` + `sprint-6-fix-report.md` + (Sprint 6 FIX iter 2 report TBD от Code) |
-| Code review Sprint 6 | `docs/project/code-review-sprint-6.md` |
-| Тест-кейсы Sprint 6 | `docs/project/test-cases-sprint-6.md` (14 кейсов основной smoke) + `docs/project/test-cases-sprint-6-fix-retest.md` (7 runnable retest кейсов после FIX iter 1/2) |
-| Sprint 6 FIX prompts | `docs/project/sprint-6-fix-prompt.md` (iter 1) + `docs/project/sprint-6-fix-iter2-prompt.md` (BUG-Q5 + Phase F + BUG-Q6) |
+| Последний завершённый sprint phase | `docs/project/sprints/sprint-report-6.md` + `sprint-6-fix-report.md` + (Sprint 6 FIX iter 2 report TBD от Code) |
+| Code review Sprint 6 | `docs/project/sprints/code-review-sprint-6.md` |
+| Тест-кейсы Sprint 6 | `docs/project/sprints/test-cases-sprint-6.md` (14 кейсов основной smoke) + `docs/project/sprints/test-cases-sprint-6-fix-retest.md` (7 runnable retest кейсов после FIX iter 1/2) |
+| Sprint 6 FIX prompts | `docs/project/sprints/sprint-6-fix-prompt.md` (iter 1) + `docs/project/sprints/sprint-6-fix-iter2-prompt.md` (BUG-Q5 + Phase F + BUG-Q6) |
 | Polish-pack v1 (закрыт в Sprint 5) + v2 кандидаты | `docs/project/polish-pack.md` + JTBD §4/§5/§6 ◆ stories |
 
 ---

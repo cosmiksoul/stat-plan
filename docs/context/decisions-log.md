@@ -149,7 +149,7 @@
 - ADR-013 (Шаг 4 «Валидация и отчёт») — этот ADR уточняет how-to: ipynb upload как primary, форма как fallback.
 - ADR-004 (тул не принимает решений) — соблюдается: тул принимает **пользовательские** результаты выполнения **пользовательского** ноутбука и применяет **пользовательские** decision_rules. Поле «Принятое решение» в readout остаётся пустым.
 - ADR-002 (артефакты как переносимое состояние) — этот ADR расширяет: `.ipynb` с outputs тоже становится переносимым артефактом (раньше был только output stat·plan'а, теперь и input для Шага 4).
-- Sprint 7 prompt (`docs/project/sprint-7-prompt.md`) — детальная реализация.
+- Sprint 7 prompt (`docs/project/sprints/sprint-7-prompt.md`) — детальная реализация.
 - DATA_MODEL.md — обновится новым разделом «Notebook results export schema».
 - `notebook-builder.js` (Sprint 6) — обновится в Sprint 7: добавление export-cell + matplotlib styling.
 
@@ -220,7 +220,7 @@ ADR-015 контракт расширен; парсер не нарушает с
 **Related:**
 - ADR-001 (no backend, minimum deps) — этот ADR — exception, обоснованный реальной потребностью в Sprint 6.
 - ADR-010 (стек) пункт 6 — уточняется: recharts из кандидата → принят.
-- Sprint 6 prompt (`docs/project/sprint-6-prompt.md`) — `npm install recharts papaparse`.
+- Sprint 6 prompt (`docs/project/sprints/sprint-6-prompt.md`) — `npm install recharts papaparse`.
 
 ---
 
@@ -369,8 +369,8 @@ ADR-015 контракт расширен; парсер не нарушает с
 **Related:**
 - ADR-002 (артефакты как переносимое состояние) — этот ADR усиливает: контракт metric_name/metric_label теперь строго определён.
 - `DATA_MODEL.md` — обновлён.
-- `docs/project/sprint-4-fix-report.md` — где Code зафиксировал semantic shift в iter 1.
-- BUG-3 в `docs/project/test-cases-sprint-4.md` — историческое описание (с уточнением что первоначальная формулировка от Cowork была неточной).
+- `docs/project/sprints/sprint-4-fix-report.md` — где Code зафиксировал semantic shift в iter 1.
+- BUG-3 в `docs/project/sprints/test-cases-sprint-4.md` — историческое описание (с уточнением что первоначальная формулировка от Cowork была неточной).
 - polish-pack.md P-7 — legacy heuristic для парсера.
 
 ---

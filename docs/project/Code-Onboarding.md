@@ -15,7 +15,7 @@
 | # | Файл | Зачем |
 |---|------|-------|
 | 1 | `<project>/CLAUDE.md` | Поведенческие правила, anti-patterns, project-specific правила. **Источник истины как себя вести.** |
-| 2 | Sprint prompt текущего спринта (`docs/project/sprint-N-prompt.md` или `sprint-N-fix-prompt.md`) | Что именно сейчас делать |
+| 2 | Sprint prompt текущего спринта (`docs/project/sprints/sprint-N-prompt.md` или `sprint-N-fix-prompt.md`) | Что именно сейчас делать |
 
 ### По необходимости (если sprint prompt ссылается)
 
@@ -23,8 +23,8 @@
 |---|---|
 | `<project>/docs/context/architecture.md` | Перед началом кодинга — структура папок, стек, паттерны |
 | `<project>/docs/context/decisions-log.md` (нужные ADR) | Если sprint prompt упоминает конкретные ADR |
-| `<project>/docs/project/sprint-report-N-1.md` (предыдущий) | Если текущий спринт продолжает работу предыдущего |
-| `<project>/docs/project/code-review-sprint-N.md` | Если работаешь над FIX phase — там описаны concerns, которые тоже могут быть в багах |
+| `<project>/docs/project/sprints/sprint-report-N-1.md` (предыдущий) | Если текущий спринт продолжает работу предыдущего |
+| `<project>/docs/project/sprints/code-review-sprint-N.md` | Если работаешь над FIX phase — там описаны concerns, которые тоже могут быть в багах |
 
 ### Не читать (это не твоя зона)
 
@@ -76,7 +76,7 @@
 
 ## Sprint report — обязательный формат
 
-В конце каждого спринта (фаза DEV) — обязательно создать `docs/project/sprint-report-N.md` по шаблону:
+В конце каждого спринта (фаза DEV) — обязательно создать `docs/project/sprints/sprint-report-N.md` по шаблону:
 
 ```markdown
 # Sprint N Report — [Название из sprint prompt]
@@ -155,4 +155,4 @@
 - Поведенческие правила и project-specific: `CLAUDE.md`
 - Архитектура и стек: `docs/context/architecture.md`
 - Принятые решения: `docs/context/decisions-log.md`
-- Текущий sprint prompt: `docs/project/sprint-N-prompt.md`
+- Текущий sprint prompt: `docs/project/sprints/sprint-N-prompt.md`

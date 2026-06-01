@@ -23,7 +23,7 @@ export default defineConfig({
   server: {
     watch: {
       // Не триггерим full reload при изменении документации, мокапов и тестов.
-      // Sprint 2 QA — пользователь редактирует docs/project/test-cases-*.md
+      // Sprint 2 QA — пользователь редактирует docs/project/sprints/test-cases-*.md
       // параллельно с тестированием, и это сбрасывало state приложения.
       ignored: ['**/docs/**', '**/mockups/**', '**/tests/**'],
     },

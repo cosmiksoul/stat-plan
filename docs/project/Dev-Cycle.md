@@ -56,7 +56,7 @@
 - Финализация схемы YAML frontmatter перед фичей чтения/записи
 
 **Особенности цикла:**
-- Фаза PLAN расширена: включает **research + проектирование** (живёт в `docs/project/sprint-N-design.md`)
+- Фаза PLAN расширена: включает **research + проектирование** (живёт в `docs/project/sprints/sprint-N-design.md`)
 - Перед DEV фазой — **review архитектурного решения** пользователем
 - Если решение значимое и долгоживущее — Cowork в диалоге с пользователем формирует новый ADR в `docs/context/decisions-log.md`
 - Дальше — обычный Code sprint по реализации согласованного дизайна
@@ -135,11 +135,11 @@ Cowork при планировании каждого следующего сп�
 
 **Действия:**
 
-- Написать `docs/project/sprint-N-prompt.md` — полное ТЗ для Claude Code
+- Написать `docs/project/sprints/sprint-N-prompt.md` — полное ТЗ для Claude Code
 - Включить: цель, список задач, технические детали, ограничения (DO NOT), критерии приёмки
 - Сослаться на нужные файлы (`CLAUDE.md`, предыдущие sprint-reports, релевантные ADR, разделы architecture)
 
-**Артефакт:** `docs/project/sprint-N-prompt.md`
+**Артефакт:** `docs/project/sprints/sprint-N-prompt.md`
 
 **Шаблон prompt-файла:**
 
@@ -191,7 +191,7 @@ Cowork при планировании каждого следующего сп�
 - Claude Code пишет код, делает коммиты
 - По завершении формирует отчёт
 
-**Артефакт:** `docs/project/sprint-report-N.md`
+**Артефакт:** `docs/project/sprints/sprint-report-N.md`
 
 **Шаблон отчёта** (Claude Code должен следовать этому формату):
 
@@ -257,7 +257,7 @@ Cowork при планировании каждого следующего сп�
 - Не углубляется в стиль кода (это уровень CLAUDE.md правил, проверяет Code сам)
 - Не запускает код (это пользователь на QA)
 
-**Артефакт:** `docs/project/code-review-sprint-N.md`
+**Артефакт:** `docs/project/sprints/code-review-sprint-N.md`
 
 **Шаблон:**
 
@@ -346,12 +346,12 @@ Cowork при планировании каждого следующего сп�
 
 **Действия:**
 
-- На основе sprint-report, sprint-prompt и code-review результатов создать `docs/project/test-cases-sprint-N.md`
+- На основе sprint-report, sprint-prompt и code-review результатов создать `docs/project/sprints/test-cases-sprint-N.md`
 - Включить: позитивные сценарии, негативные сценарии, edge cases, регрессию предыдущих спринтов
 - **Особо проверить участки, где были 🟡 Concerns** в code review — там высокая вероятность найти runtime-баги
 - Каждый тест-кейс: описание, ожидаемый результат, поле для статуса
 
-**Артефакт:** `docs/project/test-cases-sprint-N.md`
+**Артефакт:** `docs/project/sprints/test-cases-sprint-N.md`
 
 **Шаблон тест-кейса:**
 
@@ -402,7 +402,7 @@ Cowork при планировании каждого следующего сп�
 - Найденные баги — описать в таблице багов с severity
 - По возможности — скриншоты или описание шагов воспроизведения
 
-**Артефакт:** обновлённый `docs/project/test-cases-sprint-N.md` с заполненными статусами и таблицей багов.
+**Артефакт:** обновлённый `docs/project/sprints/test-cases-sprint-N.md` с заполненными статусами и таблицей багов.
 
 **Severity:**
 
@@ -421,11 +421,11 @@ Cowork при планировании каждого следующего сп�
 
 - Обсуждение результатов QA в Cowork
 - Классификация багов: fix now (Critical/High) vs defer (Medium/Low)
-- Подготовка fix prompt: `docs/project/sprint-N-fix-prompt.md`
+- Подготовка fix prompt: `docs/project/sprints/sprint-N-fix-prompt.md`
 - Claude Code выполняет фикс
 - Claude Code обновляет `sprint-report-N.md` (добавляет секцию "Bug Fixes") или создаёт `sprint-N-fix-report.md` (по договорённости — для большого спринта удобнее отдельный файл)
 
-**Артефакт:** `docs/project/sprint-N-fix-prompt.md`, обновлённый `sprint-report-N.md` (или `sprint-N-fix-report.md`)
+**Артефакт:** `docs/project/sprints/sprint-N-fix-prompt.md`, обновлённый `sprint-report-N.md` (или `sprint-N-fix-report.md`)
 
 **Шаблон fix prompt:**
 
@@ -468,7 +468,7 @@ Cowork при планировании каждого следующего сп�
 - Пройти ключевые регрессионные тесты
 - Обновить статусы в test-cases
 
-**Артефакт:** обновлённый `docs/project/test-cases-sprint-N.md`
+**Артефакт:** обновлённый `docs/project/sprints/test-cases-sprint-N.md`
 
 **Правила:**
 
@@ -537,11 +537,11 @@ Cowork при планировании каждого следующего сп�
 ### Фаза 2: RESEARCH + DESIGN (Cowork)
 
 - Изучение вариантов (через web search, изучение docs библиотек)
-- Подготовка `docs/project/sprint-N-design.md` с обоснованием выбора
+- Подготовка `docs/project/sprints/sprint-N-design.md` с обоснованием выбора
 - Возможные альтернативы с trade-off'ами
 - Рекомендация
 
-**Артефакт:** `docs/project/sprint-N-design.md`
+**Артефакт:** `docs/project/sprints/sprint-N-design.md`
 
 ### Фаза 3: REVIEW (Пользователь + Cowork)
 

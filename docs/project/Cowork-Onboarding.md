@@ -25,9 +25,9 @@
 | Файл | Когда читать |
 |---|---|
 | `<project>/docs/context/architecture.md` | Перед фазой PROMPT или CODE REVIEW — понимание стека, слоёв, структуры репозитория |
-| `<project>/docs/project/sprint-report-N.md` (последний) | Перед PLAN фазой нового спринта — что сделали в прошлом |
+| `<project>/docs/project/sprints/sprint-report-N.md` (последний) | Перед PLAN фазой нового спринта — что сделали в прошлом |
 | `<project>/docs/project/CONTEXT.md` | Если есть ощущение что упускаешь history проекта |
-| `<project>/docs/project/code-review-sprint-N.md` (последний) | Перед TEST PREP — какие concerns были в code review, на что обратить внимание в тестах |
+| `<project>/docs/project/sprints/code-review-sprint-N.md` (последний) | Перед TEST PREP — какие concerns были в code review, на что обратить внимание в тестах |
 
 ---
 
