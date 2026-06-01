@@ -6,11 +6,9 @@
 
 ---
 
-## ⚠ Cross-zone зависимость (для Cowork / деплоя)
+## Cross-zone зависимость (для Cowork — info)
 
-K-4 страницы `src/pages/Docs{Start,Tutorial,Methodology}Page.jsx` импортируют контент `import md from '../../docs/content/docs-*.md?raw'`. **`docs/content/` — Cowork-зона и сейчас untracked.** Для прохождения деплой-сборки (GitHub Actions vite build из `main`) каталог `docs/content/` **должен быть закоммичен** (Cowork-зона). Если его нет в репо — `npm run build` в CI упадёт на резолве импорта. Я не коммичу `docs/**` (зона), эскалирую: **закоммить `docs/content/` вместе с docs-правками**.
-
-Также `src/pages/Docs{Start,Tutorial,Methodology}Page.jsx` оказались untracked (видимо открепились между iter-1 и Sprint 9) — я добавляю их в этот коммит.
+K-4 страницы `src/pages/Docs{Start,Tutorial,Methodology}Page.jsx` импортируют контент `import md from '../../docs/content/docs-*.md?raw'`. `docs/content/` — Cowork-зона; **проверено: все 4 файла уже tracked в репо** (`git ls-files docs/content/`), поэтому деплой-сборка не блокируется. На будущее: правки `docs/content/*.md` Cowork'ом автоматически попадают в страницы при следующем build (без правок кода).
 
 ---
 
